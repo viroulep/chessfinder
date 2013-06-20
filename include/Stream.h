@@ -25,7 +25,7 @@ protected:
 
 class InputStream : public Stream {
 public:
-    InputStream();
+    //InputStream();
     InputStream(int file_descriptor);
     ~InputStream();
     void open(int file_descriptor);
@@ -39,7 +39,7 @@ private:
 
 class OutputStream : public Stream {
 public:
-    OutputStream();
+    //OutputStream();
     OutputStream(int file_descriptor);
     ~OutputStream();
     void open(int file_descriptor);

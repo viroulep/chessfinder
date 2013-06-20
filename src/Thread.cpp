@@ -9,9 +9,9 @@ Runnable::~Runnable()
 {}
 
 
-Thread::Thread(shared_ptr<Runnable> r) : 
+Thread::Thread(Runnable *r) : 
         runnable_(r) {
-    if(!runnable_.get()){
+    if(!runnable_){
         cout << "Thread::Thread(auto_ptr<Runnable> r, bool isDetached)"\
         "failed at " << " " << __FILE__ <<":" << __LINE__ << "-" <<
         " runnable is NULL" << endl;
@@ -19,7 +19,11 @@ Thread::Thread(shared_ptr<Runnable> r) :
     }
 }
 
-Thread::~Thread() {}
+Thread::~Thread()
+{
+    if (runnable_)
+        delete runnable_;
+}
 
 
 
@@ -57,8 +61,19 @@ void Thread::start() {
     }
 }
 
+void Thread::kill() 
+{
+    pthread_cancel(PthreadThreadID);
+}
 
-void *Thread::join() {
+
+void Thread::detach()
+{
+    int status = pthread_detach(PthreadThreadID);
+}
+
+void *Thread::join()
+{
     // A thread calling T.join() waits until thread T completes.
     int status = pthread_join(PthreadThreadID, NULL);
     // result was already saved by thread start function

@@ -34,14 +34,20 @@ void Stream::open(int file_descriptor, ios_base::openmode openmode)
 
 Stream::~Stream()
 {
-    close(file_descriptor_);
-    delete filebuf_;
+    //filebuf_->close();
+    //delete filebuf_;
+    /*
+     *if (file_descriptor_)
+     *    close(file_descriptor_);
+     *if (filebuf_)
+     *    delete filebuf_;
+     */
 }
 
 
-InputStream::InputStream() :
-    Stream(), stdistream_(NULL)
-{ }
+//InputStream::InputStream() :
+    //Stream(), stdistream_(NULL)
+//{ }
 
 InputStream::InputStream(int file_descriptor) :
     Stream(file_descriptor, ios_base::in)
@@ -89,8 +95,8 @@ InputStream::~InputStream()
     delete stdistream_;
 }
 
-OutputStream::OutputStream() :
-    Stream(), stdostream_(NULL) {}
+//OutputStream::OutputStream() :
+    //Stream(), stdostream_(NULL) {}
 
 OutputStream::OutputStream(int file_descriptor) :
     Stream(file_descriptor, ios_base::out)

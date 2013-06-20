@@ -3,8 +3,11 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <memory>
+#include <list>
 #include "Thread.h"
 #include "Engine.h"
+#include "Utils.h"
+#include "Line.h"
 #include "MatFinder.h"
 
 #define CHILD_STDIN_READ pipefds_input[0]
@@ -36,8 +39,8 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    Engine stockfish("stockfish", "/usr/local/bin");
-    MatFinder *theFinder = new MatFinder(stockfish);
+    Engine gardner("gardnerfish", "/usr/local/bin");
+    MatFinder *theFinder = new MatFinder(gardner);
 
     pid_t pid;
     // Create child process; both processes continue from here
@@ -52,19 +55,24 @@ int main()
         // Tell the parent the exec failed
         kill(getppid(), SIGUSR1);
         exit(EXIT_FAILURE);
-    }
-    else if (pid > pid_t(0))
-    {
+    } else if (pid > pid_t(0)) {
+        //TODO: take position and moves as param !
         cout << "Parent : running finder\n";
-        theFinder->runFinder();
-    }
-    else
-    {
+        //string testFenMat("8/8/1rq2k2/1p1p1p2/1b1p1B2/1P1P1P2/2R1QK2/8 w - - 4 6");
+        list<string> startingMoves;
+        startingMoves.push_back("c2d4");
+        startingMoves.push_back("c5d4");
+        //Starting side should be read from fen
+        int rt = theFinder->runFinder(WHITE, startingMoves);
+        Utils::handleError("runfinder()\n", rt);
+
+        //Kill the child
+        kill(pid, SIGTERM);
+    } else {
         perror("Error: fork failed");
         exit(EXIT_FAILURE);
     }
-
-    cout << "Exiting\n";
+    cout << "Exiting program\n";
     delete theFinder;
     return 0;
 }

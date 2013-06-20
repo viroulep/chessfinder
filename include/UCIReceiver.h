@@ -12,9 +12,14 @@
 class UCIReceiver : public Runnable {
 public:
     UCIReceiver(MatFinder *finder);
+    ~UCIReceiver();
     void *run();
 private:
-    InputStream input_;
+    void bestmove(istringstream &is);
+    void readyok(istringstream &is);
+    void info(istringstream &is);
+    void option(istringstream &is);
+    InputStream *input_;
     MatFinder *matFinder_;
     void parseMessage(std::string msg);
 };

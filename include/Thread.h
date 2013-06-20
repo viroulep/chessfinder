@@ -15,16 +15,18 @@ public:
 
 class Thread {
 public:
-    Thread(shared_ptr<Runnable> run);
+    Thread(Runnable *run);
     virtual ~Thread();
     void start();
+    void kill();
+    void detach();
     void *join();
 private:
     // thread ID
     pthread_t PthreadThreadID;
     pthread_attr_t threadAttribute;
     // runnable object will be deleted automatically
-    shared_ptr<Runnable> runnable_;
+    Runnable *runnable_;
     Thread(const Thread&);
     const Thread& operator=(const Thread&);
     // called when run() completes

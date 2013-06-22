@@ -11,6 +11,7 @@ typedef enum side_e {
     BLACK,
     UNDEFINED
 } side_t;
+static const char* SideNames[3] = { "white", "black", "undefined" };
 
 //Class representing a particular line for a position
 //TODO: make the line inherit from list<string>

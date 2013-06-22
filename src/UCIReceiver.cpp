@@ -79,6 +79,8 @@ void UCIReceiver::info(istringstream &is)
             //TODO
         } else if (token == "hashfull") {
             //TODO
+            is >> token;
+            cerr << "********** Hashfull : " << token << " *******\n";
         } else if (token == "nps") {
             is >> curNps;
             matFinder_->updateNps(curNps);
@@ -121,6 +123,7 @@ void UCIReceiver::bestmove(istringstream &is)
 void UCIReceiver::parseMessage(string msg)
 {
     string token;
+    //cerr << "\tcmd: " << msg << "\n";
     istringstream is(msg);
     is >> skipws >> token;
     if (token == "id") {

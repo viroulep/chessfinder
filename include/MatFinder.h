@@ -10,13 +10,16 @@
 #include "Line.h"
 
 using namespace std;
-#define MAX_LINES 8
+//TODO: better this -_-
+#define MAX_LINES 10
+#define MAX_LINES_STR "10"
 
 class MatFinder {
 public:
     MatFinder(Engine chessEngine);
     ~MatFinder();
-    int runFinder(side_t engineSide, list<string> &moves, string pos = "startpos");
+    int runFinder(side_t enginePlayFor, list<string> &moves,
+            string pos = "startpos");
     int runEngine();
 
     //should update or create the line and update the gui
@@ -31,6 +34,7 @@ public:
 private:
     Thread *startReceiver();
     void switchSide();
+    void switchSide(side_t *side);
     void sendCurrentPositionToEngine();
     void sendPositionToEngine(string pos, list<string> &moves,
             list<string> &addedMoves);
@@ -46,7 +50,6 @@ private:
     int getEngineErrWrite();
     Line &getFirstNotMatUnbalancedLine();
 
-    void getTimeout(struct timespec *ts, int seconds);
 
     int in_fds_[2], out_fds_[2], err_fds_[2];
     OutputStream *engine_input_;
@@ -57,6 +60,7 @@ private:
 
     //Engine specific members
     Engine engine_;
+    side_t engine_play_for_ = UNDEFINED;
     side_t engine_side_ = UNDEFINED;
     //The starting moves
     list<string> startingMoves_;

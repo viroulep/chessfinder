@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <ext/stdio_filebuf.h>
 
-#define BUFFER_SIZE (512)
+#define BUFFER_SIZE (2048)
 
 
 using namespace std;

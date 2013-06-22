@@ -1,11 +1,17 @@
 #include <iostream>
 #include <sstream>
-#include <sys/time.h>
+#include <cmath>
 #include <unistd.h>
 #include "MatFinder.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
+
+
+//TODO:
+// - Write a chess board
+// - Write error management
+//
 
 MatFinder::MatFinder(Engine chessEngine) : engine_(chessEngine)
 {
@@ -16,25 +22,34 @@ MatFinder::MatFinder(Engine chessEngine) : engine_(chessEngine)
     // the same pipe and they can communicate.
 
     pipe_status = pipe(in_fds_);
-    if (pipe_status == -1)
-    {
-        perror("Error creating the pipe");
-        exit(EXIT_FAILURE);
-    }
+    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
+    /*
+     *if (pipe_status == -1)
+     *{
+     *    perror("Error creating the pipe");
+     *    exit(EXIT_FAILURE);
+     *}
+     */
 
     pipe_status = pipe(out_fds_);
-    if (pipe_status == -1)
-    {
-        perror("Error creating the pipe");
-        exit(EXIT_FAILURE);
-    }
+    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
+    /*
+     *if (pipe_status == -1)
+     *{
+     *    perror("Error creating the pipe");
+     *    exit(EXIT_FAILURE);
+     *}
+     */
 
     pipe_status = pipe(err_fds_);
-    if (pipe_status == -1)
-    {
-        perror("Error creating the pipe");
-        exit(EXIT_FAILURE);
-    }
+    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
+    /*
+     *if (pipe_status == -1)
+     *{
+     *    perror("Error creating the pipe");
+     *    exit(EXIT_FAILURE);
+     *}
+     */
     engine_input_ = new OutputStream(getEngineInWrite());
 }
 
@@ -75,12 +90,19 @@ int MatFinder::runEngine()
     engine_.execEngine();
 }
 
-int MatFinder::runFinder(side_t engineSide, list<string> &moves,
+//FIXME: sideToMove should be read from fen, and move added
+int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
         string pos/* = "startpos"*/)
 {
     //engine_input_.open(getEngineInWrite());
-    engine_side_ = engineSide;
-    side_t startingSide = engineSide;
+    side_t sideToMove = (pos == "startpos")?WHITE:Utils::getSideFromFen(pos);
+    if (moves.size()%2)
+        switchSide(&sideToMove);
+
+    if (sideToMove == UNDEFINED)
+        return 1;
+    engine_side_ = sideToMove;
+    engine_play_for_ = enginePlayFor;
     startpos_ = pos;
     addedMoves_.clear();
     lines_.fill(Line::emptyLine);
@@ -101,7 +123,7 @@ int MatFinder::runFinder(side_t engineSide, list<string> &moves,
     //FIXME: #define these
     sendOptionToEngine("Hash", "4096");
     sendOptionToEngine("UCI_AnalyseMode", "true");
-    sendOptionToEngine("MultiPV", "4");
+    sendOptionToEngine("MultiPV", MAX_LINES_STR);
     sendToEngine("ucinewgame");
 
     sendToEngine("isready");
@@ -111,29 +133,63 @@ int MatFinder::runFinder(side_t engineSide, list<string> &moves,
 
     waitReadyok();
 
+    cout << "Starting side is " << SideNames[engine_side_] << endl;
 
-
-    int i = 0;
+    cout << "Doing some basic evaluation on submitted position..." << endl;
+    sendCurrentPositionToEngine();
+    sendToEngine("go movetime 5000");
+    waitBestmove();
+    cout << "Lines found are :" << endl;
+    cout << getPrettyLines();
 
     //should be while true
-    while (i < 4) {
+    while (true) {
     //TODO: Write the engine pilot main loop...
     //End this !!!
         Line bestUnba;
+        lines_.fill(Line::emptyLine);
         //final cond should take into account addedMoves_.empty()
-        if (engine_side_ == startingSide) {
+        cout << "[" << SideNames[engine_side_] << "]" << endl;
+        if (engine_side_ == engine_play_for_) {
             sendCurrentPositionToEngine();
             //We are now thinking
-            sendToEngine("go movetime 5000");
+            sendToEngine("go movetime 2500");
+            cout << "[" << SideNames[engine_side_] << "] Thinking... (2500)\n";
             waitBestmove();
 
             bestUnba = getFirstNotMatUnbalancedLine();
-            if (bestUnba.empty())
-                break;
+            if (bestUnba.empty()) {
+                cout << "We just closed a line :" << endl;
+                cout << getPrettyLines();
+                //Handle the case where we should backtrack
+                if (!addedMoves_.empty()) {
+                    //Remove opposite previous move
+                    addedMoves_.pop_back();
+                    switchSide();
+                    //Remove our previous move if we had one
+                    //(not the case if starting side is not the side 
+                    //the engine play for)
+                    if (!addedMoves_.empty()) {
+                        addedMoves_.pop_back();
+                        switchSide();
+                    }
+                    continue;
+                } else {
+                    addedMoves_.clear();
+                    //This is the end (hold your breath and count to ten)
+                    break;
+                }
 
-            cout << "[Start] Best line : \n";
-            cout << bestUnba.getPretty(engine_side_);
-            cout << "Next move : ";
+                //FIXME: Handle error correctly
+                Utils::handleError("Line empty from starting point of view",
+                        1);
+                break;
+            }
+
+            //TODO: refactor, common code !
+            cout << "[" << SideNames[engine_side_] << "] Best line : \n";
+            cout << "\t" << bestUnba.getPretty(engine_side_);
+            cout << "\tNext move : ";
             string next = bestUnba.firstMove();
             cout << next << endl;
             addedMoves_.push_back(next);
@@ -144,42 +200,55 @@ int MatFinder::runFinder(side_t engineSide, list<string> &moves,
             //We are now answering the "best" move, should not be so many
             //precise answers, so thinking should be short.
             sendToEngine("go movetime 1000");
+            cout << "[" << SideNames[engine_side_] << "] Thinking... (1000)\n";
             waitBestmove();
-            bestUnba = getFirstNotMatUnbalancedLine();
-            if (bestUnba.empty())
-                break;
+            //Best line is the first
+            bestUnba = lines_[0];
+            if (bestUnba.empty()) {
+                //FIXME: Handle error correctly
+                Utils::handleError("Line empty from opposite point of view",
+                        1);
+                exit(EXIT_FAILURE);
+            }
+            if (bestUnba.isMat()) {
+                if (addedMoves_.empty()) {
+                    //The end, starting side was not playFor side
+                    //FIXME: not needed, as white handle the case 
+                    //where added.size() is 1
+                    cout << "Looks like it's over" << endl;
+                    break;
+                }
+                //Backtrack so that start is to move
+                cout << "\tBacktrack move " << addedMoves_.back()
+                    << " (addedMove#" << addedMoves_.size() << ")"
+                    << endl;
+                addedMoves_.pop_back();//remove *startingSide* move
+                switchSide();
+                continue;
+            }
+            //else just play the move for opponent
 
-            cout << "[Opposite] Best line : \n";
-            cout << bestUnba.getPretty(engine_side_);
-            cout << "Next move : ";
+            cout << "[" << SideNames[engine_side_] << "] Best line : \n";
+            cout << "\t" << bestUnba.getPretty(engine_side_);
+            cout << "\tNext move : ";
             string next = bestUnba.firstMove();
             cout << next << endl;
             addedMoves_.push_back(next);
             switchSide();
         }
-        //Now compute exit, or not
-        i++;
     }
-    cout << "All lines should now be null or mat :\n";
+
+    cout << "Finder is done." << endl;
+    cout << "Starting side was " << SideNames[sideToMove] << endl;
+    cout << "Engine played for " << SideNames[engine_play_for_] << endl;
+    if (engine_play_for_ == sideToMove)
+        cout << "All lines should now be draw or mat :" << endl;
+    else
+        cout << "Best line should be mat.\n" << endl;
     //Correct eval sign (last line are from black for this test)
-    switchSide();
+    //switchSide();
     cout << getPrettyLines();
 
-
-    /*
-       idée du programme :
-       pos de départ, 
-       un move blanc
-       si eval != 0
-       explorer les mats
-       jouer 'top' coup noir en < 1000ms
-       explorer les coups blancs
-       while (eval variation 1 in -300 300)
-       lister les variations : si eval < 300 ou > 300 : mat
-       si rien en ??s, "aider"
-       si eval = 0
-       ??
-     * */
 
 
     thread->kill();
@@ -224,10 +293,10 @@ void MatFinder::sendOptionToEngine(string optionName, string optionValue)
 
 void MatFinder::sendToEngine(string cmd)
 {
-    //TODO: better this
+    //TODO: better this, debug mode
     string toSend(cmd);
     toSend += "\n";
-    cout << "Sending : " << toSend;
+    //cout << "Sending : " << toSend;
     (*engine_input_) << toSend;
 }
 
@@ -268,12 +337,25 @@ void MatFinder::signalBestmove(string &bestmove)
 string MatFinder::getPrettyLines()
 {
     ostringstream oss;
-    oss << "Lines are :\n";
+    if (!addedMoves_.empty()) {
+        oss << "Lines after moves ";
+        list<string> tmpList = startingMoves_;
+        tmpList.insert(tmpList.end(), addedMoves_.begin(), addedMoves_.end());
+        int i = 0;
+        //TODO: #define max number of displayed move
+        while (!tmpList.empty() && i < 8) {
+            oss << tmpList.front();
+            oss << " ";
+            tmpList.pop_front();
+            i++;
+        }
+        oss << "\n";
+    }
     Line curLine;
     for (int i = 0; i < lines_.size(); ++i) {
         curLine = lines_[i];
         if (!curLine.empty()) {
-            oss << "[";
+            oss << "\t[";
             oss << (i + 1);
             oss << "] ";
             oss << curLine.getPretty(engine_side_);
@@ -300,7 +382,12 @@ Thread *MatFinder::startReceiver()
 
 void MatFinder::switchSide()
 {
-    engine_side_ = (engine_side_ == WHITE)?BLACK:WHITE;
+    switchSide(&engine_side_);
+}
+
+void MatFinder::switchSide(side_t *side)
+{
+    (*side) = ((*side) == WHITE)?BLACK:WHITE;
 }
 
 void MatFinder::waitReadyok()
@@ -308,7 +395,7 @@ void MatFinder::waitReadyok()
     pthread_mutex_lock(&readyok_mutex_);
     struct timespec ts;
     //TODO:#define it
-    getTimeout(&ts, 5);
+    Utils::getTimeout(&ts, 5);
     pthread_cond_timedwait(&readyok_cond_,
             &readyok_mutex_,
             &ts);
@@ -355,23 +442,14 @@ int MatFinder::getEngineErrWrite()
 Line &MatFinder::getFirstNotMatUnbalancedLine()
 {
     for (int i = 0; i < lines_.size(); ++i) {
-        if (lines_[i].getEval() != 0 && !lines_[i].isMat())
+        //TODO: find a clearer way to define "balance"
+        //eval is in centipawn, 100 ~ a pawn
+        int limit = 50;
+        if (fabs(lines_[i].getEval()) > limit && !lines_[i].isMat())
             return lines_[i];
     }
-    //if all are null, return the same line
+    //if all are draw, return the same line
     return Line::emptyLine;
-}
-
-void MatFinder::getTimeout(struct timespec *ts, int seconds)
-{
-    struct timeval tp;
-    int rc = gettimeofday(&tp, NULL);
-    Utils::handleError("gettimeofday()\n", rc);
-
-    /* Convert from timeval to timespec */
-    ts->tv_sec  = tp.tv_sec;
-    ts->tv_nsec = tp.tv_usec * 1000;
-    ts->tv_sec += seconds;
 }
 
 

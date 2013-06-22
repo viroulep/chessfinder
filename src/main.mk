@@ -1,26 +1,26 @@
-ALL_TARGETS += matfinder-gardner
-INSTALL_TARGETS += install-gardner
-CLEAN_TARGETS += clean-gardner
+ALL_TARGETS += matfinder
+INSTALL_TARGETS += install
+CLEAN_TARGETS += clean
 
 .SILENT:
 
-gardner_SOURCES           := $(wildcard src/*.cpp)
-gardner_HEADERS           := $(wildcard include/*.h)
-gardner_HEADERS_DEP           := $(wildcard include/*.h)
+matfinder_SOURCES           := $(wildcard src/*.cpp)
+matfinder_HEADERS           := $(wildcard include/*.h)
+matfinder_HEADERS_DEP           := $(wildcard include/*.h)
 
-gardner_OBJECTS := $(gardner_SOURCES:.cpp=.o)
+matfinder_OBJECTS := $(matfinder_SOURCES:.cpp=.o)
 
 
 canonical_path := ../$(shell basename $(shell pwd -P))
 
-src/%.o: src/%.cpp $(gardner_HEADERS_DEP)
-	echo "[gardner] CXX $<"
+src/%.o: src/%.cpp $(matfinder_HEADERS_DEP)
+	echo "[matfinder] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
-matfinder-gardner: $(gardner_OBJECTS)
-	echo "[gardner] Link gardner"
+matfinder: $(matfinder_OBJECTS)
+	echo "[matfinder] Link matfinder"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-clean-gardner:
-	echo "[gardner] Clean"
-	rm -f $(gardner_OBJECTS) matfinder-gardner
+clean-matfinder:
+	echo "[matfinder] Clean"
+	rm -f $(matfinder_OBJECTS) matfinder

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <unistd.h>
 #include "MatFinder.h"
+#include "MatFinderOptions.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
@@ -13,7 +14,8 @@
 // - Write error management
 //
 
-MatFinder::MatFinder(Engine chessEngine) : engine_(chessEngine)
+MatFinder::MatFinder() :
+    engine_(MatFinderOptions::getEngine(), MatFinderOptions::getPath())
 {
     int pipe_status;
 
@@ -90,24 +92,25 @@ int MatFinder::runEngine()
     engine_.execEngine();
 }
 
-//FIXME: sideToMove should be read from fen, and move added
-int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
-        string pos/* = "startpos"*/)
+int MatFinder::runFinder()
 {
-    //engine_input_.open(getEngineInWrite());
+    string pos = MatFinderOptions::getStartingPos();
+    startingMoves_.clear();
+    startingMoves_.insert(startingMoves_.end(), 
+            MatFinderOptions::getUserMoves().begin(),
+            MatFinderOptions::getUserMoves().end());
+
     side_t sideToMove = (pos == "startpos")?WHITE:Utils::getSideFromFen(pos);
-    if (moves.size()%2)
+    if (startingMoves_.size()%2)
         switchSide(&sideToMove);
 
     if (sideToMove == UNDEFINED)
         return 1;
     engine_side_ = sideToMove;
-    engine_play_for_ = enginePlayFor;
+    engine_play_for_ = MatFinderOptions::getPlayFor();
     startpos_ = pos;
     addedMoves_.clear();
-    lines_.fill(Line::emptyLine);
-    startingMoves_.clear();
-    startingMoves_.insert(startingMoves_.end(), moves.begin(), moves.end());
+    lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
 
 
 
@@ -116,14 +119,12 @@ int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
 
     string message;
 
-    cout << "Sending command" << endl;
 
     //Send some commands, init etc...
     sendToEngine("uci");
-    //FIXME: #define these
-    sendOptionToEngine("Hash", "4096");
+    sendOptionToEngine("Hash", to_string(MatFinderOptions::getHashmapSize()));
     sendOptionToEngine("UCI_AnalyseMode", "true");
-    sendOptionToEngine("MultiPV", MAX_LINES_STR);
+    sendOptionToEngine("MultiPV", to_string(MatFinderOptions::getMaxLines()));
     sendToEngine("ucinewgame");
 
     sendToEngine("isready");
@@ -144,12 +145,11 @@ int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
 
     //should be while true
     while (true) {
-    //TODO: Write the engine pilot main loop...
-    //End this !!!
         Line bestUnba;
-        lines_.fill(Line::emptyLine);
+        lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
         //final cond should take into account addedMoves_.empty()
-        cout << "[" << SideNames[engine_side_] << "]" << endl;
+        cout << "[" << SideNames[engine_side_] << "] Depth "
+            << addedMoves_.size() << endl;
         if (engine_side_ == engine_play_for_) {
             sendCurrentPositionToEngine();
             //We are now thinking
@@ -157,10 +157,11 @@ int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
             cout << "[" << SideNames[engine_side_] << "] Thinking... (2500)\n";
             waitBestmove();
 
-            bestUnba = getFirstNotMatUnbalancedLine();
-            if (bestUnba.empty()) {
+            cout << getPrettyLines();
+            bestUnba = getBestLine();
+            if (bestUnba.empty() || bestUnba.isMat()) {
                 cout << "We just closed a line :" << endl;
-                cout << getPrettyLines();
+                //cout << getPrettyLines();
                 //Handle the case where we should backtrack
                 if (!addedMoves_.empty()) {
                     //Remove opposite previous move
@@ -175,7 +176,7 @@ int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
                     }
                     continue;
                 } else {
-                    addedMoves_.clear();
+                    //addedMoves_.clear();
                     //This is the end (hold your breath and count to ten)
                     break;
                 }
@@ -189,9 +190,9 @@ int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
             //TODO: refactor, common code !
             cout << "[" << SideNames[engine_side_] << "] Best line : \n";
             cout << "\t" << bestUnba.getPretty(engine_side_);
-            cout << "\tNext move : ";
+            //cout << "\tNext move : ";
             string next = bestUnba.firstMove();
-            cout << next << endl;
+            //cout << next << endl;
             addedMoves_.push_back(next);
             switchSide();
 
@@ -203,36 +204,41 @@ int MatFinder::runFinder(side_t enginePlayFor, list<string> &moves,
             cout << "[" << SideNames[engine_side_] << "] Thinking... (1000)\n";
             waitBestmove();
             //Best line is the first
-            bestUnba = lines_[0];
-            if (bestUnba.empty()) {
-                //FIXME: Handle error correctly
-                Utils::handleError("Line empty from opposite point of view",
-                        1);
-                exit(EXIT_FAILURE);
-            }
-            if (bestUnba.isMat()) {
-                if (addedMoves_.empty()) {
-                    //The end, starting side was not playFor side
-                    //FIXME: not needed, as white handle the case 
-                    //where added.size() is 1
-                    cout << "Looks like it's over" << endl;
+            //bestUnba = lines_[0];
+            //Actually should be, but we still need to explore unba lines if first
+            //is draw
+            cout << getPrettyLines();
+            bestUnba = getFirstUnbalancedLine();
+            if (!addedMoves_.empty()) {
+                if (bestUnba.isMat() || bestUnba.empty()) {
+                    //NOTE: no need to check addedMoves.empty() :
+                    //white handle the case where added.size() is 1
+                    //Backtrack so that start is to move
+                    cout << "\t[" << SideNames[engine_side_]
+                        << "] Backtrack move " << addedMoves_.back()
+                        << " (addedMove#" << addedMoves_.size() << ")"
+                        << endl;
+                    if (bestUnba.empty())
+                        cout << "\t[" << SideNames[engine_side_]
+                            << "] (No best line)i\n";
+                    addedMoves_.pop_back();//remove *startingSide* move
+                    switchSide();
+                    continue;
+                }
+            } else {
+                if (bestUnba.isMat()) {
+                    //This is the end
                     break;
                 }
-                //Backtrack so that start is to move
-                cout << "\tBacktrack move " << addedMoves_.back()
-                    << " (addedMove#" << addedMoves_.size() << ")"
-                    << endl;
-                addedMoves_.pop_back();//remove *startingSide* move
-                switchSide();
-                continue;
             }
+
             //else just play the move for opponent
 
             cout << "[" << SideNames[engine_side_] << "] Best line : \n";
             cout << "\t" << bestUnba.getPretty(engine_side_);
-            cout << "\tNext move : ";
+            //cout << "\tNext move : ";
             string next = bestUnba.firstMove();
-            cout << next << endl;
+            //cout << next << endl;
             addedMoves_.push_back(next);
             switchSide();
         }
@@ -439,13 +445,57 @@ int MatFinder::getEngineErrWrite()
     return err_fds_[1];
 }
 
+Line &MatFinder::getBestLine()
+{
+    //TODO: take engine side into account
+    //AND CHANGE THE FUNC NAME
+    for (int i = 0; i < lines_.size(); ++i) {
+        int limit = 100;
+        //TODO: find a clearer way to define "balance"
+        //eval is in centipawn, 100 ~ a pawn
+        if (lines_[i].isMat()) {
+            if (lines_[i].getEval() > 0)
+                //This line is a win !
+                //eval is relative to engine side, ie positive eval is
+                //good for us
+                return lines_[i];
+            //Else this line is lost and we don't wan't it
+        } else {
+            //If the line is a draw we don't want it
+            if (fabs(lines_[i].getEval()) > limit)
+                return lines_[i];
+        }
+    }
+    //if all are draw, return the same line
+    return Line::emptyLine;
+
+}
+
 Line &MatFinder::getFirstNotMatUnbalancedLine()
+{
+    //TODO: take engine side into account
+    //AND CHANGE THE FUNC NAME
+    for (int i = 0; i < lines_.size(); ++i) {
+        //TODO: find a clearer way to define "balance"
+        //eval is in centipawn, 100 ~ a pawn
+        int limit = 100;
+        if (lines_[i].isMat() && lines_[i].getEval() > 0)
+            return lines_[i];
+        if (fabs(lines_[i].getEval()) > limit && !lines_[i].isMat())
+            return lines_[i];
+    }
+    //if all are draw, return the same line
+    return Line::emptyLine;
+}
+
+
+Line &MatFinder::getFirstUnbalancedLine()
 {
     for (int i = 0; i < lines_.size(); ++i) {
         //TODO: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
-        int limit = 50;
-        if (fabs(lines_[i].getEval()) > limit && !lines_[i].isMat())
+        int limit = 100;
+        if (fabs(lines_[i].getEval()) > limit || lines_[i].isMat())
             return lines_[i];
     }
     //if all are draw, return the same line

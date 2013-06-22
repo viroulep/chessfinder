@@ -1,6 +1,6 @@
 ALL_TARGETS += matfinder
-INSTALL_TARGETS += install
-CLEAN_TARGETS += clean
+INSTALL_TARGETS += install-matfinder
+CLEAN_TARGETS += clean-matfinder
 
 .SILENT:
 

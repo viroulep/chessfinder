@@ -3,23 +3,18 @@
 
 #include <string>
 #include <vector>
-#include <array>
 #include "Engine.h"
 #include "Thread.h"
 #include "Stream.h"
 #include "Line.h"
 
 using namespace std;
-//TODO: better this -_-
-#define MAX_LINES 10
-#define MAX_LINES_STR "10"
 
 class MatFinder {
 public:
-    MatFinder(Engine chessEngine);
+    MatFinder();
     ~MatFinder();
-    int runFinder(side_t enginePlayFor, list<string> &moves,
-            string pos = "startpos");
+    int runFinder();
     int runEngine();
 
     //should update or create the line and update the gui
@@ -48,7 +43,9 @@ private:
     int getEngineOutWrite();
     int getEngineErrRead();
     int getEngineErrWrite();
+    Line &getBestLine();
     Line &getFirstNotMatUnbalancedLine();
+    Line &getFirstUnbalancedLine();
 
 
     int in_fds_[2], out_fds_[2], err_fds_[2];
@@ -62,7 +59,7 @@ private:
     Engine engine_;
     side_t engine_play_for_ = UNDEFINED;
     side_t engine_side_ = UNDEFINED;
-    //The starting moves
+    //The starting moves (might be defined by user)
     list<string> startingMoves_;
     //Move "played" by the finder
     list<string> addedMoves_;
@@ -71,7 +68,8 @@ private:
     //NOTE: sort the array according to eval
     //smallest (absolute value) to greatest
     //NOTEbis : might already be done by engine
-    array<Line, MAX_LINES> lines_;
+    //array<Line, MAX_LINES> lines_;
+    vector<Line> lines_;
     int nps_ = 0;
     int thinktime_ = 0;
 };

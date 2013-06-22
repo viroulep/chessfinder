@@ -1,11 +1,17 @@
-#include "Utils.h"
-#include "Line.h"
 #include <iostream>
 #include <sstream>
+#include "Utils.h"
+#include "MatFinderOptions.h"
+#include "Line.h"
 
 using namespace std;
 
-void Utils::handleErrorAndExit(string msg)
+void Utils::handleError(int rc)
+{
+    handleError("unspecified caller", rc);
+}
+
+void Utils::handleError(string msg)
 {
     cerr << msg << endl;
     exit(EXIT_FAILURE);
@@ -14,9 +20,132 @@ void Utils::handleErrorAndExit(string msg)
 void Utils::handleError(string caller, int rc)
 {
     if (rc) {
-        cerr << "Error on : " << caller << ", rc=" << rc << endl;
-        exit(EXIT_FAILURE);
+        handleError("Error on : " + caller + ", rc=" + to_string(rc));
     }
+}
+
+void Utils::output(string msg, int level/* = 0*/)
+{
+    if (level <= MatFinderOptions::getVerboseLevel())
+        cout << msg;
+}
+
+string Utils::helpMessage()
+{
+    ostringstream oss;
+    oss << "MatFinder, a program to help engines to find mat\n";
+    oss << "\n";
+    oss << "Options\n";
+    oss << "\n";
+    oss << "\t" << "--startpos=fenstring, -s fen_string\n";
+    oss << "\t\t" << "Defines the initial board state, fen format.\n"
+        << "\t\t" << "Example value : "
+        << "\"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\"\n"
+        << "\t\t" << "Default value : \"" << DEFAULT_STARTPOS << "\"\n";
+    oss << "\n";
+    oss << "\t" << "--moves=moves, -s moves\n";
+    oss << "\t\t" << "Defines the main line after the starting position.\n"
+        << "\t\t" << "Example value : "
+        << "\"e2e4 c7d5\"\n"
+        << "\t\t" << "Default value : \""
+        << Utils::listToString(MatFinderOptions::getUserMoves()) << "\"\n";
+    oss << "\n";
+    oss << "\t" << "--engine=engine, -e engine\n";
+    oss << "\t\t" << "Defines the uci engine command.\n"
+        << "\t\t" << "Default value : \"" << DEFAULT_ENGINE << "\"\n";
+    oss << "\n";
+    oss << "\t" << "--playfor=side, -o side\n";
+    oss << "\t\t" << "Defines the side the engine plays for.\n"
+        << "\t\t" << "Default value : \"" << SideNames[DEFAULT_PLAY_FOR]
+        << "\"\n";
+    oss << "\n";
+    oss << "\t" << "--path=path, -p path\n";
+    oss << "\t\t" << "Defines the engine binary's path.\n"
+        << "\t\t" << "Default value : \"" << DEFAULT_PATH << "\"\n";
+    oss << "\n";
+    oss << "\t" << "--pf_movetime=msec, -f msec\n";
+    oss << "\t\t" << "Playfor Movetime. Defines the engine thinking time,\n"
+        << "\t\t\twhen playing on the side he \"plays for\".\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_PLAYFOR_MOVETIME_) << "\n";
+    oss << "\n";
+    oss << "\t" << "--pa_movetime=msec, -a msec\n";
+    oss << "\t\t" << "Playagainst Movetime. Defines the engine thinking time,\n"
+        << "\t\t\twhen he answers the side he \"plays for\".\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_PLAYAGAINST_MOVETIME_) << "\n";
+    oss << "\n";
+    oss << "\t" << "--lines=n, -l n\n";
+    oss << "\t\t" << "Defines the number of lines to evaluate"
+        << " (MultiPV uci's option)\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_MAX_LINES) << "\n";
+    oss << "\n";
+    oss << "\t" << "--verbose[=level], -v\n";
+    oss << "\t\t" << "Defines the verbose level. Level is optional : "
+        << "default arg value is 1\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_VERBOSE_LEVEL) << "\n";
+    oss << "\n";
+    oss << "\t" << "--hashmap_size=size, -t size\n";
+    oss << "\t\t" << "Defines the engine Hashmap size in MBytes.\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_HASHMAP_SIZE) << "\n";
+    /*
+     *oss << "\t" << "Hashmap size\t\t" << " = " << HASHMAP_SIZE_ << endl;
+     */
+    oss << "\n";
+    oss << "Examples\n";
+    oss << "\n";
+    oss << "\tStart the finder on gardnerfish, studying 1. c4 opening,\n"
+        << "\twith detail informations about lines played :\n";
+    oss << "\t$ ./matfinder --verbose --moves=\"c3c4\" --engine=\"gardnerfish\"\n";
+    oss << "\n";
+    oss << "Contact\n";
+    oss << "\tPhilippe Virouleau <philippe.viroulea@imag.fr>\n";
+    return oss.str();
+}
+
+string Utils::listToString(list<string> &theList)
+{
+    ostringstream oss;
+    if (theList.empty())
+        oss << "<none>";
+    for (list<string>::iterator it = theList.begin(),
+            itEnd = theList.end();
+            it != itEnd; ++it) {
+        if (it != theList.begin())
+            oss << " ";
+        oss << (*it);
+    }
+    return oss.str();
+}
+
+int Utils::parseMovelist(list<string> &theList, string moves)
+{
+    istringstream is(moves);
+    string mv;
+    while (is >> skipws >> mv) {
+        if ( mv.size() != 4
+                || mv[0] > 'h' || mv[0] < 'a'
+                || mv[1] > '8' || mv[1] < '1'
+                || mv[2] > 'h' || mv[2] < 'a'
+                || mv[3] > '8' || mv[3] < '1')
+            return 1;
+        theList.push_back(mv);
+    }
+    return 0;
+}
+
+int Utils::parseSide(side_t *side, string sidestr)
+{
+    if (sidestr == "w" || sidestr == "white")
+        *side = WHITE;
+    else if (sidestr == "b" || sidestr == "black")
+        *side = BLACK;
+    else
+        return 1;
+    return 0;
 }
 
 side_t Utils::getSideFromFen(string fen)

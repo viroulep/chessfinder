@@ -208,7 +208,7 @@ int MatFinder::runFinder()
             //Actually should be, but we still need to explore unba lines if first
             //is draw
             cout << getPrettyLines();
-            bestUnba = getFirstUnbalancedLine();
+            bestUnba = getBestLine();
             if (!addedMoves_.empty()) {
                 if (bestUnba.isMat() || bestUnba.empty()) {
                     //NOTE: no need to check addedMoves.empty() :
@@ -218,18 +218,16 @@ int MatFinder::runFinder()
                         << "] Backtrack move " << addedMoves_.back()
                         << " (addedMove#" << addedMoves_.size() << ")"
                         << endl;
-                    if (bestUnba.empty())
-                        cout << "\t[" << SideNames[engine_side_]
-                            << "] (No best line)i\n";
                     addedMoves_.pop_back();//remove *startingSide* move
                     switchSide();
                     continue;
                 }
             } else {
-                if (bestUnba.isMat()) {
+                if (bestUnba.isMat() || bestUnba.empty()) {
                     //This is the end
                     break;
                 }
+                Utils::output("We are at depth 0, and there is still work", 1);
             }
 
             //else just play the move for opponent

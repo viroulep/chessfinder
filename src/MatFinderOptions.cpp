@@ -80,6 +80,7 @@ string MatFinderOptions::getPretty()
     oss << "\t" << "Path\t\t\t" << " = " << PATH_ << endl;
     oss << "\t" << "Usermoves\t\t" << " = "
         << Utils::listToString(USER_MOVES_) << endl;
+    oss << "\t" << "Playfor\t\t\t" << " = " << SideNames[PLAY_FOR_] << endl;
     oss << "\t" << "Playfor Movetime\t" << " = " << PLAYFOR_MOVETIME_ << endl;
     oss << "\t" << "Playagainst Movetime\t" << " = "
         << PLAYAGAINST_MOVETIME_ << endl;

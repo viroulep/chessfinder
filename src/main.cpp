@@ -39,7 +39,7 @@ void parseArgs(int argc, char **argv)
     int option_index = 0;
 
     while ((c = getopt_long(argc, argv,
-                "hv::s:e:p:m:l:t:f:a:",
+                "hv::s:e:o:p:m:l:t:f:a:",
                 long_options, &option_index)) != -1) {
         list<string> moveList;
         int value;

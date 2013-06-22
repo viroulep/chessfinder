@@ -180,11 +180,6 @@ int MatFinder::runFinder()
                     //This is the end (hold your breath and count to ten)
                     break;
                 }
-
-                //FIXME: Handle error correctly
-                Utils::handleError("Line empty from starting point of view",
-                        1);
-                break;
             }
 
             //TODO: refactor, common code !
@@ -209,8 +204,8 @@ int MatFinder::runFinder()
             //is draw
             cout << getPrettyLines();
             bestUnba = getBestLine();
-            if (!addedMoves_.empty()) {
-                if (bestUnba.isMat() || bestUnba.empty()) {
+            if (bestUnba.isMat() || bestUnba.empty()) {
+                if (!addedMoves_.empty()) {
                     //NOTE: no need to check addedMoves.empty() :
                     //white handle the case where added.size() is 1
                     //Backtrack so that start is to move
@@ -221,13 +216,10 @@ int MatFinder::runFinder()
                     addedMoves_.pop_back();//remove *startingSide* move
                     switchSide();
                     continue;
-                }
-            } else {
-                if (bestUnba.isMat() || bestUnba.empty()) {
+                } else {
                     //This is the end
                     break;
                 }
-                Utils::output("We are at depth 0, and there is still work", 1);
             }
 
             //else just play the move for opponent
@@ -346,8 +338,7 @@ string MatFinder::getPrettyLines()
         list<string> tmpList = startingMoves_;
         tmpList.insert(tmpList.end(), addedMoves_.begin(), addedMoves_.end());
         int i = 0;
-        //TODO: #define max number of displayed move
-        while (!tmpList.empty() && i < 8) {
+        while (!tmpList.empty() && i < MatFinderOptions::movesDisplayed) {
             oss << tmpList.front();
             oss << " ";
             tmpList.pop_front();
@@ -398,8 +389,7 @@ void MatFinder::waitReadyok()
 {
     pthread_mutex_lock(&readyok_mutex_);
     struct timespec ts;
-    //TODO:#define it
-    Utils::getTimeout(&ts, 5);
+    Utils::getTimeout(&ts, MatFinderOptions::isreadyTimeout);
     pthread_cond_timedwait(&readyok_cond_,
             &readyok_mutex_,
             &ts);
@@ -445,14 +435,18 @@ int MatFinder::getEngineErrWrite()
 
 Line &MatFinder::getBestLine()
 {
-    //TODO: take engine side into account
-    //AND CHANGE THE FUNC NAME
     for (int i = 0; i < lines_.size(); ++i) {
         int limit = 100;
-        //TODO: find a clearer way to define "balance"
+        //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines_[i].isMat()) {
             if (lines_[i].getEval() > 0)
+                    /*NOTE: this cond can be used to explore all the lost
+                     * line, if the side we play for is not the side starting
+                     * to move !
+                     *&& !(addedMoves_.size() == 0
+                     *&& engine_side_ != engine_play_for_))
+                     */
                 //This line is a win !
                 //eval is relative to engine side, ie positive eval is
                 //good for us
@@ -468,36 +462,4 @@ Line &MatFinder::getBestLine()
     return Line::emptyLine;
 
 }
-
-Line &MatFinder::getFirstNotMatUnbalancedLine()
-{
-    //TODO: take engine side into account
-    //AND CHANGE THE FUNC NAME
-    for (int i = 0; i < lines_.size(); ++i) {
-        //TODO: find a clearer way to define "balance"
-        //eval is in centipawn, 100 ~ a pawn
-        int limit = 100;
-        if (lines_[i].isMat() && lines_[i].getEval() > 0)
-            return lines_[i];
-        if (fabs(lines_[i].getEval()) > limit && !lines_[i].isMat())
-            return lines_[i];
-    }
-    //if all are draw, return the same line
-    return Line::emptyLine;
-}
-
-
-Line &MatFinder::getFirstUnbalancedLine()
-{
-    for (int i = 0; i < lines_.size(); ++i) {
-        //TODO: find a clearer way to define "balance"
-        //eval is in centipawn, 100 ~ a pawn
-        int limit = 100;
-        if (fabs(lines_[i].getEval()) > limit || lines_[i].isMat())
-            return lines_[i];
-    }
-    //if all are draw, return the same line
-    return Line::emptyLine;
-}
-
 

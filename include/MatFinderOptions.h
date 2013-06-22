@@ -14,6 +14,8 @@
 #define DEFAULT_STARTPOS "startpos"
 #define DEFAULT_ENGINE "stockfish"
 #define DEFAULT_PATH "/usr/local/bin"
+#define TIMEOUT_READY 5
+#define MOVES_DISPLAYED 8
 
 using namespace std;
 
@@ -52,6 +54,12 @@ public:
 
     //Pretty-print the options
     static string getPretty();
+
+    //How long we wait for the engine to be ready (s)
+    const static int isreadyTimeout = TIMEOUT_READY;
+
+    //Number of moves displayed when printing lines
+    const static int movesDisplayed = MOVES_DISPLAYED;
 
 private:
     //Private (static class)

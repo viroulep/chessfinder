@@ -44,8 +44,6 @@ private:
     int getEngineErrRead();
     int getEngineErrWrite();
     Line &getBestLine();
-    Line &getFirstNotMatUnbalancedLine();
-    Line &getFirstUnbalancedLine();
 
 
     int in_fds_[2], out_fds_[2], err_fds_[2];
@@ -59,6 +57,7 @@ private:
     Engine engine_;
     side_t engine_play_for_ = UNDEFINED;
     side_t engine_side_ = UNDEFINED;
+
     //The starting moves (might be defined by user)
     list<string> startingMoves_;
     //Move "played" by the finder

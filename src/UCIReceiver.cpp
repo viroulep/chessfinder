@@ -2,6 +2,7 @@
 #include <sstream>
 #include "UCIReceiver.h"
 #include "Stream.h"
+#include "Utils.h"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ void *UCIReceiver::run()
 
 void UCIReceiver::readyok(istringstream &is)
 {
-    cout << "Engine is ready.\n";
+    Utils::output("Engine is ready.\n", 1);
     matFinder_->signalReadyok();
 }
 
@@ -49,12 +50,12 @@ void UCIReceiver::info(istringstream &is)
         if (token == "depth") {
             is >> curDepth;
         } else if (token == "seldepth") {
-            //TODO (assert depth is already consumed)
+            //Drop
         } else if (token == "time") {
             is >> curThinktime;
             matFinder_->updateThinktime(curThinktime);
         } else if (token == "nodes") {
-            //TODO
+            //Drop
         } else if (token == "pv") {
             readLine = true;
             //NOTE: should be the last token of infoline
@@ -74,11 +75,11 @@ void UCIReceiver::info(istringstream &is)
                 cerr << "********* No score ***********" << endl;
             }
         } else if (token == "currmove") {
-            //TODO
+            //Drop
         } else if (token == "currmovenumber") {
-            //TODO
+            //Drop
         } else if (token == "hashfull") {
-            //TODO
+            //TODO: do it soon !
             is >> token;
             cerr << "********** Hashfull : " << token << " *******\n";
         } else if (token == "nps") {
@@ -89,11 +90,11 @@ void UCIReceiver::info(istringstream &is)
         } else if (token == "cpuload") {
             //TODO
         } else if (token == "string") {
-            //TODO
+            //Drop
         } else if (token == "refutation") {
-            //TODO
+            //Drop
         } else if (token == "currline") {
-            //TODO
+            //Drop
         }
     }
     if (readLine) {
@@ -130,9 +131,9 @@ void UCIReceiver::parseMessage(string msg)
         ;//not implemented
     } else if (token == "uciok") {
         ;//drop
-    } else if (token == "bestmove") bestmove(is);//TODO
+    } else if (token == "bestmove") bestmove(is);
     else if (token == "readyok") readyok(is);
-    else if (token == "info") info(is);//TODO
+    else if (token == "info") info(is);
     else if (token == "option") option(is);
     else {
         cerr << "Unrecognise command from engine :\n";

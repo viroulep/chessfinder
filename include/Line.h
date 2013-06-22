@@ -22,12 +22,9 @@ public:
     //Return more readable format
     string getPretty(side_t engineSide);
 
-    void update(float newEval, int newDepth, list<string> newMoves,
-            bool isMat = false);
     void update(Line &line);
     bool isMat();
     float getEval();
-    bool addMove(string mv);
     bool empty();
     string firstMove();
     bool operator<(const Line &rhs);

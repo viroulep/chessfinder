@@ -1,7 +1,8 @@
-#include "Thread.h"
 #include <iostream>
 #include <cassert>
 #include <string.h>
+#include "Thread.h"
+#include "Utils.h"
 
 using namespace std;
 
@@ -12,10 +13,9 @@ Runnable::~Runnable()
 Thread::Thread(Runnable *r) : 
         runnable_(r) {
     if(!runnable_){
-        cout << "Thread::Thread(auto_ptr<Runnable> r, bool isDetached)"\
-        "failed at " << " " << __FILE__ <<":" << __LINE__ << "-" <<
-        " runnable is NULL" << endl;
-        exit(-1);
+        Utils::handleError("Thread::Thread(auto_ptr<Runnable> r,"\
+                " bool isDetached) failed at " + string(__FILE__)
+                + to_string(__LINE__) + " - runnable is NULL\n");
     }
 }
 
@@ -30,35 +30,23 @@ Thread::~Thread()
 void Thread::start() {
     // initialize attribute object
     int status = pthread_attr_init(&threadAttribute);
-    if(status) {
-        printError("pthread_attr_init failed at", status,
-            __FILE__, __LINE__);
-        exit(status);
-    }
+    Utils::handleError("pthread_attr_init failed at", status,
+        __FILE__, __LINE__);
 
     // set the scheduling scope attribute
     status = pthread_attr_setscope(&threadAttribute,
                     PTHREAD_SCOPE_SYSTEM);
-    if(status) {
-        printError("pthread_attr_setscope failed at", status,
-            __FILE__, __LINE__);
-        exit(status);
-    }
+    Utils::handleError("pthread_attr_setscope failed at", status,
+        __FILE__, __LINE__);
 
     status = pthread_create(&PthreadThreadID, &threadAttribute,
         Thread::startRunnable, (void*)this);    
-    if(status) {
-        printError("pthread_create failed at", status,
-            __FILE__, __LINE__);
-        exit(status);
-    }
+    Utils::handleError("pthread_create failed at", status,
+        __FILE__, __LINE__);
 
     status = pthread_attr_destroy(&threadAttribute);
-    if(status) {
-        printError("pthread_attr_destroy failed at", status,
-            __FILE__, __LINE__);
-        exit(status);
-    }
+    Utils::handleError("pthread_attr_destroy failed at", status,
+        __FILE__, __LINE__);
 }
 
 void Thread::kill() 
@@ -78,9 +66,8 @@ void *Thread::join()
     int status = pthread_join(PthreadThreadID, NULL);
     // result was already saved by thread start function
     if(status) {
-        printError("pthread_join failed at", status,
+        Utils::handleError("pthread_join failed at", status,
             __FILE__, __LINE__);
-        exit(status);
     }
     return result;
 }
@@ -100,7 +87,3 @@ void Thread::setCompleted() {
 // completion handled by pthread_join()
 }
 
-void Thread::printError(const string &msg, int status, const string &fileName, int lineNumber) {
-    cout << msg << " " << fileName << ":" << lineNumber <<
-        "-" << strerror(status) << endl;
-}

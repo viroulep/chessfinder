@@ -6,25 +6,35 @@
 
 using namespace std;
 
+//TODO: exit program correctly on error
+
 void Utils::handleError(int rc)
 {
     handleError("unspecified caller", rc);
 }
 
-void Utils::handleError(string msg)
+void Utils::handleError(const string &msg)
 {
     cerr << msg << endl;
     exit(EXIT_FAILURE);
 }
 
-void Utils::handleError(string caller, int rc)
+void Utils::handleError(const string &caller, int rc)
 {
     if (rc) {
         handleError("Error on : " + caller + ", rc=" + to_string(rc));
     }
 }
 
-void Utils::output(string msg, int level/* = 0*/)
+void Utils::handleError(const string &msg, int rc,
+        const string &fileName, int lineNumber)
+{
+    cerr << fileName << ":" << lineNumber << endl;
+    handleError(msg, rc);
+}
+
+
+void Utils::output(const string &msg, int level/* = 0*/)
 {
     if (level <= MatFinderOptions::getVerboseLevel())
         cout << msg;

@@ -1,7 +1,8 @@
-#include "Line.h"
 #include <cmath>
 #include <iostream>
 #include <sstream>
+#include "Line.h"
+#include "MatFinderOptions.h"
 
 Line::Line() : eval_(0)
 {
@@ -18,7 +19,6 @@ Line::Line(float ev, int depth, list<string> mv, bool isMat) :
 string Line::getPretty(side_t engineSide)
 {
     ostringstream oss;
-    //TODO: implement a chess board to display pgn-style infos
 
     float displayEval = (engineSide == BLACK)?-eval_:eval_;
     if (isMat_)
@@ -31,8 +31,7 @@ string Line::getPretty(side_t engineSide)
     oss << ", line : ";
     list<string> tmpList = moves_;
     int i = 0;
-    //TODO: #define max number of displayed move
-    while (!tmpList.empty() && i < 8) {
+    while (!tmpList.empty() && i < MatFinderOptions::movesDisplayed) {
         oss << tmpList.front();
         oss << " ";
         tmpList.pop_front();
@@ -45,21 +44,15 @@ string Line::getPretty(side_t engineSide)
     return oss.str();
 }
 
-void Line::update(float newEval, int newDepth, list<string> newMoves,
-        bool isMat/* = false*/)
-{
-    //TODO: is this really needed ?
-    eval_ = newEval;
-    depth_ = newDepth;
-    moves_.clear();
-    //clear and copy
-    moves_.insert(moves_.end(), newMoves.begin(), newMoves.end());
-    isMat_ = isMat;
-}
-
 void Line::update(Line &line)
 {
-    update(line.eval_, line.depth_, line.moves_, line.isMat_);
+    eval_ = line.eval_;
+    depth_ = line.depth_;
+    moves_.clear();
+    //clear and copy
+    moves_.insert(moves_.end(), line.moves_.begin(), line.moves_.end());
+    isMat_ = line.isMat_;
+    //update(line.eval_, line.depth_, line.moves_, line.isMat_);
 }
 
 bool Line::isMat()
@@ -70,15 +63,6 @@ bool Line::isMat()
 float Line::getEval()
 {
     return eval_;
-}
-
-bool Line::addMove(string mv)
-{
-    //TODO : is this really needed ?
-    if (mv.size() != 4)
-        return false;
-    //Maybe check that mv 0 and 2 \in a-h
-    moves_.push_back(mv);
 }
 
 bool Line::empty()

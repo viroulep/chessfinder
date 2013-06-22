@@ -11,7 +11,6 @@ Engine::Engine(string engineName, string binPrefix) :
 
 void Engine::execEngine()
 {
-    //TODO: ?
     string enginePath(prefix_);
     enginePath += "/";
     enginePath += name_;

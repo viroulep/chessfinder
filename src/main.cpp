@@ -45,15 +45,6 @@ void parseArgs(int argc, char **argv)
         int value;
         side_t playFor = UNDEFINED;
         switch (c) {
-            case 0:
-                /* If this option set a flag, do nothing else now. */
-                if (long_options[option_index].flag != 0)
-                    break;
-                printf ("option %s", long_options[option_index].name);
-                if (optarg)
-                    printf (" with arg %s", optarg);
-                printf ("\n");
-                break;
 
             case 'v':
                 value = 1;
@@ -151,12 +142,10 @@ int main(int argc, char **argv)
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     if (sigaction(SIGUSR1, &action, NULL) < 0) {
-        perror("SIGUSR1 install error");
-        exit(EXIT_FAILURE);
+        Utils::handleError("SIGUSR1 install error");
     }
 
-    //TODO: delegate to matfinder
-    //Engine gardner("losalamosfish", "/usr/local/bin");
+    //The main object
     MatFinder *theFinder = new MatFinder();
 
     pid_t pid;
@@ -171,37 +160,21 @@ int main(int argc, char **argv)
         // Tell the parent the exec failed
         kill(getppid(), SIGUSR1);
         exit(EXIT_FAILURE);
-    } else if (pid > pid_t(0)) {
-        //TODO: take position and moves as param !
-        cout << "Running finder on startpos, using losalamosfish\n";
-        cout << "The aim is to prove that all unbalanced lines lead to black mating white.\n";
-        //string testFenMat("8/8/1rq2k2/1p1p1p2/1b1p1B2/1P1P1P2/2R1QK2/8 w - - 4 6");
-        //string testFenMat("8/8/1r1bnk2/1p1p1p2/8/1P1P1P2/1R1B1K2/8 w - - 0 5");
-        //string testFenMat("8/8/1rnbqk2/1p1p1p2/3p4/1P1PPP2/1R1BQK2/8 b - - 0 3");
-        string testFenAlamos("8/1rnqknr1/1pppppp1/8/8/1PPPPPP1/1RNQKNR1/8 w - - 0 1");
-        //8/1rnqknr1/1pppppp1/8/8/1PPPPPP1/1RNQKNR1/8 w - - 0 1
-        list<string> startingMoves;
-        //Explore this bad move, demonstrate that black wins
-        startingMoves.push_back("f2e4");
-        /*
-         *startingMoves.push_back("d3d4");
-         *startingMoves.push_back("e5d4");
-         *startingMoves.push_back("e3d4");
-         *startingMoves.push_back("f5f4");
-         */
-        //startingMoves.push_back("c5d4");
-        //Starting side should be read from fen
-        int rt = theFinder->runFinder();
-        //int rt = theFinder->runFinder(WHITE, startingMoves, testFenMat);
-        Utils::handleError("runfinder()\n", rt);
 
-        //Kill the child
+    } else if (pid > pid_t(0)) {
+
+        //Run the finder
+        int rt = theFinder->runFinder();
+
+        Utils::handleError("runfinder()", rt);
+
+        //Kill the child to exit properly
         kill(pid, SIGTERM);
     } else {
-        perror("Error: fork failed");
-        exit(EXIT_FAILURE);
+        Utils::handleError("Error: fork failed");
     }
-    cout << "Exiting program\n";
+
+    Utils::output("Deleting Finder", 5);
     delete theFinder;
     return 0;
 }

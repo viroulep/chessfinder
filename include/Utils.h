@@ -11,10 +11,12 @@ class Utils {
 public:
     //implicitly inlined
     static void handleError(int rc);
-    static void handleError(string msg);
-    static void handleError(string caller, int rc);
+    static void handleError(const string &msg);
+    static void handleError(const string &caller, int rc);
+    static void handleError(const string &msg, int rc,
+            const string &fileName, int lineNumber);
 
-    static void output(string msg, int level = 0);
+    static void output(const string &msg, int level = 0);
 
     static string helpMessage();
 

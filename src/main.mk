@@ -5,15 +5,21 @@ CLEAN_TARGETS += clean-matfinder
 .SILENT:
 
 matfinder_SOURCES           := $(wildcard src/*.cpp)
+matfinder_SOURCES_CXX       := $(wildcard src/*.cxx)
 matfinder_HEADERS           := $(wildcard include/*.h)
-matfinder_HEADERS_DEP           := $(wildcard include/*.h)
+matfinder_HEADERS_DEP       := $(wildcard include/*.h)
 
 matfinder_OBJECTS := $(matfinder_SOURCES:.cpp=.o)
+matfinder_OBJECTS += $(matfinder_SOURCES_CXX:.cxx=.o)
 
 
 canonical_path := ../$(shell basename $(shell pwd -P))
 
 src/%.o: src/%.cpp $(matfinder_HEADERS_DEP)
+	echo "[matfinder] CXX $<"
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
+
+src/%.o: src/%.cxx $(matfinder_HEADERS_DEP)
 	echo "[matfinder] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 

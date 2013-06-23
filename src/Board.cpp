@@ -112,7 +112,8 @@ namespace Board {
         if (square_)
             square_->changePiece(this);
         else
-            deletedPieces.push_back(this);//drop
+            ;//TODO: by the GAME
+            //deletedPieces.push_back(this);//drop
     }
 
     const string Piece::getPretty()

@@ -6,6 +6,7 @@
 
 using namespace std;
 
+
 namespace Board {
     enum Side {
         WHITE,
@@ -17,9 +18,9 @@ namespace Board {
     };
     typedef unsigned int Rank;
 
-    static const string to_string(Board::Side theSide);
-    static const char to_char(File theFile);
-    static const char to_char(Rank theRank);
+    const string to_string(Board::Side theSide);
+    const char to_char(File theFile);
+    const char to_char(Rank theRank);
 
     class Piece;
     class Square { 
@@ -59,10 +60,13 @@ namespace Board {
         Square *square_ = NULL;
     };
 
-    static list<Piece *> deletedPieces;
+    typedef map<Board::File, map<Board::Rank, Board::Square>> Chessboard;
+
+    Chessboard importFromFEN(string fenString);
+    string exportToFEN(Chessboard board);
+
 
 }
 
-typedef map<Board::File, map<Board::Rank, Board::Square>> Chessboard;
 
 #endif

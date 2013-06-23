@@ -136,6 +136,7 @@ int Utils::parseMovelist(list<string> &theList, string moves)
 {
     istringstream is(moves);
     string mv;
+    //TODO: handle the case e7e8q
     while (is >> skipws >> mv) {
         if ( mv.size() != 4
                 || mv[0] > 'h' || mv[0] < 'a'

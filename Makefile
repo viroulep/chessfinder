@@ -16,6 +16,7 @@ CPPFLAGS += -Iinclude -std=c++11
 all: real-all
 
 include src/main.mk
+include boardtest/boardTest.mk
 
 real-all: $(ALL_TARGETS)
 

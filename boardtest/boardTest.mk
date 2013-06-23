@@ -1,11 +1,11 @@
-ALL_TARGETS += boardTest
+ALL_TARGETS += board
 #INSTALL_TARGETS += install-boardTest
 CLEAN_TARGETS += clean-boardTest
 
 .SILENT:
 
 boardTest_SOURCES           := $(wildcard src/*.cpp)
-boardTest_SOURCES_CXX       := $(wildcard test/*.cxx)
+boardTest_SOURCES_CXX       := $(wildcard boardtest/*.cxx)
 boardTest_HEADERS           := $(wildcard include/*.h)
 boardTest_HEADERS_DEP       := $(wildcard include/*.h)
 
@@ -19,14 +19,14 @@ src/%.o: src/%.cpp $(boardTest_HEADERS_DEP)
 	echo "[boardTest] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
-test/%.o: test/%.cxx $(boardTest_HEADERS_DEP)
+boardtest/%.o: boardtest/%.cxx $(boardTest_HEADERS_DEP)
 	echo "[boardTest] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
-boardTest: $(boardTest_OBJECTS)
-	echo "[boardTest] Link boardTest"
+board: $(boardTest_OBJECTS)
+	echo "[boardTest] Link board"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean-boardTest:
 	echo "[boardTest] Clean"
-	rm -f $(boardTest_OBJECTS) boardTest
+	rm -f $(boardTest_OBJECTS) board

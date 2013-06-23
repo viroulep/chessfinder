@@ -29,7 +29,8 @@ void Utils::handleError(const string &caller, int rc)
 void Utils::handleError(const string &msg, int rc,
         const string &fileName, int lineNumber)
 {
-    cerr << fileName << ":" << lineNumber << endl;
+    if (rc)
+        cerr << fileName << ":" << lineNumber << endl;
     handleError(msg, rc);
 }
 

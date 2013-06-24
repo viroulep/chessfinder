@@ -29,7 +29,7 @@ public:
 private:
     Thread *startReceiver();
     void switchSide();
-    void switchSide(side_t *side);
+    void switchSide(Board::Side *side);
     void sendCurrentPositionToEngine();
     void sendPositionToEngine(string pos, list<string> &moves,
             list<string> &addedMoves);
@@ -55,8 +55,8 @@ private:
 
     //Engine specific members
     Engine engine_;
-    side_t engine_play_for_ = UNDEFINED;
-    side_t engine_side_ = UNDEFINED;
+    Board::Side engine_play_for_;
+    Board::Side engine_side_;
 
     //The starting moves (might be defined by user)
     list<string> startingMoves_;

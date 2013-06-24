@@ -3,7 +3,7 @@
 
 #include <string>
 #include <list>
-#include "Line.h"
+#include "Board.h"
 
 #define DEFAULT_MAX_LINES 8
 #define DEFAULT_PLAY_FOR WHITE
@@ -43,8 +43,8 @@ public:
     static int getVerboseLevel();
     static void setVerboseLevel(int verboseLevel);
 
-    static side_t getPlayFor();
-    static void setPlayFor(side_t playFor);
+    static Board::Side getPlayFor();
+    static void setPlayFor(Board::Side playFor);
 
     static int getMaxLines();
     static void setMaxLines(int maxLines);
@@ -76,7 +76,7 @@ private:
 
     static int MAX_LINES_;
 
-    static side_t PLAY_FOR_;
+    static Board::Side PLAY_FOR_;
 
     // 0 = minimal output
     // 1 = not-that-huge output

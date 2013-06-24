@@ -4,8 +4,9 @@
 #include <string>
 #include <list>
 #include <vector>
-#include "Line.h"
 #include <sys/time.h>
+//FIXME: this include should not exist
+#include "Board.h"
 
 class Utils {
 public:
@@ -19,11 +20,13 @@ public:
     static void output(const string &msg, int level = 0);
 
     static string helpMessage();
-
-    static side_t getSideFromFen(string fen);
     static string listToString(list<string> &theList);
-    static int parseMovelist(list<string> &theList, string moves);
-    static int parseSide(side_t *side, string sidestr);
     static void getTimeout(struct timespec *ts, int seconds);
+
+    //FIXME: deprecated, main should start a chesboard,
+    //then take the side
+    static Board::Side getSideFromFen(string fen);
+    //FIXME: should belong to board ?
+    static int parseMovelist(list<string> &theList, string moves);
 };
 #endif

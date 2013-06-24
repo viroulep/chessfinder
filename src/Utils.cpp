@@ -67,8 +67,8 @@ string Utils::helpMessage()
     oss << "\n";
     oss << "\t" << "--playfor=side, -o side\n";
     oss << "\t\t" << "Defines the side the engine plays for.\n"
-        << "\t\t" << "Default value : \"" << SideNames[DEFAULT_PLAY_FOR]
-        << "\"\n";
+        << "\t\t" << "Default value : \""
+        << Board::to_string(Board::Side::DEFAULT_PLAY_FOR) << "\"\n";
     oss << "\n";
     oss << "\t" << "--path=path, -p path\n";
     oss << "\t\t" << "Defines the engine binary's path.\n"
@@ -149,18 +149,7 @@ int Utils::parseMovelist(list<string> &theList, string moves)
     return 0;
 }
 
-int Utils::parseSide(side_t *side, string sidestr)
-{
-    if (sidestr == "w" || sidestr == "white")
-        *side = WHITE;
-    else if (sidestr == "b" || sidestr == "black")
-        *side = BLACK;
-    else
-        return 1;
-    return 0;
-}
-
-side_t Utils::getSideFromFen(string fen)
+Board::Side Utils::getSideFromFen(string fen)
 {
     vector<string> infos;
     stringstream ss(fen);
@@ -170,12 +159,12 @@ side_t Utils::getSideFromFen(string fen)
     if (infos.size() > 1) {
         string side = infos[1];
         if (side == "w") {
-            return WHITE;
+            return Board::Side::WHITE;
         } else if (side == "b") {
-            return BLACK;
+            return Board::Side::BLACK;
         }
     }
-    return UNDEFINED;
+    Utils::handleError("Unable to get side from fen string.");
 }
 
 void Utils::getTimeout(struct timespec *ts, int seconds)

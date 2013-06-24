@@ -3,24 +3,26 @@
 
 #include <string>
 #include <list>
+#include "Board.h"
 
 using namespace std;
 
-typedef enum side_e {
-    WHITE,
-    BLACK,
-    UNDEFINED
-} side_t;
-static const char* SideNames[3] = { "white", "black", "undefined" };
+/*
+ *typedef enum side_e {
+ *    WHITE,
+ *    BLACK,
+ *    UNDEFINED
+ *} side_t;
+ *static const char* SideNames[3] = { "white", "black", "undefined" };
+ */
 
 //Class representing a particular line for a position
-//TODO: make the line inherit from list<string>
 class Line {
 public:
     Line();
     Line(float ev, int depth, list<string> mv, bool isMat = false);
     //Return more readable format
-    string getPretty(side_t engineSide);
+    string getPretty(Board::Side engineSide);
 
     void update(Line &line);
     bool isMat();

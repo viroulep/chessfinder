@@ -12,7 +12,7 @@ list<string> MatFinderOptions::USER_MOVES_;
 int MatFinderOptions::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
 int MatFinderOptions::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
 int MatFinderOptions::MAX_LINES_ = DEFAULT_MAX_LINES;
-side_t MatFinderOptions::PLAY_FOR_ = DEFAULT_PLAY_FOR;
+Board::Side MatFinderOptions::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
 int MatFinderOptions::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
 int MatFinderOptions::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
 
@@ -59,8 +59,8 @@ void MatFinderOptions::setVerboseLevel(int verboseLevel)
     VERBOSE_LEVEL_ = verboseLevel;
 }
 
-side_t MatFinderOptions::getPlayFor() { return PLAY_FOR_; }
-void MatFinderOptions::setPlayFor(side_t playFor) { PLAY_FOR_ = playFor; }
+Board::Side MatFinderOptions::getPlayFor() { return PLAY_FOR_; }
+void MatFinderOptions::setPlayFor(Board::Side playFor) { PLAY_FOR_ = playFor; }
 
 int MatFinderOptions::getMaxLines() { return MAX_LINES_; }
 void MatFinderOptions::setMaxLines(int maxLines) { MAX_LINES_ = maxLines; }
@@ -80,7 +80,7 @@ string MatFinderOptions::getPretty()
     oss << "\t" << "Path\t\t\t" << " = " << PATH_ << endl;
     oss << "\t" << "Usermoves\t\t" << " = "
         << Utils::listToString(USER_MOVES_) << endl;
-    oss << "\t" << "Playfor\t\t\t" << " = " << SideNames[PLAY_FOR_] << endl;
+    oss << "\t" << "Playfor\t\t\t" << " = " << Board::to_string(PLAY_FOR_) << endl;
     oss << "\t" << "Playfor Movetime\t" << " = " << PLAYFOR_MOVETIME_ << endl;
     oss << "\t" << "Playagainst Movetime\t" << " = "
         << PLAYAGAINST_MOVETIME_ << endl;

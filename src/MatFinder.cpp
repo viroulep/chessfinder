@@ -93,12 +93,10 @@ int MatFinder::runFinder()
             MatFinderOptions::getUserMoves().begin(),
             MatFinderOptions::getUserMoves().end());
 
-    side_t sideToMove = (pos == "startpos")?WHITE:Utils::getSideFromFen(pos);
+    Board::Side sideToMove = (pos == "startpos")?Board::Side::WHITE:Utils::getSideFromFen(pos);
     if (startingMoves_.size()%2)
         switchSide(&sideToMove);
 
-    if (sideToMove == UNDEFINED)
-        return 1;
     engine_side_ = sideToMove;
     engine_play_for_ = MatFinderOptions::getPlayFor();
     startpos_ = pos;
@@ -125,7 +123,7 @@ int MatFinder::runFinder()
     waitReadyok();
 
 
-    Utils::output("Starting side is " + string(SideNames[engine_side_]) + "\n");
+    Utils::output("Starting side is " + Board::to_string(engine_side_) + "\n");
     Utils::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
@@ -140,7 +138,7 @@ int MatFinder::runFinder()
         Line bestLine;
         //Initialize vector with empty lines
         lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
-        Utils::output("[" + string(SideNames[engine_side_])
+        Utils::output("[" + Board::to_string(engine_side_)
                 + "] Depth " + to_string(addedMoves_.size()) + "\n");
 
         sendCurrentPositionToEngine();
@@ -151,7 +149,7 @@ int MatFinder::runFinder()
             MatFinderOptions::getPlayagainstMovetime();
         sendToEngine("go movetime " + to_string(moveTime));
 
-        Utils::output("[" + string(SideNames[engine_side_])
+        Utils::output("[" + Board::to_string(engine_side_)
                 + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
 
         //Wait for engine to finish thinking
@@ -185,7 +183,7 @@ int MatFinder::runFinder()
             }
         }
 
-        Utils::output("[" + string(SideNames[engine_side_])
+        Utils::output("[" + Board::to_string(engine_side_)
                 + "] Chosen line : \n", 1);
         Utils::output("\t" + bestLine.getPretty(engine_side_), 1);
         string next = bestLine.firstMove();
@@ -195,9 +193,9 @@ int MatFinder::runFinder()
     }
 
     Utils::output("Finder is done.\n");
-    Utils::output("Starting side was " + string(SideNames[sideToMove]) + "\n");
+    Utils::output("Starting side was " + Board::to_string(sideToMove) + "\n");
     Utils::output("Engine played for "
-        + string(SideNames[engine_play_for_]) + "\n");
+        + to_string(engine_play_for_) + "\n");
     if (engine_play_for_ == sideToMove)
         Utils::output("All lines should now be draw or mat :\n");
     else
@@ -338,9 +336,10 @@ void MatFinder::switchSide()
     switchSide(&engine_side_);
 }
 
-void MatFinder::switchSide(side_t *side)
+void MatFinder::switchSide(Board::Side *side)
 {
-    (*side) = ((*side) == WHITE)?BLACK:WHITE;
+    (*side) = ((*side) == Board::Side::WHITE)?
+        Board::Side::BLACK:Board::Side::WHITE;
 }
 
 void MatFinder::waitReadyok()

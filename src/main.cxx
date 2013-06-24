@@ -43,7 +43,7 @@ void parseArgs(int argc, char **argv)
                 long_options, &option_index)) != -1) {
         list<string> moveList;
         int value;
-        side_t playFor = UNDEFINED;
+        Board::Side playFor;
         switch (c) {
 
             case 'v':
@@ -78,8 +78,7 @@ void parseArgs(int argc, char **argv)
                 break;
 
             case 'o':
-                if (Utils::parseSide(&playFor, optarg))
-                    Utils::handleError("Error parsing playfor side");
+                playFor = Board::getSideFromString(optarg);
                 MatFinderOptions::setPlayFor(playFor);
                 break;
 

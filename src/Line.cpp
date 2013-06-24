@@ -16,32 +16,36 @@ Line::Line(float ev, int depth, list<string> mv, bool isMat) :
     moves_.insert(moves_.end(), mv.begin(), mv.end());
 }
 
-string Line::getPretty(side_t engineSide)
+//TODO: getPretty(bool invertEval) ?! (so that Line doesn't depend on board)
+string Line::getPretty(Board::Side engineSide)
 {
-    ostringstream oss;
+    ostringstream out;
 
-    float displayEval = (engineSide == BLACK)?-eval_:eval_;
+    float displayEval = (engineSide == Board::Side::BLACK)?-eval_:eval_;
     if (isMat_)
-        oss << "#";
+        out << "#";
     else
         displayEval /= 100;
-    oss << displayEval;
-    oss << ", d: ";
-    oss << depth_;
-    oss << ", line : ";
+    char eval[10];
+    //Tricky: avoid invalid write of '0' in output stream
+    sprintf(eval, "%.2f", displayEval);
+    out << eval;
+    out << ", d: ";
+    out << depth_;
+    out << ", line : ";
     list<string> tmpList = moves_;
     int i = 0;
     while (!tmpList.empty() && i < MatFinderOptions::movesDisplayed) {
-        oss << tmpList.front();
-        oss << " ";
+        out << tmpList.front();
+        out << " ";
         tmpList.pop_front();
         i++;
     }
     if (i < tmpList.size())
-        oss << "[...moves...]";
-    oss << "\n";
+        out << "[...moves...]";
+    out << "\n";
 
-    return oss.str();
+    return out.str();
 }
 
 void Line::update(Line &line)

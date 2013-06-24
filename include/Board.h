@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <list>
+#include <stack>
 
 using namespace std;
 
@@ -27,7 +28,9 @@ namespace Board {
     public:
         Square(File file, Rank rank);
         Square(File file, Rank rank, Piece *piece);
+        ~Square();
         void changePiece(Piece *newPiece);
+        Piece *getPiece();
 
     private:
         const File file_;
@@ -46,27 +49,49 @@ namespace Board {
             QUEEN,
             KING
         };
-        static const string to_string(Kind thePiece);
-        static const char to_char(Kind thePiece);
+        const string to_string();
+        const char to_char();
+        //Useful because we don't want to print pawns 'P' in pgn
+        const char to_pgn();
 
         Piece(Kind kind, Side color);
         Piece(Kind kind, Side color, Square *square);
+        Side getColor();
         //Move the piece to square, even if illegal move
         void moveTo(Square *newSquare);
-        const string getPretty();
     private:
         const Kind kind_;
         const Side color_;
         Square *square_ = NULL;
     };
 
-    typedef map<Board::File, map<Board::Rank, Board::Square>> Chessboard;
-
-    Chessboard importFromFEN(string fenString);
-    string exportToFEN(Chessboard board);
-
-
+    typedef struct move_s {
+        Piece *piece;
+        Square *from;
+        Square *to;
+    } Move;
+    Side getSideFromString(string sidestr);
 }
+
+using namespace Board;
+class Chessboard {
+public:
+
+    ~Chessboard();
+    const string to_string();
+    static Chessboard *createChessboard();
+    static Chessboard *importFromFEN(string fenString);
+    static string exportToFEN(Chessboard board);
+
+private:
+    Chessboard();
+
+    //FIXME: tmp, #define startpos for standard, gardner and alamos chess
+    void setupDefaultBoard();
+    stack<Piece *> takenPieces;
+    map<Board::File, map<Board::Rank, Board::Square*>> board_;
+};
+
 
 
 #endif

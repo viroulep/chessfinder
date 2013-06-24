@@ -15,9 +15,9 @@ boardTest_OBJECTS += $(boardTest_SOURCES_CXX:.cxx=.o)
 
 canonical_path := ../$(shell basename $(shell pwd -P))
 
-src/%.o: src/%.cpp $(boardTest_HEADERS_DEP)
-	echo "[boardTest] CXX $<"
-	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
+#src/%.o: src/%.cpp $(boardTest_HEADERS_DEP)
+	#echo "[boardTest] CXX $<"
+	#$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
 boardtest/%.o: boardtest/%.cxx $(boardTest_HEADERS_DEP)
 	echo "[boardTest] CXX $<"

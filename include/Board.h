@@ -1,9 +1,6 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 #include <string>
-#include <map>
-#include <list>
-#include <stack>
 
 using namespace std;
 
@@ -66,31 +63,12 @@ namespace Board {
     };
 
     typedef struct move_s {
-        Piece *piece;
-        Square *from;
-        Square *to;
+        Square *from = NULL;
+        Square *to = NULL;
+        bool takePiece = false;
     } Move;
     Side getSideFromString(string sidestr);
 }
-
-using namespace Board;
-class Chessboard {
-public:
-
-    ~Chessboard();
-    const string to_string();
-    static Chessboard *createChessboard();
-    static Chessboard *importFromFEN(string fenString);
-    static string exportToFEN(Chessboard board);
-
-private:
-    Chessboard();
-
-    //FIXME: tmp, #define startpos for standard, gardner and alamos chess
-    void setupDefaultBoard();
-    stack<Piece *> takenPieces;
-    map<Board::File, map<Board::Rank, Board::Square*>> board_;
-};
 
 
 

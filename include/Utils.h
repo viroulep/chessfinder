@@ -22,6 +22,8 @@ public:
     static string helpMessage();
     static string listToString(list<string> &theList);
     static void getTimeout(struct timespec *ts, int seconds);
+    static const string RED;
+    static const string RESET;
 
     //FIXME: deprecated, main should start a chesboard,
     //then take the side

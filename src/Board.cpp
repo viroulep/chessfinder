@@ -8,9 +8,9 @@ namespace Board {
     {
         switch (theSide) {
             case WHITE:
-                return "white";
+                return "White";
             case BLACK:
-                return "black";
+                return "Black";
             default:
                 return "undefined";
         }
@@ -51,20 +51,72 @@ namespace Board {
     //Should only be called by Piece::moveTo
     void Square::changePiece(Piece *newPiece)
     {
-        if (piece_)
-            piece_->moveTo(NULL);
+        if (newPiece == piece_)
+            return;
+        Utils::output("Change to :\n", 4);
+        if (newPiece)
+            Utils::output(newPiece->to_string(), 4);
+        else
+            Utils::output("null", 4);
+        Utils::output("\n", 4);
+
+        if (newPiece && piece_)
+            Utils::handleError("There is a already a piece on our square");
+        //handle by the chessboard
+            //piece_->moveTo(NULL);
+            
+        //we moved a piece from the square
         piece_ = newPiece;
-        //Do not piece.moveTo : a piece move to a square, not the opposite
+
+        //Do not newPiece.moveTo : a piece move to a square, not the opposite
     }
 
     Piece *Square::getPiece()
     {
         return piece_;
     }
+    const File Square::getFile()
+    {
+        return file_;
+    }
+
+    const Rank Square::getRank()
+    {
+        return rank_;
+    }
+
+    const string Square::to_string()
+    {
+        string str;
+        str += to_char(file_);
+        str += to_char(rank_);
+        return str;
+    }
+
+    const char Piece::to_char(Kind k)
+    {
+        switch (k) {
+            case KNIGHT:
+                return 'N';
+            case BISHOP:
+                return 'B';
+            case ROOK:
+                return 'R';
+            case QUEEN:
+                return 'Q';
+            case KING:
+                return 'K';
+            case PAWN:
+                return 'P';
+            default:
+                return ' ';
+        }
+
+    }
 
     const string Piece::to_string()
     {
-        switch (kind_) {
+        switch (getKind()) {
             case PAWN:
                 return "Pawn";
             case KNIGHT:
@@ -82,29 +134,23 @@ namespace Board {
         }
     }
 
+    void Piece::prettyPrint(ostringstream &oss)
+    {
+        if (getColor() == Side::BLACK)
+            oss << Utils::RED;
+        oss << this->to_char();
+        if (getColor() == Side::BLACK)
+            oss << Utils::RESET;
+    }
+
     const char Piece::to_char()
     {
-        switch (kind_) {
-            case KNIGHT:
-                return 'N';
-            case BISHOP:
-                return 'B';
-            case ROOK:
-                return 'R';
-            case QUEEN:
-                return 'Q';
-            case KING:
-                return 'K';
-            case PAWN:
-                return 'P';
-            default:
-                return ' ';
-        }
+        to_char(getKind());
     }
 
     const char Piece::to_pgn()
     {
-        if (kind_ == PAWN)
+        if (getKind() == PAWN)
             return '\0';
         else
             return to_char();
@@ -122,9 +168,14 @@ namespace Board {
             moveTo(square);
     }
 
-    Side Piece::getColor()
+    const Side Piece::getColor()
     {
         return color_;
+    }
+
+    const Piece::Kind Piece::getKind()
+    {
+        return (promoted_ == KING)?kind_:promoted_;
     }
 
     //Move the piece to square, even if illegal move
@@ -138,10 +189,22 @@ namespace Board {
         if (square_)
             square_->changePiece(this);
         else
-            ;//TODO: by the GAME
+            Utils::output(string("Dropped : ") + to_char() + "\n", 4);//TODO: by the GAME
             //deletedPieces.push_back(this);//drop
     }
 
+    void Piece::promoteTo(Kind kind)
+    {
+        if (promoted_ == KING)
+            promoted_ = kind;
+        else
+            Utils::handleError("Piece is already promoted");
+    }
+
+    void Piece::unpromote()
+    {
+        promoted_ = KING;
+    }
 
     Side getSideFromString(string sidestr)
     {

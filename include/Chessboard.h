@@ -11,8 +11,12 @@ public:
 
     ~Chessboard();
     const string to_string();
-    void uciApplyMove(string uciMove);
-    void backtrackMove();
+    //Return the pretty move
+    int uciApplyMove(string uciMove);
+    void undoMove();
+    //Play the moves, backtrack them, then return
+    //corresponding prettyMovesHistory
+    const string tryUciMoves(const list<string> &moves);
 
 
     static Chessboard *createChessboard();
@@ -26,7 +30,10 @@ private:
     Chessboard();
 
     Square *squareFromString(string str);
-    void applyMove(Square *from, Square *to);
+    int applyMove(Move theMove);
+    bool isValidMove(Move theMove);
+    const string getPrettyMove(Move mv);
+    const string prettyHistoryToString();
 
     void posFromFEN(string pos);
     void sideFromFEN(string side);
@@ -45,6 +52,10 @@ private:
     int halfmoveClock_ = 0;
     //Number of moves. Incremented after each black move
     int fullmoveClock_ = 1;
+    //enpassant square
+    Square *enpassant_ = NULL;
+
+    int castle_ = 0x0;
 };
 
 

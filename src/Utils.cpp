@@ -117,6 +117,9 @@ string Utils::helpMessage()
     return oss.str();
 }
 
+const string Utils::RED = "\e[31;1m";
+const string Utils::RESET = "\e[0m";
+
 string Utils::listToString(list<string> &theList)
 {
     ostringstream oss;

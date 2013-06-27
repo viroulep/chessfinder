@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+
+
+#Long !
+../matfinder -v -e gardnerfish --startpos="`cat black_play_white_win`"
+
+#micourt
+../matfinder -v -e gardnerfish --startpos="`cat white_play_black_win`"
+../matfinder -v -e gardnerfish --startpos="`cat black_play_black_win`"

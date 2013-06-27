@@ -1,8 +1,30 @@
+/*
+ * Matfinder, a program to help chess engines to find mat
+ *
+ * Copyright© 2013 Philippe Virouleau
+ *
+ * You can contact me at firstname.lastname@imag.fr
+ * (Replace "firstname" and "lastname" with my actual names)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 #include <iostream>
 #include <sstream>
 #include "Utils.h"
 #include "MatFinderOptions.h"
 #include "Line.h"
+#include "Board.h"
 
 using namespace std;
 
@@ -155,24 +177,6 @@ int Utils::parseMovelist(list<string> &theList, string moves)
         theList.push_back(mv);
     }
     return 0;
-}
-
-Board::Side Utils::getSideFromFen(string fen)
-{
-    vector<string> infos;
-    stringstream ss(fen);
-    string tmpInfo;
-    while (getline(ss, tmpInfo, ' '))
-        infos.push_back(tmpInfo);
-    if (infos.size() > 1) {
-        string side = infos[1];
-        if (side == "w") {
-            return Board::Side::WHITE;
-        } else if (side == "b") {
-            return Board::Side::BLACK;
-        }
-    }
-    Utils::handleError("Unable to get side from fen string.");
 }
 
 void Utils::getTimeout(struct timespec *ts, int seconds)

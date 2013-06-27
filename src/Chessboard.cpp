@@ -127,6 +127,13 @@ int Chessboard::uciApplyMove(string uciMove)
     return applyMove(mv);
 }
 
+int Chessboard::uciApplyMoves(list<string> uciMoves)
+{
+    for (list<string>::iterator it = uciMoves.begin(), itEnd = uciMoves.end();
+            it != itEnd; ++it)
+        uciApplyMove(*it);
+}
+
 void Chessboard::undoMove()
 {
     if (moveHistory_.empty()) {
@@ -135,7 +142,7 @@ void Chessboard::undoMove()
     }
     Move lastMove = moveHistory_.back();
     moveHistory_.pop_back();
-    Utils::output("Backtrack : " + prettyMoveHistory_.back() + "\n", 2);
+    Utils::output("Backtrack : " + prettyMoveHistory_.back() + "\n", 3);
     prettyMoveHistory_.pop_back();
     Square *from = lastMove.to;
     Square *to = lastMove.from;
@@ -187,17 +194,19 @@ void Chessboard::undoMove()
     } else if (to == board_[E][8]) {
         if (from == board_[G][8])
             board_[F][8]->getPiece()->moveTo(board_[H][8]);
-        else if (to == board_[C][8])
+        else if (from == board_[C][8])
             board_[D][8]->getPiece()->moveTo(board_[A][8]);
     }
 }
 
-const string Chessboard::tryUciMoves(const list<string> &moves)
+const string Chessboard::tryUciMoves(const list<string> &moves, int limit)
 {
     ostringstream oss;
     Move mv;
     int moveClock = fullmoveClock_;
     int halfMove = 0;
+    int movePlayed = 0;
+    int stop = (limit == -1)?moves.size():limit;
     oss << moveClock << ".";
     int notPar = moveHistory_.size()%2;
     if ((int)active_) {
@@ -206,17 +215,45 @@ const string Chessboard::tryUciMoves(const list<string> &moves)
     }
     oss << " ";
     for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
-            it != itEnd; ++it) {
+            it != itEnd && movePlayed < stop; ++it) {
         if (fullmoveClock_ != moveClock && !(halfMove%2))
             oss << fullmoveClock_ << ". ";
         uciApplyMove(*it);
         oss << prettyMoveHistory_.back() << " ";
         halfMove++;
+        movePlayed++;
     }
-    for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
-            it != itEnd; ++it)
+    for (int i = 0; i < movePlayed; i++)
         undoMove();
+    if (movePlayed < moves.size())
+        oss << "[...moves...]";
+    /*
+     *for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
+     *        it != itEnd; ++it)
+     *    undoMove();
+     */
     return oss.str();
+}
+
+const Side Chessboard::getActiveSide()
+{
+    return active_;
+}
+
+const list<string> Chessboard::getUciMoves()
+{
+    ostringstream oss;
+    string move;
+    list<string> moves;
+    for (list<Move>::iterator it = moveHistory_.begin(),
+            itEnd = moveHistory_.end(); it != itEnd; ++it) {
+        move = "";
+        move += it->from->to_string() + it->to->to_string();
+        if (it->promoteTo != Piece::Kind::KING)
+            move += Piece::to_uci(it->promoteTo);
+        moves.push_back(move);
+    }
+    return moves;
 }
 
 Chessboard *Chessboard::createChessboard()
@@ -280,14 +317,14 @@ Chessboard::Chessboard() : board_(), takenPieces_()
 Square *Chessboard::squareFromString(string str)
 {
     if (str.size() != 2)
-        Utils::handleError("Error parsing square string");
+        Utils::handleError("Error parsing square string : " + str);
     char file = str[0];
     char rank = str[1];
     if (file < 'a' || file > 'h')
-        Utils::handleError("Error parsing square string");
+        Utils::handleError("Error parsing square string : " + str);
     File f = (File)(file - 'a');
     if (rank < '1' || rank > '8')
-        Utils::handleError("Error parsing square string");
+        Utils::handleError("Error parsing square string : " + str);
     Rank r = (rank - '0');
     Utils::output(string("Returning square ") + to_char(f) + to_char(r) + "\n", 4);
     return board_[f][r];
@@ -330,7 +367,6 @@ int Chessboard::applyMove(Move theMove)
     }
 
     //Update the full clock
-    Utils::output("Active side is : " + Board::to_string(active_) + "\n", 2);
     if (active_ == Side::BLACK)
         fullmoveClock_++;
 
@@ -433,12 +469,12 @@ bool Chessboard::isValidMove(Move theMove)
     Square *from = theMove.from;
     Square *to = theMove.to;
     if (!from || !to || from == to) {
-        Utils::output("Invalid move : invalid squares\n", 2);
+        Utils::output("Invalid move : invalid squares\n", 3);
         return false;
     }
     Piece *toMove = from->getPiece();
     if (!toMove) {
-        Utils::output("Invalid move : no piece to move\n", 2);
+        Utils::output("Invalid move : no piece to move\n", 3);
         return false;
     }
     //TODO (maybe) : check for move validity

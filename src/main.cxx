@@ -22,7 +22,7 @@ void parseArgs(int argc, char **argv)
     const static struct option long_options[] =
     {
         {"help", no_argument, 0, 'h'},
-        {"verbose", optional_argument, 0, 'v'},
+        {"verbose", required_argument, 0, 'v'},
         {"startpos", required_argument, 0, 's'},
         {"engine", required_argument, 0, 'e'},
         {"playfor", required_argument, 0, 'o'},
@@ -32,6 +32,7 @@ void parseArgs(int argc, char **argv)
         {"hashmap_size", required_argument, 0, 't'},
         {"pf_movetime", required_argument, 0, 'f'},
         {"pa_movetime", required_argument, 0, 'a'},
+        {"cp_treshold", required_argument, 0, 'c'},
     };
 
     int c;
@@ -39,23 +40,18 @@ void parseArgs(int argc, char **argv)
     int option_index = 0;
 
     while ((c = getopt_long(argc, argv,
-                "hv::s:e:o:p:m:l:t:f:a:",
+                "hv:s:e:o:p:m:l:t:c:f:a:",
                 long_options, &option_index)) != -1) {
         list<string> moveList;
-        int value;
         Board::Side playFor;
         switch (c) {
 
             case 'v':
-                value = 1;
-                //FIXME: -v n is not recognize properly
                 try {
-                    if (optarg)
-                        value = stoi(optarg);
+                    MatFinderOptions::setVerboseLevel(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing verbose level");
                 }
-                MatFinderOptions::setVerboseLevel(value);
                 break;
 
             case 's':
@@ -95,6 +91,14 @@ void parseArgs(int argc, char **argv)
                     MatFinderOptions::setHashmapSize(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing hasmap size");
+                }
+                break;
+
+            case 'c':
+                try {
+                    MatFinderOptions::setCpTreshold(stoi(optarg));
+                } catch (...) {
+                    Utils::handleError("Error parsing centipawn treshold");
                 }
                 break;
 

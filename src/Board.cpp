@@ -61,7 +61,8 @@ namespace Board {
         Utils::output("\n", 4);
 
         if (newPiece && piece_)
-            Utils::handleError("There is a already a piece on our square");
+            Utils::handleError("There is a already a piece on our square : "
+                    + to_string());
         //handle by the chessboard
             //piece_->moveTo(NULL);
             
@@ -112,6 +113,13 @@ namespace Board {
                 return ' ';
         }
 
+    }
+
+    const char Piece::to_uci(Kind k)
+    {
+        char c = to_char(k);
+        c = c - 'A' + 'a';
+        return c;
     }
 
     const string Piece::to_string()
@@ -189,7 +197,7 @@ namespace Board {
         if (square_)
             square_->changePiece(this);
         else
-            Utils::output(string("Dropped : ") + to_char() + "\n", 4);//TODO: by the GAME
+            Utils::output(string("Dropped : ") + to_char() + "\n", 4);
             //deletedPieces.push_back(this);//drop
     }
 

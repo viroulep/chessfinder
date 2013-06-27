@@ -15,6 +15,7 @@ int MatFinderOptions::MAX_LINES_ = DEFAULT_MAX_LINES;
 Board::Side MatFinderOptions::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
 int MatFinderOptions::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
 int MatFinderOptions::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
+int MatFinderOptions::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
 
 
 
@@ -71,6 +72,14 @@ void MatFinderOptions::setHashmapSize(int size)
     HASHMAP_SIZE_ = size;
 }
 
+int MatFinderOptions::getCpTreshold() { return CP_TRESHOLD_; }
+
+void MatFinderOptions::setCpTreshold(int treshold)
+{
+    CP_TRESHOLD_ = treshold;
+}
+
+
 string MatFinderOptions::getPretty()
 {
     ostringstream oss;
@@ -87,6 +96,7 @@ string MatFinderOptions::getPretty()
     oss << "\t" << "Max lines\t\t" << " = " << MAX_LINES_ << endl;
     oss << "\t" << "Verbose level\t\t" << " = " << VERBOSE_LEVEL_ << endl;
     oss << "\t" << "Hashmap size\t\t" << " = " << HASHMAP_SIZE_ << endl;
+    oss << "\t" << "Centipawn treshold\t" << " = " << CP_TRESHOLD_ << endl;
 
     return oss.str();
 }

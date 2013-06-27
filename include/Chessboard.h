@@ -13,11 +13,15 @@ public:
     const string to_string();
     //Return the pretty move
     int uciApplyMove(string uciMove);
+    int uciApplyMoves(list<string> uciMoves);
     void undoMove();
     //Play the moves, backtrack them, then return
     //corresponding prettyMovesHistory
-    const string tryUciMoves(const list<string> &moves);
+    const string tryUciMoves(const list<string> &moves, int limit = -1);
 
+    const Side getActiveSide();
+
+    const list<string> getUciMoves();
 
     static Chessboard *createChessboard();
     static Chessboard *createFromFEN(string fenString);

@@ -92,9 +92,9 @@ string Utils::helpMessage()
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_MAX_LINES) << "\n";
     oss << "\n";
-    oss << "\t" << "--verbose[=level], -v\n";
-    oss << "\t\t" << "Defines the verbose level. Level is optional : "
-        << "default arg value is 1\n"
+    oss << "\t" << "--verbose=level, -v level\n";
+    oss << "\t\t" << "Defines the verbose level. 1 displays lines followed,\n"
+        << "\t\t\t" << "2 add the chessboard, 3+ is for debug purpose\n"
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_VERBOSE_LEVEL) << "\n";
     oss << "\n";
@@ -102,9 +102,14 @@ string Utils::helpMessage()
     oss << "\t\t" << "Defines the engine Hashmap size in MBytes.\n"
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_HASHMAP_SIZE) << "\n";
-    /*
-     *oss << "\t" << "Hashmap size\t\t" << " = " << HASHMAP_SIZE_ << endl;
-     */
+    oss << "\n";
+    oss << "\t" << "--cp_treshold=limit, -t limit\n";
+    oss << "\t\t" << "Centipawn treshold : defines the treshold value for\n"\
+        "\t\t  an evaluation to be considered.\n"\
+        "\t\tAll lines with an evaluation (in centipawn) below this value\n"\
+        "\t\t  will be ignored.\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_HASHMAP_SIZE) << "\n";
     oss << "\n";
     oss << "Examples\n";
     oss << "\n";

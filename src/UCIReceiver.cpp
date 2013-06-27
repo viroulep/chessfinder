@@ -79,7 +79,7 @@ void UCIReceiver::info(istringstream &is)
         } else if (token == "currmovenumber") {
             //Drop
         } else if (token == "hashfull") {
-            //TODO: do it soon !
+            //NOTE: not supported by stockfish
             is >> token;
             cerr << "********** Hashfull : " << token << " *******\n";
         } else if (token == "nps") {

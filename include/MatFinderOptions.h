@@ -14,6 +14,7 @@
 #define DEFAULT_STARTPOS "startpos"
 #define DEFAULT_ENGINE "stockfish"
 #define DEFAULT_PATH "/usr/local/bin"
+#define DEFAULT_TRESHOLD 100
 #define TIMEOUT_READY 5
 #define MOVES_DISPLAYED 8
 
@@ -52,6 +53,9 @@ public:
     static int getHashmapSize();
     static void setHashmapSize(int size);
 
+    static int getCpTreshold();
+    static void setCpTreshold(int treshold);
+
     //Pretty-print the options
     static string getPretty();
 
@@ -75,6 +79,9 @@ private:
     static int PLAYAGAINST_MOVETIME_;
 
     static int MAX_LINES_;
+
+    //in centipawn
+    static int CP_TRESHOLD_;
 
     static Board::Side PLAY_FOR_;
 

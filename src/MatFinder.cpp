@@ -9,10 +9,6 @@
 #include "Utils.h"
 
 
-//TODO:
-// - Write a chess board
-// - Write error management
-//
 
 MatFinder::MatFinder() :
     engine_(MatFinderOptions::getEngine(), MatFinderOptions::getPath())
@@ -25,34 +21,31 @@ MatFinder::MatFinder() :
 
     pipe_status = pipe(in_fds_);
     Utils::handleError("pipe() : Error creating the pipe", pipe_status);
-    /*
-     *if (pipe_status == -1)
-     *{
-     *    perror("Error creating the pipe");
-     *    exit(EXIT_FAILURE);
-     *}
-     */
 
     pipe_status = pipe(out_fds_);
     Utils::handleError("pipe() : Error creating the pipe", pipe_status);
-    /*
-     *if (pipe_status == -1)
-     *{
-     *    perror("Error creating the pipe");
-     *    exit(EXIT_FAILURE);
-     *}
-     */
 
     pipe_status = pipe(err_fds_);
     Utils::handleError("pipe() : Error creating the pipe", pipe_status);
-    /*
-     *if (pipe_status == -1)
-     *{
-     *    perror("Error creating the pipe");
-     *    exit(EXIT_FAILURE);
-     *}
-     */
+
     engine_input_ = new OutputStream(getEngineInWrite());
+
+    //Build chessboard
+    string pos = MatFinderOptions::getStartingPos();
+    startpos_ = pos;
+    addedMoves_ = 0;
+
+    string fenpos = (pos == "startpos")?engine_.getEngineStartpos():pos;
+    cb_ = Chessboard::createFromFEN(fenpos);
+
+    //Apply user moves
+    cb_->uciApplyMoves(MatFinderOptions::getUserMoves());
+
+
+    //engine_side_ = cb_->getActiveSide();
+    engine_play_for_ = MatFinderOptions::getPlayFor();
+
+    lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
 }
 
 MatFinder::~MatFinder()
@@ -65,6 +58,8 @@ MatFinder::~MatFinder()
     close(getEngineOutRead());
     close(getEngineErrRead());
     delete engine_input_;
+    if (cb_)
+        delete cb_;
 }
 
 int MatFinder::runEngine()
@@ -87,29 +82,11 @@ int MatFinder::runEngine()
 
 int MatFinder::runFinder()
 {
-    string pos = MatFinderOptions::getStartingPos();
-    startingMoves_.clear();
-    startingMoves_.insert(startingMoves_.end(), 
-            MatFinderOptions::getUserMoves().begin(),
-            MatFinderOptions::getUserMoves().end());
 
-    Board::Side sideToMove = (pos == "startpos")?Board::Side::WHITE:Utils::getSideFromFen(pos);
-    if (startingMoves_.size()%2)
-        switchSide(&sideToMove);
-
-    engine_side_ = sideToMove;
-    engine_play_for_ = MatFinderOptions::getPlayFor();
-    startpos_ = pos;
-    addedMoves_.clear();
-    lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
-
-
+    Board::Side sideToMove = cb_->getActiveSide();
 
     //Start the receiver
     Thread *thread = startReceiver();
-
-    string message;
-
 
     //Send some commands, init etc...
     sendToEngine("uci");
@@ -123,7 +100,7 @@ int MatFinder::runFinder()
     waitReadyok();
 
 
-    Utils::output("Starting side is " + Board::to_string(engine_side_) + "\n");
+    Utils::output("Starting board is :\n" + cb_->to_string() + "\n");
     Utils::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
@@ -136,44 +113,48 @@ int MatFinder::runFinder()
     //Main loop
     while (true) {
         Line bestLine;
+        Side active = cb_->getActiveSide();
         //Initialize vector with empty lines
         lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
-        Utils::output("[" + Board::to_string(engine_side_)
-                + "] Depth " + to_string(addedMoves_.size()) + "\n");
+        Utils::output("[" + Board::to_string(active)
+                + "] Depth " + to_string(addedMoves_) + "\n");
 
         sendCurrentPositionToEngine();
 
+        Utils::output(cb_->to_string(), 2);
+
         //Thinking according to the side the engine play for
-        int moveTime = (engine_side_ == engine_play_for_) ?
+        int moveTime = (active == engine_play_for_ || !addedMoves_) ?
             MatFinderOptions::getPlayforMovetime() :
             MatFinderOptions::getPlayagainstMovetime();
         sendToEngine("go movetime " + to_string(moveTime));
 
-        Utils::output("[" + Board::to_string(engine_side_)
+        Utils::output("[" + Board::to_string(active)
                 + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
 
         //Wait for engine to finish thinking
         waitBestmove();
 
-        Utils::output(getPrettyLines(), 1);
+        Utils::output(getPrettyLines(), 2);
         bestLine = getBestLine();
         if (bestLine.empty() || bestLine.isMat()) {
             //Handle the case where we should backtrack
-            if (!addedMoves_.empty()) {
-                Utils::output("\tBacktracking " + addedMoves_.back()
-                    + " (addedMove#" + to_string(addedMoves_.size())
+            if (addedMoves_ > 0) {
+                Utils::output("\tBacktracking " + cb_->getUciMoves().back()
+                    + " (addedMove#" + to_string(addedMoves_)
                     + ")\n");
                 //Remove opposite side previous move
-                addedMoves_.pop_back();
-                switchSide();
-                if (engine_side_ == engine_play_for_) {
+                addedMoves_--;
+                cb_->undoMove();
+
+                if (active == engine_play_for_) {
                     //Remove our previous move if we had one, since the
                     //mat is "recorded" by engine
                     //(not the case if starting side is not the side 
                     //the engine play for)
-                    if (!addedMoves_.empty()) {
-                        addedMoves_.pop_back();
-                        switchSide();
+                    if (addedMoves_ > 0) {
+                        addedMoves_--;
+                        cb_->undoMove();
                     }
                 }
                 continue;
@@ -183,24 +164,29 @@ int MatFinder::runFinder()
             }
         }
 
-        Utils::output("[" + Board::to_string(engine_side_)
+        //If we are here, we just need to handle the next move
+        Utils::output("[" + Board::to_string(active)
                 + "] Chosen line : \n", 1);
-        Utils::output("\t" + bestLine.getPretty(engine_side_), 1);
+        Utils::output("\t" + getPrettyLine(bestLine,
+                    MatFinderOptions::movesDisplayed) + "\n", 1);
+
         string next = bestLine.firstMove();
-        Utils::output("\tNext move is " + next, 2);
-        addedMoves_.push_back(next);
-        switchSide();
+        Utils::output("\tNext move is " + next + "\n", 3);
+        addedMoves_++;
+        cb_->uciApplyMove(next);
     }
 
-    Utils::output("Finder is done.\n");
-    Utils::output("Starting side was " + Board::to_string(sideToMove) + "\n");
-    Utils::output("Engine played for "
-        + to_string(engine_play_for_) + "\n");
+    //Display info at the end of computation
+    Utils::output("Finder is done. Starting board was : \n");
+    Utils::output(cb_->to_string() + "\n");
+
     if (engine_play_for_ == sideToMove)
         Utils::output("All lines should now be draw or mat :\n");
     else
         Utils::output("Best line should be mat or draw.\n");
     Utils::output(getPrettyLines());
+    Utils::output("Full best line is : \n");
+    Utils::output(getPrettyLine(lines_[0]) + "\n");
 
 
 
@@ -211,26 +197,17 @@ int MatFinder::runFinder()
 
 void MatFinder::sendCurrentPositionToEngine()
 {
-    sendPositionToEngine(startpos_, startingMoves_, addedMoves_);
-}
-
-void MatFinder::sendPositionToEngine(string pos, list<string> &moves,
-        list<string> &addedMoves)
-{
     string position("position ");
-    if (pos != "startpos")
+    if (startpos_ != "startpos")
         position += "fen ";
-    position += pos;
+    position += startpos_;
     position += " ";
-    list<string> tmp = moves;
-    tmp.insert(tmp.end(), addedMoves.begin(), addedMoves.end());
-    if (!tmp.empty())
+    const list<string> moves = cb_->getUciMoves();
+    if (!moves.empty())
         position += "moves ";
-    while (!tmp.empty()) {
-        position += tmp.front();
-        position += " ";
-        tmp.pop_front();
-    }
+    for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
+            it != itEnd; ++it)
+        position += (*it) + " ";
     sendToEngine(position);
 }
 
@@ -248,7 +225,7 @@ void MatFinder::sendToEngine(string cmd)
 {
     string toSend(cmd);
     toSend += "\n";
-    Utils::output(cmd, 2);
+    Utils::output(cmd, 3);
     (*engine_input_) << toSend;
 }
 
@@ -289,19 +266,6 @@ void MatFinder::signalBestmove(string &bestmove)
 string MatFinder::getPrettyLines()
 {
     ostringstream oss;
-    if (!addedMoves_.empty()) {
-        oss << "Lines after moves ";
-        list<string> tmpList = startingMoves_;
-        tmpList.insert(tmpList.end(), addedMoves_.begin(), addedMoves_.end());
-        int i = 0;
-        while (!tmpList.empty() && i < MatFinderOptions::movesDisplayed) {
-            oss << tmpList.front();
-            oss << " ";
-            tmpList.pop_front();
-            i++;
-        }
-        oss << "\n";
-    }
     Line curLine;
     for (int i = 0; i < lines_.size(); ++i) {
         curLine = lines_[i];
@@ -309,9 +273,19 @@ string MatFinder::getPrettyLines()
             oss << "\t[";
             oss << (i + 1);
             oss << "] ";
-            oss << curLine.getPretty(engine_side_);
+            oss << getPrettyLine(curLine, MatFinderOptions::movesDisplayed);
+            oss << "\n";
         }
     }
+    return oss.str();
+}
+
+string MatFinder::getPrettyLine(Line &line, int limit)
+{
+    ostringstream oss;
+    oss << line.getPrettyEval(cb_->getActiveSide() == Side::BLACK);
+    oss << " : ";
+    oss << cb_->tryUciMoves(line.getMoves(), limit);
     return oss.str();
 }
 
@@ -329,17 +303,6 @@ Thread *MatFinder::startReceiver()
     thread->start();
     thread->detach();
     return thread;
-}
-
-void MatFinder::switchSide()
-{
-    switchSide(&engine_side_);
-}
-
-void MatFinder::switchSide(Board::Side *side)
-{
-    (*side) = ((*side) == Board::Side::WHITE)?
-        Board::Side::BLACK:Board::Side::WHITE;
 }
 
 void MatFinder::waitReadyok()
@@ -390,10 +353,13 @@ int MatFinder::getEngineErrWrite()
     return err_fds_[1];
 }
 
+/**
+ * This function determine the "best" line to follow
+ */
 Line &MatFinder::getBestLine()
 {
     for (int i = 0; i < lines_.size(); ++i) {
-        int limit = 100;
+        int limit = MatFinderOptions::getCpTreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines_[i].isMat()) {

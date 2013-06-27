@@ -56,6 +56,7 @@ namespace Board {
             KING
         };
         static const char to_char(Kind k);
+        static const char to_uci(Kind k);
         const string to_string();
         void prettyPrint(ostringstream &oss);
         const char to_char();

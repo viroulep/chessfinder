@@ -22,13 +22,15 @@ public:
     Line();
     Line(float ev, int depth, list<string> mv, bool isMat = false);
     //Return more readable format
-    string getPretty(Board::Side engineSide);
+    string getPretty(bool invertEval);
+    string getPrettyEval(bool invertEval);
 
     void update(Line &line);
     bool isMat();
     float getEval();
     bool empty();
     string firstMove();
+    const list<string> &getMoves();
     bool operator<(const Line &rhs);
 
     static Line emptyLine;

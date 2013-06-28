@@ -25,10 +25,10 @@
 
 
 
-string MatFinderOptions::START_POS_ = DEFAULT_STARTPOS;
+//Init static members
 string MatFinderOptions::ENGINE_ = DEFAULT_ENGINE;
 string MatFinderOptions::PATH_ = DEFAULT_PATH;
-list<string> MatFinderOptions::USER_MOVES_;
+PositionList MatFinderOptions::START_POS_LIST_;
 int MatFinderOptions::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
 int MatFinderOptions::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
 int MatFinderOptions::MAX_LINES_ = DEFAULT_MAX_LINES;
@@ -45,18 +45,20 @@ void MatFinderOptions::setEngine(string engine) { ENGINE_ = engine; }
 string MatFinderOptions::getPath() { return PATH_; }
 void MatFinderOptions::setPath(string path) { PATH_ = path; }
 
-string MatFinderOptions::getStartingPos() { return START_POS_; }
-void MatFinderOptions::setStartingPos(string startingPos)
+const PositionList &MatFinderOptions::getPositionList()
 {
-    START_POS_ = startingPos;
+    return START_POS_LIST_;
 }
-
-list<string> &MatFinderOptions::getUserMoves() { return USER_MOVES_; }
-void MatFinderOptions::setUserMoves(list<string> &theList)
+void MatFinderOptions::setPositionList(PositionList &theList)
 {
-    USER_MOVES_.clear();
+    START_POS_LIST_.clear();
     //Delete moves from theList and insert into class member
-    USER_MOVES_.splice(USER_MOVES_.end(), theList);
+    START_POS_LIST_.splice(START_POS_LIST_.end(), theList);
+}
+void MatFinderOptions::addPositionToList(string pos, list<string> &moves)
+{
+    pair<string, list<string>> toAdd(pos, moves);
+    START_POS_LIST_.push_front(toAdd);
 }
 
 int MatFinderOptions::getPlayagainstMovetime()
@@ -104,11 +106,8 @@ string MatFinderOptions::getPretty()
 {
     ostringstream oss;
     oss << "Options :\n";
-    oss << "\t" << "Startpos\t\t" << " = " << START_POS_ << endl;
     oss << "\t" << "Engine\t\t\t" << " = " << ENGINE_ << endl;
     oss << "\t" << "Path\t\t\t" << " = " << PATH_ << endl;
-    oss << "\t" << "Usermoves\t\t" << " = "
-        << Utils::listToString(USER_MOVES_) << endl;
     oss << "\t" << "Playfor\t\t\t" << " = " << Board::to_string(PLAY_FOR_) << endl;
     oss << "\t" << "Playfor Movetime\t" << " = " << PLAYFOR_MOVETIME_ << endl;
     oss << "\t" << "Playagainst Movetime\t" << " = "

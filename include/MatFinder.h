@@ -56,6 +56,7 @@ public:
 
 private:
     Thread *startReceiver();
+    int runFinderOnCurrentPosition();
     void sendCurrentPositionToEngine();
     void sendOptionToEngine(string optionName, string optionValue);
     void sendToEngine(string cmd);

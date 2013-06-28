@@ -29,7 +29,7 @@ using namespace Board;
 Chessboard::~Chessboard()
 {
     Utils::output("Deleting chessboard\n", 5);
-    //Free all the datum
+    //Free all the data
     for (int f = A; f <= H; f++)
         for (Rank r = 1; r <= 8; r++)
             delete board_[(File)f][r];
@@ -286,7 +286,7 @@ Chessboard *Chessboard::createChessboard()
 
 Chessboard *Chessboard::createFromFEN(string fenString)
 {
-
+    //TODO: replace handleError by throw runtime_error(error)
     queue<string> infos;
     stringstream ss(fenString);
     string tmpInfo;
@@ -503,6 +503,7 @@ bool Chessboard::isValidMove(Move theMove)
     //TODO (maybe) : check for move validity
     return true;
 }
+
 void Chessboard::posFromFEN(string pos)
 {
     queue<string> ranks;

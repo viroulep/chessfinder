@@ -50,6 +50,7 @@ void parseArgs(int argc, char **argv)
         {"path", required_argument, 0, 'p'},
         {"moves", required_argument, 0, 'm'},
         {"lines", required_argument, 0, 'l'},
+        {"position_file", required_argument, 0, 'i'},
         {"hashmap_size", required_argument, 0, 't'},
         {"pf_movetime", required_argument, 0, 'f'},
         {"pa_movetime", required_argument, 0, 'a'},
@@ -59,12 +60,14 @@ void parseArgs(int argc, char **argv)
     int c;
     /* getopt_long stores the option index here. */
     int option_index = 0;
+    string startingPos;
+    list<string> moveList;
+    Board::Side playFor;
+    PositionList posList;
 
     while ((c = getopt_long(argc, argv,
-                "hv:s:e:o:p:m:l:t:c:f:a:",
+                "hi:v:s:e:o:p:m:l:t:c:f:a:",
                 long_options, &option_index)) != -1) {
-        list<string> moveList;
-        Board::Side playFor;
         switch (c) {
 
             case 'v':
@@ -76,11 +79,16 @@ void parseArgs(int argc, char **argv)
                 break;
 
             case 's':
-                MatFinderOptions::setStartingPos(optarg);
+                startingPos = optarg;
                 break;
 
             case 'e':
                 MatFinderOptions::setEngine(optarg);
+                break;
+
+            case 'i':
+                posList = Utils::positionListFromFile(optarg);
+                MatFinderOptions::setPositionList(posList);
                 break;
 
             case 'p':
@@ -91,7 +99,8 @@ void parseArgs(int argc, char **argv)
                 moveList.clear();
                 if (Utils::parseMovelist(moveList, optarg))
                     Utils::handleError("Error parsing movelist");
-                MatFinderOptions::setUserMoves(moveList);
+                //Adding the move is done after this loop
+                //MatFinderOptions::setUserMoves(moveList);
                 break;
 
             case 'o':
@@ -151,6 +160,11 @@ void parseArgs(int argc, char **argv)
                 abort ();
         }
     }
+    if (startingPos.size() == 0 && moveList.size() > 0)
+        startingPos = "startpos";
+
+    if (startingPos.size() > 0)
+        MatFinderOptions::addPositionToList(startingPos, moveList);
 
 }
 

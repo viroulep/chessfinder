@@ -26,7 +26,7 @@
 #include <list>
 #include <vector>
 #include <sys/time.h>
-
+#include "MatFinderOptions.h"
 
 using namespace std;
 
@@ -49,5 +49,6 @@ public:
 
     //FIXME: should belong to board ?
     static int parseMovelist(list<string> &theList, string moves);
+    static PositionList positionListFromFile(string fileName);
 };
 #endif

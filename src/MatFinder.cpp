@@ -55,22 +55,10 @@ MatFinder::MatFinder() :
     //Create our UCIReceiver
     uciReceiver_ = new UCIReceiver(this);
 
-    //Build chessboard
-    string pos = MatFinderOptions::getStartingPos();
-    startpos_ = pos;
-    addedMoves_ = 0;
-
-    string fenpos = (pos == "startpos")?engine_.getEngineStartpos():pos;
-    cb_ = Chessboard::createFromFEN(fenpos);
-
-    //Apply user moves
-    cb_->uciApplyMoves(MatFinderOptions::getUserMoves());
-
 
     //engine_side_ = cb_->getActiveSide();
     engine_play_for_ = MatFinderOptions::getPlayFor();
 
-    lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
 }
 
 MatFinder::~MatFinder()
@@ -85,8 +73,6 @@ MatFinder::~MatFinder()
     delete engine_input_;
     if (uciReceiver_)
         delete uciReceiver_;
-    if (cb_)
-        delete cb_;
 }
 
 int MatFinder::runEngine()
@@ -110,11 +96,10 @@ int MatFinder::runEngine()
 
 int MatFinder::runFinder()
 {
-
-    Board::Side sideToMove = cb_->getActiveSide();
-
     //Start the receiver
     Thread *thread = startReceiver();
+
+
 
     //Send some commands, init etc...
     sendToEngine("uci");
@@ -127,6 +112,46 @@ int MatFinder::runFinder()
 
     waitReadyok();
 
+    const PositionList &allPositions = MatFinderOptions::getPositionList();
+
+    for (PositionList::const_iterator it = allPositions.begin(),
+            itEnd = allPositions.end(); it != itEnd; ++it) {
+        //Extract infos from pair
+        string pos = (*it).first;
+        string fenpos = (pos == "startpos")?engine_.getEngineStartpos():pos;
+        list<string> userMoves = (*it).second;
+
+        Utils::output("Running finder on \"" + pos + "\", with moves : "
+                + Utils::listToString(userMoves) + "\n");
+
+
+        //Build chessboard
+        cb_ = Chessboard::createFromFEN(fenpos);
+        //Apply user moves
+        cb_->uciApplyMoves(userMoves);
+
+        //Fresh finder
+        startpos_ = pos;
+        addedMoves_ = 0;
+        lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
+
+        //Run
+        runFinderOnCurrentPosition();
+
+        delete cb_;
+    }
+    if (allPositions.empty())
+        Utils::output("No position to run matfinder on. Please adjust --startingpos"\
+                " and/or --position_file\n");
+
+    thread->kill();
+    delete thread;
+    return EXIT_SUCCESS;
+}
+
+int MatFinder::runFinderOnCurrentPosition()
+{
+    Board::Side sideToMove = cb_->getActiveSide();
 
     Utils::output("Starting board is :\n" + cb_->to_string() + "\n");
     Utils::output("Doing some basic evaluation on submitted position...\n");
@@ -205,7 +230,7 @@ int MatFinder::runFinder()
     }
 
     //Display info at the end of computation
-    Utils::output("Finder is done. Starting board was : \n");
+    Utils::output("[End] Finder is done. Starting board was : \n");
     Utils::output(cb_->to_string() + "\n");
 
     if (engine_play_for_ == sideToMove)
@@ -213,14 +238,9 @@ int MatFinder::runFinder()
     else
         Utils::output("Best line should be mat or draw.\n");
     Utils::output(getPrettyLines());
-    Utils::output("Full best line is : \n");
-    Utils::output(getPrettyLine(lines_[0]) + "\n");
-
-
-
-    thread->kill();
-    delete thread;
-    return EXIT_SUCCESS;
+    Utils::output("[End] Full best line is : \n");
+    Utils::output("[End] " + getPrettyLine(lines_[0]) + "\n");
+    return 0;
 }
 
 void MatFinder::sendCurrentPositionToEngine()

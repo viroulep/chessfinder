@@ -42,30 +42,29 @@ string Line::getPrettyEval(bool invertEval)
 
     ostringstream out;
 
-    float displayEval = (invertEval)?-eval_:eval_;
+    float displayEval = (float)((invertEval)?-eval_:eval_);
     if (isMat_)
         out << "#";
     else
         displayEval /= 100;
     char eval[10];
-    //Tricky: avoid invalid write of '0' in output stream
+    //Trick to display first two decimals
     sprintf(eval, "%.2f", displayEval);
     out << eval;
     return out.str();
 }
 
-//TODO: getPretty(bool invertEval) ?! (so that Line doesn't depend on board)
 string Line::getPretty(bool invertEval)
 {
     ostringstream out;
 
-    float displayEval = (invertEval)?-eval_:eval_;
+    float displayEval = (float)((invertEval)?-eval_:eval_);
     if (isMat_)
         out << "#";
     else
         displayEval /= 100;
     char eval[10];
-    //Tricky: avoid invalid write of '0' in output stream
+    //Trick to display first two decimals
     sprintf(eval, "%.2f", displayEval);
     out << eval;
     out << ", d: ";

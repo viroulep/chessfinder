@@ -21,6 +21,7 @@
  */
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include "Utils.h"
 #include "MatFinderOptions.h"
 #include "Line.h"
@@ -80,8 +81,16 @@ string Utils::helpMessage()
     oss << "\t\t" << "Defines the main line after the starting position.\n"
         << "\t\t" << "Example value : "
         << "\"e2e4 c7d5\"\n"
-        << "\t\t" << "Default value : \""
-        << Utils::listToString(MatFinderOptions::getUserMoves()) << "\"\n";
+        << "\t\t" << "Default value : \"<none>\"\n";
+    oss << "\n";
+    oss << "\t" << "--position_file=pathtofile, -i pathtofile\n";
+    oss << "\t\t" << "Specify a file to load the positions from. If this\n"\
+        "\t\t  options is given, --startpos and --moves will be ignored.\n"\
+        "\t\t  All the positions in this file are to be processed.\n"
+        << "\t\t" << "There must be one position per line, following this "\
+        "format : \n"
+        << "\t\t\"position (startpos|fen thefenstring) "\
+        "[moves additionnalmoves]\"\n";
     oss << "\n";
     oss << "\t" << "--engine=engine, -e engine\n";
     oss << "\t\t" << "Defines the uci engine command.\n"
@@ -165,8 +174,10 @@ string Utils::listToString(list<string> &theList)
 int Utils::parseMovelist(list<string> &theList, string moves)
 {
     istringstream is(moves);
+    Utils::output("Parsing moves : " + moves + "\n", 3);
     string mv;
     //TODO: handle the case e7e8q
+    //FIXME: delegate this task to board
     while (is >> skipws >> mv) {
         if ( mv.size() != 4
                 || mv[0] > 'h' || mv[0] < 'a'
@@ -177,6 +188,71 @@ int Utils::parseMovelist(list<string> &theList, string moves)
         theList.push_back(mv);
     }
     return 0;
+}
+
+PositionList Utils::positionListFromFile(string fileName)
+{
+    string line;
+    PositionList ret;
+    ifstream inputFile(fileName);
+    if (inputFile.is_open()) {
+        while (getline(inputFile, line) && inputFile.good()) {
+            pair<string, list<string>> toAdd;
+            istringstream is(line);
+            string token;
+            is >> skipws >> token;
+            if (token != "position")
+                Utils::handleError("Position must start with \"position\"");
+            is >> token;
+            if (token == "startpos") {
+                Utils::output("Startpos is the pos\n", 4);
+                toAdd.first = token;
+                //get "moves" token, if any
+                is >> token;
+            } else {
+                Utils::output("Startpos is a fen\n", 4);
+                string fenString;
+                while (is >> token && token != "moves") {
+                    //FIXME: better this
+                    fenString += token + " "; 
+                }
+                toAdd.first = fenString;
+            }
+            list<string> moves;
+            if (is.good()) {
+                //if we are here we need to parse moves
+                if (token != "moves") {
+                    if (token.size() > 0)
+                        Utils::handleError("Unrecognize token \"" + token + "\"");
+                } else {
+                    Utils::output("Parsing moves\n");
+                    string mv;
+                    //TODO: handle the case e7e8q
+                    //FIXME: delegate this task to board
+                    while (is >> skipws >> mv) {
+                        if ( mv.size() != 4
+                                || mv[0] > 'h' || mv[0] < 'a'
+                                || mv[1] > '8' || mv[1] < '1'
+                                || mv[2] > 'h' || mv[2] < 'a'
+                                || mv[3] > '8' || mv[3] < '1')
+                            handleError("Error parsing move list");
+                        moves.push_back(mv);
+                    }
+                    //Utils::output("token : " + token + "\n");
+                    //if (Utils::parseMovelist(moves, is.str()))
+                        //Utils::handleError("Error parsing move list");
+                }
+            } else
+                Utils::output("End of input\n");
+            toAdd.second = moves;
+            Utils::output("Adding position : \"" + toAdd.first + "\" with"\
+                    " moves : \n", 3);
+            Utils::output("\t" + Utils::listToString(toAdd.second) +"\n", 3);
+            ret.push_back(toAdd);
+        }
+    } else
+        Utils::handleError("Error opening file \"" + fileName + "\"");
+    return ret;
 }
 
 void Utils::getTimeout(struct timespec *ts, int seconds)

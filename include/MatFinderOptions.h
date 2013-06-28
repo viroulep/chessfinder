@@ -24,6 +24,7 @@
 
 #include <string>
 #include <list>
+#include <utility>
 #include "Board.h"
 
 #define DEFAULT_MAX_LINES 8
@@ -41,6 +42,8 @@
 
 using namespace std;
 
+typedef list<pair<string, list<string>>> PositionList;
+
 class MatFinderOptions {
 public:
 
@@ -50,11 +53,9 @@ public:
     static string getPath();
     static void setPath(string path);
 
-    static string getStartingPos();
-    static void setStartingPos(string startingPos);
-
-    static list<string> &getUserMoves();
-    static void setUserMoves(list<string> &theList);
+    static const PositionList &getPositionList();
+    static void setPositionList(PositionList &theList);
+    static void addPositionToList(string pos, list<string> &moves);
 
     static int getPlayagainstMovetime();
     static void setPlayagainstMovetime(int movetime);
@@ -89,11 +90,10 @@ public:
 private:
     //Private (static class)
     MatFinderOptions();
-    static string START_POS_;
+
     static string ENGINE_;
     static string PATH_;
 
-    static list<string> USER_MOVES_;
 
     // in ms
     static int PLAYFOR_MOVETIME_;
@@ -114,6 +114,9 @@ private:
 
     // in Mo
     static int HASHMAP_SIZE_;
+
+    //Stores all the position to be processed : a list of pair (starting position, user moves)
+    static PositionList START_POS_LIST_;
 };
 
 

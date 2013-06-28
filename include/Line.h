@@ -49,7 +49,7 @@ public:
 private:
     //Line Evaluation
     //Might be a mat
-    float eval_;
+    int eval_;
     bool isMat_ = false;
     int depth_;
     list<string> moves_;

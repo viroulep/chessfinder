@@ -110,6 +110,7 @@ namespace Board {
         //if promoteTo != KING : promotion
         Piece::Kind promoteTo = Piece::Kind::KING;
     } Move;
+
     Side getSideFromString(string sidestr);
 }
 

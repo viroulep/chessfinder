@@ -34,17 +34,16 @@ UCIReceiver::UCIReceiver(MatFinder *finder) : matFinder_(finder)
 
 UCIReceiver::~UCIReceiver()
 {
-    //delete input_;
+    delete input_;
 }
 
 void *UCIReceiver::run()
 {
-    string str;
     //Should get each engine message, then parse it
     //then eventually update and notify matFinder
     while (true) {
-        getline((*input_), str);
-        parseMessage(str);
+        getline((*input_), strBuf_);
+        parseMessage(strBuf_);
     }
 }
 

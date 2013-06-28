@@ -52,6 +52,9 @@ MatFinder::MatFinder() :
 
     engine_input_ = new OutputStream(getEngineInWrite());
 
+    //Create our UCIReceiver
+    uciReceiver_ = new UCIReceiver(this);
+
     //Build chessboard
     string pos = MatFinderOptions::getStartingPos();
     startpos_ = pos;
@@ -80,6 +83,8 @@ MatFinder::~MatFinder()
     close(getEngineOutRead());
     close(getEngineErrRead());
     delete engine_input_;
+    if (uciReceiver_)
+        delete uciReceiver_;
     if (cb_)
         delete cb_;
 }
@@ -100,6 +105,7 @@ int MatFinder::runEngine()
 
 
     engine_.execEngine();
+    return 0;
 }
 
 int MatFinder::runFinder()
@@ -318,10 +324,7 @@ string MatFinder::getPrettyLine(Line &line, int limit)
 Thread *MatFinder::startReceiver()
 {
     //Starts in separate thread, so that it's handled background
-    UCIReceiver *task = new UCIReceiver(this);
-
-
-    Thread *thread = new Thread(static_cast<Runnable *>(task));
+    Thread *thread = new Thread(static_cast<Runnable *>(uciReceiver_));
     thread->start();
     thread->detach();
     return thread;

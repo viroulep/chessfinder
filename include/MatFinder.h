@@ -31,6 +31,9 @@
 
 using namespace std;
 
+//Forward decl
+class UCIReceiver;
+
 class MatFinder {
 public:
     MatFinder();
@@ -69,6 +72,7 @@ private:
 
     int in_fds_[2], out_fds_[2], err_fds_[2];
     OutputStream *engine_input_;
+    UCIReceiver *uciReceiver_;
     pthread_cond_t readyok_cond_ = PTHREAD_COND_INITIALIZER;
     pthread_mutex_t readyok_mutex_ = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t bestmove_cond_ = PTHREAD_COND_INITIALIZER;

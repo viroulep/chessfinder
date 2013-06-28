@@ -55,20 +55,12 @@ void Stream::open(int file_descriptor, ios_base::openmode openmode)
 
 Stream::~Stream()
 {
-    //filebuf_->close();
-    //delete filebuf_;
-    /*
-     *if (file_descriptor_)
-     *    close(file_descriptor_);
-     *if (filebuf_)
-     *    delete filebuf_;
-     */
+    if (file_descriptor_)
+        close(file_descriptor_);
+    if (filebuf_)
+        delete filebuf_;
 }
 
-
-//InputStream::InputStream() :
-    //Stream(), stdistream_(NULL)
-//{ }
 
 InputStream::InputStream(int file_descriptor) :
     Stream(file_descriptor, ios_base::in)
@@ -112,12 +104,8 @@ size_t InputStream::getline(char* s, streamsize n, char delim)
 
 InputStream::~InputStream()
 {
-    this->~Stream();
     delete stdistream_;
 }
-
-//OutputStream::OutputStream() :
-    //Stream(), stdostream_(NULL) {}
 
 OutputStream::OutputStream(int file_descriptor) :
     Stream(file_descriptor, ios_base::out)
@@ -146,11 +134,10 @@ OutputStream& OutputStream::operator<< (const string& str)
 
 OutputStream::~OutputStream()
 {
-    this->~Stream();
     delete stdostream_;
 }
 
-size_t getline(InputStream& is, string& str)
+size_t getline(InputStream& is, string &str)
 {
     char tmp[BUFFER_SIZE];
     size_t ret = is.getline(tmp, BUFFER_SIZE);

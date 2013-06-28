@@ -44,8 +44,8 @@ public:
     void *join();
 private:
     // thread ID
-    pthread_t PthreadThreadID;
-    pthread_attr_t threadAttribute;
+    pthread_t PthreadThreadID_;
+    pthread_attr_t threadAttribute_;
     // runnable object will be deleted automatically
     Runnable *runnable_;
     Thread(const Thread&);

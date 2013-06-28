@@ -150,9 +150,11 @@ int Chessboard::uciApplyMove(string uciMove)
 
 int Chessboard::uciApplyMoves(list<string> uciMoves)
 {
+    int ret = 0;
     for (list<string>::iterator it = uciMoves.begin(), itEnd = uciMoves.end();
             it != itEnd; ++it)
-        uciApplyMove(*it);
+        ret &= uciApplyMove(*it);
+    return ret;
 }
 
 void Chessboard::undoMove()
@@ -518,7 +520,7 @@ void Chessboard::posFromFEN(string pos)
         Utils::output("Rank : " + std::to_string(r) + "\n", 4);
         const char *crank = ranks.front().c_str();
         char c;
-        while (c = *crank++) {
+        while ((c = *crank++)) {
             Square *sq = board_[f][r];
             switch (c) {
                 case '1':
@@ -610,7 +612,7 @@ void Chessboard::castleFromFEN(string castle)
     else {
         const char *ccastle = castle.c_str();
         char c;
-        while (c = *ccastle++) {
+        while ((c = *ccastle++)) {
             switch (c) {
                 case 'k':
                     castle_ |= WKCASTLE;

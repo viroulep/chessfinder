@@ -174,7 +174,7 @@ namespace Board {
 
     const char Piece::to_char()
     {
-        to_char(getKind());
+        return to_char(getKind());
     }
 
     const char Piece::to_pgn()
@@ -243,6 +243,7 @@ namespace Board {
             return BLACK;
         else
             Utils::handleError("Error parsing playfor side");
+        return WHITE;
     }
 
 

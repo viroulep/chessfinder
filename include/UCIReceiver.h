@@ -22,6 +22,7 @@
 #ifndef __UCIRECEIVER_H__
 #define __UCIRECEIVER_H__
 
+#include <string>
 #include "Thread.h"
 #include "Stream.h"
 #include "MatFinder.h"
@@ -43,6 +44,7 @@ private:
     InputStream *input_;
     MatFinder *matFinder_;
     void parseMessage(std::string msg);
+    std::string strBuf_;
 };
 
 #endif

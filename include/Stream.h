@@ -70,6 +70,6 @@ private:
     ostream* stdostream_;
 };
 
-size_t getline(InputStream& is, string& str);
+size_t getline(InputStream &is, string &str);
 
 #endif

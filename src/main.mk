@@ -19,11 +19,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-ALL_TARGETS += matfinder
+ALL_TARGETS += outCxx matfinder
 INSTALL_TARGETS += install-matfinder
 CLEAN_TARGETS += clean-matfinder
 
+.PHONY: outCxx
+
 .SILENT:
+
 
 matfinder_SOURCES           := $(wildcard src/*.cpp)
 matfinder_SOURCES_CXX       := $(wildcard src/*.cxx)
@@ -35,6 +38,9 @@ matfinder_OBJECTS += $(matfinder_SOURCES_CXX:.cxx=.o)
 
 
 canonical_path := ../$(shell basename $(shell pwd -P))
+
+outCxx:
+	echo "Using Cxx="$(CXX)
 
 src/%.o: src/%.cpp $(matfinder_HEADERS_DEP)
 	echo "[matfinder] CXX $<"

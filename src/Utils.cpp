@@ -30,6 +30,11 @@ using namespace std;
 
 //TODO: exit program correctly on error
 
+void Utils::signalHandler(int rc)
+{
+    handleError("Engine execution failed : " + to_string(rc));
+}
+
 void Utils::handleError(int rc)
 {
     handleError("unspecified caller", rc);

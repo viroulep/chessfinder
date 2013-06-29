@@ -176,7 +176,7 @@ int main(int argc, char **argv)
 
     // Child error signal install
     struct sigaction action;
-    action.sa_handler = Utils::handleError;
+    action.sa_handler = Utils::signalHandler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     if (sigaction(SIGUSR1, &action, NULL) < 0) {
@@ -197,6 +197,7 @@ int main(int argc, char **argv)
         // We should never reach this point
         // Tell the parent the exec failed
         kill(getppid(), SIGUSR1);
+        Utils::handleError("Engine execution failed");
         exit(EXIT_FAILURE);
 
     } else if (pid > pid_t(0)) {

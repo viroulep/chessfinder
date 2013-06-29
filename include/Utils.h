@@ -33,6 +33,7 @@ using namespace std;
 class Utils {
 public:
     //implicitly inlined
+    static void signalHandler(int rc);
     static void handleError(int rc);
     static void handleError(const string &msg);
     static void handleError(const string &caller, int rc);

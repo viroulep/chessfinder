@@ -51,6 +51,7 @@ MatFinder::MatFinder() :
     Utils::handleError("pipe() : Error creating the pipe", pipe_status);
 
     engine_input_ = new OutputStream(getEngineInWrite());
+    receiver_input_ = new OutputStream(getEngineOutWrite());
 
     //Create our UCIReceiver
     uciReceiver_ = new UCIReceiver(this);
@@ -83,10 +84,11 @@ MatFinder::~MatFinder()
     close(getEngineOutRead());
     close(getEngineErrRead());
     delete engine_input_;
-    if (uciReceiver_)
-        delete uciReceiver_;
+    delete receiver_input_;
     if (cb_)
         delete cb_;
+    if (uciReceiver_)
+        delete uciReceiver_;
 }
 
 int MatFinder::runEngine()
@@ -217,8 +219,10 @@ int MatFinder::runFinder()
     Utils::output(getPrettyLine(lines_[0]) + "\n");
 
 
+    Utils::output("Exiting receiver and joining threads\n", 4);
+    (*receiver_input_) << "quit\n";
 
-    thread->kill();
+    thread->join();
     delete thread;
     return EXIT_SUCCESS;
 }
@@ -326,7 +330,6 @@ Thread *MatFinder::startReceiver()
     //Starts in separate thread, so that it's handled background
     Thread *thread = new Thread(static_cast<Runnable *>(uciReceiver_));
     thread->start();
-    thread->detach();
     return thread;
 }
 

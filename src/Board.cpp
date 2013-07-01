@@ -64,7 +64,7 @@ namespace Board {
 
     Square::~Square()
     {
-        Utils::output("Deleting square\n", 5);
+        Utils::output("Deleting square " + to_string() + "\n", 5);
         if (piece_)
             delete piece_;
     }
@@ -195,6 +195,11 @@ namespace Board {
     {
         if (square)
             moveTo(square);
+    }
+
+    Piece::~Piece()
+    {
+        Utils::output("Deleting piece\n", 5);
     }
 
     const Side Piece::getColor()

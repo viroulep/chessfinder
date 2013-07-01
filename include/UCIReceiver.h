@@ -43,7 +43,7 @@ private:
     void option(istringstream &is);
     InputStream *input_;
     MatFinder *matFinder_;
-    void parseMessage(std::string msg);
+    int parseMessage(std::string msg);
     std::string strBuf_;
 };
 

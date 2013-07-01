@@ -43,8 +43,10 @@ void *UCIReceiver::run()
     //then eventually update and notify matFinder
     while (true) {
         getline((*input_), strBuf_);
-        parseMessage(strBuf_);
+        if (parseMessage(strBuf_))
+            break;
     }
+    return 0;
 }
 
 void UCIReceiver::readyok(istringstream &is)
@@ -141,7 +143,7 @@ void UCIReceiver::bestmove(istringstream &is)
     matFinder_->signalBestmove(bm);
 }
 
-void UCIReceiver::parseMessage(string msg)
+int UCIReceiver::parseMessage(string msg)
 {
     string token;
     //cerr << "\tcmd: " << msg << "\n";
@@ -155,9 +157,11 @@ void UCIReceiver::parseMessage(string msg)
     else if (token == "readyok") readyok(is);
     else if (token == "info") info(is);
     else if (token == "option") option(is);
+    else if (token == "quit") return 1;
     else {
         cerr << "Unrecognise command from engine :\n";
         cerr << "\"" << msg << "\"\n";
     }
+    return 0;
 }
 

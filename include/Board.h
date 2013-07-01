@@ -86,6 +86,7 @@ namespace Board {
 
         Piece(Kind kind, Side color);
         Piece(Kind kind, Side color, Square *square);
+        ~Piece();
         const Side getColor();
         const Kind getKind();
         //Move the piece to square, even if illegal move

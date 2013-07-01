@@ -29,9 +29,10 @@ Engine::Engine(const string engineName, const string binPrefix,
         const string startpos) : 
     name_(engineName), prefix_(binPrefix), startpos_(startpos)
 {
+    //TODO: work on this ?
     if (engineName == "gardnerfish")
         startpos_ = Chessboard::GARDNER_STARTPOS;
-    if (engineName == "alamosfish")
+    if (engineName == "losalamosfish" || engineName == "stockfishalamos")
         startpos_ = Chessboard::ALAMOS_STARTPOS;
 }
 

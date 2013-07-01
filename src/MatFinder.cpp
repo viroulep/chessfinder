@@ -51,6 +51,7 @@ MatFinder::MatFinder() :
     Utils::handleError("pipe() : Error creating the pipe", pipe_status);
 
     engine_input_ = new OutputStream(getEngineInWrite());
+    receiver_input_ = new OutputStream(getEngineOutWrite());
 
     //Create our UCIReceiver
     uciReceiver_ = new UCIReceiver(this);
@@ -71,6 +72,7 @@ MatFinder::~MatFinder()
     close(getEngineOutRead());
     close(getEngineErrRead());
     delete engine_input_;
+    delete receiver_input_;
     if (uciReceiver_)
         delete uciReceiver_;
 }
@@ -144,7 +146,10 @@ int MatFinder::runFinder()
         Utils::output("No position to run matfinder on. Please adjust --startingpos"\
                 " and/or --position_file\n");
 
-    thread->kill();
+    Utils::output("Exiting receiver and joining threads\n", 4);
+    (*receiver_input_) << "quit\n";
+
+    thread->join();
     delete thread;
     return EXIT_SUCCESS;
 }
@@ -240,6 +245,7 @@ int MatFinder::runFinderOnCurrentPosition()
     Utils::output(getPrettyLines());
     Utils::output("[End] Full best line is : \n");
     Utils::output("[End] " + getPrettyLine(lines_[0]) + "\n");
+
     return 0;
 }
 
@@ -346,7 +352,6 @@ Thread *MatFinder::startReceiver()
     //Starts in separate thread, so that it's handled background
     Thread *thread = new Thread(static_cast<Runnable *>(uciReceiver_));
     thread->start();
-    thread->detach();
     return thread;
 }
 

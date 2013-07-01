@@ -181,14 +181,8 @@ int Utils::parseMovelist(list<string> &theList, string moves)
     istringstream is(moves);
     Utils::output("Parsing moves : " + moves + "\n", 3);
     string mv;
-    //TODO: handle the case e7e8q
-    //FIXME: delegate this task to board
     while (is >> skipws >> mv) {
-        if ( mv.size() != 4
-                || mv[0] > 'h' || mv[0] < 'a'
-                || mv[1] > '8' || mv[1] < '1'
-                || mv[2] > 'h' || mv[2] < 'a'
-                || mv[3] > '8' || mv[3] < '1')
+        if (!Board::checkMove(mv))
             return 1;
         theList.push_back(mv);
     }
@@ -214,14 +208,22 @@ PositionList Utils::positionListFromFile(string fileName)
                 toAdd.first = token;
                 //get "moves" token, if any
                 is >> token;
-            } else {
+            } else if (token == "fen") {
                 Utils::output("Startpos is a fen\n", 4);
                 string fenString;
                 while (is >> token && token != "moves") {
-                    //FIXME: better this
                     fenString += token + " "; 
                 }
-                toAdd.first = fenString;
+                //NOTE: ugly way of getting rid off last whitespace
+                if (fenString.size()) {
+                    fenString = fenString.substr(0, fenString.size() - 1);
+                    toAdd.first = fenString;
+                } else {
+                    Utils::handleError("fen is empty");
+                }
+            } else {
+
+                Utils::handleError("Missing 'fen' keyword");
             }
             list<string> moves;
             if (is.good()) {
@@ -232,20 +234,11 @@ PositionList Utils::positionListFromFile(string fileName)
                 } else {
                     Utils::output("Parsing moves\n");
                     string mv;
-                    //TODO: handle the case e7e8q
-                    //FIXME: delegate this task to board
                     while (is >> skipws >> mv) {
-                        if ( mv.size() != 4
-                                || mv[0] > 'h' || mv[0] < 'a'
-                                || mv[1] > '8' || mv[1] < '1'
-                                || mv[2] > 'h' || mv[2] < 'a'
-                                || mv[3] > '8' || mv[3] < '1')
+                        if (!Board::checkMove(mv))
                             handleError("Error parsing move list");
                         moves.push_back(mv);
                     }
-                    //Utils::output("token : " + token + "\n");
-                    //if (Utils::parseMovelist(moves, is.str()))
-                        //Utils::handleError("Error parsing move list");
                 }
             } else
                 Utils::output("End of input\n");

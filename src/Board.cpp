@@ -64,7 +64,7 @@ namespace Board {
 
     Square::~Square()
     {
-        Utils::output("Deleting square\n", 5);
+        Utils::output("Deleting square " + to_string() + "\n", 5);
         if (piece_)
             delete piece_;
     }
@@ -197,6 +197,11 @@ namespace Board {
             moveTo(square);
     }
 
+    Piece::~Piece()
+    {
+        Utils::output("Deleting piece\n", 5);
+    }
+
     const Side Piece::getColor()
     {
         return color_;
@@ -246,6 +251,22 @@ namespace Board {
         return WHITE;
     }
 
+    bool checkMove(string mv)
+    {
+        if ( mv.size() < 4 || mv.size() > 5
+                || mv[0] > 'h' || mv[0] < 'a'
+                || mv[1] > '8' || mv[1] < '1'
+                || mv[2] > 'h' || mv[2] < 'a'
+                || mv[3] > '8' || mv[3] < '1')
+            return false;
+        else if (mv.size() == 5 && (
+                    mv[4] != 'q' || mv[4] != 'n'
+                    || mv[4] != 'b' || mv[4] != 'r'
+                    ))
+            return false;
+        else
+            return true;
+    }
 
 }
 

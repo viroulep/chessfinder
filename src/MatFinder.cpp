@@ -279,7 +279,7 @@ void MatFinder::sendToEngine(string cmd)
 {
     string toSend(cmd);
     toSend += "\n";
-    Utils::output(cmd, 3);
+    Utils::output(toSend, 3);
     (*engine_input_) << toSend;
 }
 

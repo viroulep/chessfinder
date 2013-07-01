@@ -83,7 +83,8 @@ namespace Board {
 
         if (newPiece && piece_)
             Utils::handleError("There is a already a piece on our square : "
-                    + to_string());
+                    + to_string() + " when moving " + newPiece->to_string()
+                    + " on " + piece_->to_string());
         //handle by the chessboard
             //piece_->moveTo(NULL);
             
@@ -145,22 +146,34 @@ namespace Board {
 
     const string Piece::to_string()
     {
+        string ret;
         switch (getKind()) {
             case PAWN:
-                return "Pawn";
+                ret = "Pawn";
+                break;
             case KNIGHT:
-                return "Knight";
+                ret = "Knight";
+                break;
             case BISHOP:
-                return "Bishop";
+                ret = "Bishop";
+                break;
             case ROOK:
-                return "Rook";
+                ret = "Rook";
+                break;
             case QUEEN:
-                return "Queen";
+                ret = "Queen";
+                break;
             case KING:
-                return "King";
+                ret = "King";
+                break;
             default:
-                return "undefined";
+                ret = "undefined";
+                break;
         }
+        ret += "(" + Board::to_string(color_) + ")";
+        if (square_)
+            ret += "[" + square_->to_string() + "]";
+        return ret;
     }
 
     void Piece::prettyPrint(ostringstream &oss)
@@ -223,7 +236,7 @@ namespace Board {
         if (square_)
             square_->changePiece(this);
         else
-            Utils::output(string("Dropped : ") + to_char() + "\n", 4);
+            Utils::output(string("Dropped : ") + to_string() + "\n", 4);
             //deletedPieces.push_back(this);//drop
     }
 

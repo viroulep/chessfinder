@@ -195,10 +195,16 @@ void Chessboard::undoMove()
 
     if (lastMove.takePiece) {
         Piece *taken = takenPieces_.back();
-        if (enpassant_ == from) {
+        if (enpassant_ == from && taken->getKind() == Piece::Kind::PAWN) {
             taken->moveTo(board_[from->getFile()][to->getRank()]);
-        } else
+        } else {
+            if (enpassant_ == from)
+                Utils::output("[WARNING] Undoing weird case : restoring"\
+                        "non-pawn piece on 'enpassant' square. ("
+                        + taken->to_string() + " taken by "
+                        + toMove->to_string() + "\n");
             taken->moveTo(from);
+        }
         takenPieces_.pop_back();
     }
 

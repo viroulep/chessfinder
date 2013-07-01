@@ -68,6 +68,7 @@ private:
     int getEngineOutWrite();
     int getEngineErrRead();
     int getEngineErrWrite();
+    int updateMultiPV();
     Line &getBestLine();
 
 
@@ -99,6 +100,8 @@ private:
     //TODO ?
     int nps_ = 0;
     int thinktime_ = 0;
+
+    int currentMPV_ = 0;
 };
 
 #endif

@@ -172,8 +172,7 @@ int MatFinder::runFinderOnCurrentPosition()
     while (true) {
         Line bestLine;
         Side active = cb_->getActiveSide();
-        //Initialize vector with empty lines
-        lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
+
         Utils::output("[" + Board::to_string(active)
                 + "] Depth " + to_string(addedMoves_) + "\n");
 
@@ -185,6 +184,21 @@ int MatFinder::runFinderOnCurrentPosition()
         int moveTime = (active == engine_play_for_ || !addedMoves_) ?
             MatFinderOptions::getPlayforMovetime() :
             MatFinderOptions::getPlayagainstMovetime();
+
+        //Compute optimal multipv
+        int pv = updateMultiPV();
+
+
+        //Scaling moveTime
+        moveTime = (int)(moveTime * ((float)
+                    ((float)pv/(float)MatFinderOptions::getMaxLines())
+                    ));
+        if (moveTime <= 300)
+            moveTime = 300;
+
+        //Initialize vector with empty lines
+        lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
+
         sendToEngine("go movetime " + to_string(moveTime));
 
         Utils::output("[" + Board::to_string(active)
@@ -403,6 +417,46 @@ int MatFinder::getEngineErrWrite()
     return err_fds_[1];
 }
 
+int MatFinder::updateMultiPV()
+{
+    int diffLimit = 800;
+    int multiPV = MatFinderOptions::getMaxLines();
+    int lastEvalValue = 0;
+    bool lastEvalMat = false;
+    bool allMat = true;
+    int nonEmptyLines = 0;
+    for (int i = 0; i < lines_.size(); ++i)
+        if (!lines_[i].empty())
+            nonEmptyLines++;
+    Utils::output("Non empty : " + to_string(nonEmptyLines) + "\n", 3);
+    for (int i = 0; i < lines_.size(); ++i) {
+        if (i > 0) {
+            if (lastEvalMat 
+                    || fabs(lines_[i].getEval() - lastEvalValue) > diffLimit) {
+                Utils::output("Eval/lastEval : "
+                        + to_string(lines_[i].getEval())
+                        + "/" + to_string(lastEvalValue), 3);
+                multiPV = i;
+                allMat &= lastEvalMat;
+                break;
+            }
+        }
+        allMat &= lines_[i].isMat();
+        lastEvalValue = lines_[i].getEval();
+        lastEvalMat = lines_[i].isMat();
+    }
+    if (allMat)
+        multiPV = MatFinderOptions::getMaxLines();
+
+    if (multiPV != nonEmptyLines) {
+        Utils::output("Updating MultiPV to " + to_string(multiPV) + "\n", 2);
+        sendOptionToEngine("MultiPV", to_string(multiPV));
+        sendToEngine("isready");
+        waitReadyok();
+    }
+    return multiPV;
+}
+
 /**
  * This function determine the "best" line to follow
  */
@@ -413,7 +467,7 @@ Line &MatFinder::getBestLine()
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines_[i].isMat()) {
-            if (lines_[i].getEval() > 0)
+            //if (lines_[i].getEval() > 0)
                     /*NOTE: this cond can be used to explore all the lost
                      * line, if the side we play for is not the side starting
                      * to move !

@@ -66,7 +66,7 @@ void Utils::handleError(const string &msg, int rc,
 void Utils::output(const string &msg, int level/* = 0*/)
 {
     if (level <= MatFinderOptions::getVerboseLevel())
-        cout << msg;
+        cout << msg << flush;
 }
 
 string Utils::helpMessage()
@@ -232,7 +232,7 @@ PositionList Utils::positionListFromFile(string fileName)
                     if (token.size() > 0)
                         Utils::handleError("Unrecognize token \"" + token + "\"");
                 } else {
-                    Utils::output("Parsing moves\n");
+                    Utils::output("Parsing moves\n", 3);
                     string mv;
                     while (is >> skipws >> mv) {
                         if (!Board::checkMove(mv))

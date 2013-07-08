@@ -193,8 +193,8 @@ int MatFinder::runFinderOnCurrentPosition()
         moveTime = (int)(moveTime * ((float)
                     ((float)pv/(float)MatFinderOptions::getMaxLines())
                     ));
-        if (moveTime <= 300)
-            moveTime = 300;
+        if (moveTime <= 600)
+            moveTime = 600;
 
         //Initialize vector with empty lines
         lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);

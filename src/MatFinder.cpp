@@ -24,135 +24,23 @@
 #include <sstream>
 #include <cmath>
 #include <unistd.h>
+#include "Finder.h"
 #include "MatFinder.h"
-#include "MatFinderOptions.h"
+#include "Options.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
 
 
 
-MatFinder::MatFinder() :
-    engine_(MatFinderOptions::getEngine(), MatFinderOptions::getPath())
+MatFinder::MatFinder() : Finder()
 {
-    int pipe_status;
-
-    // Create the pipes
-    // We do this before the fork so both processes will know about
-    // the same pipe and they can communicate.
-
-    pipe_status = pipe(in_fds_);
-    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
-
-    pipe_status = pipe(out_fds_);
-    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
-
-    pipe_status = pipe(err_fds_);
-    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
-
-    engine_input_ = new OutputStream(getEngineInWrite());
-    receiver_input_ = new OutputStream(getEngineOutWrite());
-
-    //Create our UCIReceiver
-    uciReceiver_ = new UCIReceiver(this);
-
-
-    //engine_side_ = cb_->getActiveSide();
-    engine_play_for_ = MatFinderOptions::getPlayFor();
-
 }
 
 MatFinder::~MatFinder()
 {
-    // Close the pipes
-    close(getEngineInRead());
-    close(getEngineOutWrite());
-    close(getEngineErrWrite());
-    close(getEngineInWrite());
-    close(getEngineOutRead());
-    close(getEngineErrRead());
-    delete engine_input_;
-    delete receiver_input_;
-    if (uciReceiver_)
-        delete uciReceiver_;
 }
 
-int MatFinder::runEngine()
-{
-    // Engine part of the process
-    // Its only duty is to run the chessengine
-
-    // Tie the standard input, output and error streams to the
-    // appropiate pipe ends
-    // The file descriptor 0 is the standard input
-    // We tie it to the read end of the pipe as we will use
-    // this end of the pipe to read from it
-    dup2 (getEngineInRead(),0);
-    dup2 (getEngineOutWrite(),1);
-    dup2 (getEngineErrWrite(),2);
-
-
-    engine_.execEngine();
-    return 0;
-}
-
-int MatFinder::runFinder()
-{
-    //Start the receiver
-    Thread *thread = startReceiver();
-
-
-
-    //Send some commands, init etc...
-    sendToEngine("uci");
-    sendOptionToEngine("Hash", to_string(MatFinderOptions::getHashmapSize()));
-    sendOptionToEngine("UCI_AnalyseMode", "true");
-    sendOptionToEngine("MultiPV", to_string(MatFinderOptions::getMaxLines()));
-    sendToEngine("ucinewgame");
-
-    sendToEngine("isready");
-
-    waitReadyok();
-
-    const PositionList &allPositions = MatFinderOptions::getPositionList();
-
-    for (PositionList::const_iterator it = allPositions.begin(),
-            itEnd = allPositions.end(); it != itEnd; ++it) {
-        //Extract infos from pair
-        string pos = (*it).first;
-        string fenpos = (pos == "startpos")?engine_.getEngineStartpos():pos;
-        list<string> userMoves = (*it).second;
-
-        Utils::output("Running finder on \"" + pos + "\", with moves : "
-                + Utils::listToString(userMoves) + "\n");
-
-
-        //Build chessboard
-        cb_ = Chessboard::createFromFEN(fenpos);
-        //Apply user moves
-        cb_->uciApplyMoves(userMoves);
-
-        //Fresh finder
-        startpos_ = pos;
-        addedMoves_ = 0;
-        lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
-
-        //Run
-        runFinderOnCurrentPosition();
-
-        delete cb_;
-    }
-    if (allPositions.empty())
-        Utils::output("No position to run matfinder on. Please adjust --startingpos"\
-                " and/or --position_file\n");
-
-    Utils::output("Exiting receiver and joining threads\n", 4);
-    (*receiver_input_) << "quit\n";
-
-    thread->join();
-    delete thread;
-    return EXIT_SUCCESS;
-}
 
 int MatFinder::runFinderOnCurrentPosition()
 {
@@ -163,7 +51,7 @@ int MatFinder::runFinderOnCurrentPosition()
 
     sendCurrentPositionToEngine();
     sendToEngine("go movetime "
-            + to_string(MatFinderOptions::getPlayforMovetime()));
+            + to_string(Options::getPlayforMovetime()));
     waitBestmove();
     Utils::output("Evaluation is :\n");
     Utils::output(getPrettyLines());
@@ -182,22 +70,24 @@ int MatFinder::runFinderOnCurrentPosition()
 
         //Thinking according to the side the engine play for
         int moveTime = (active == engine_play_for_ || !addedMoves_) ?
-            MatFinderOptions::getPlayforMovetime() :
-            MatFinderOptions::getPlayagainstMovetime();
+            Options::getPlayforMovetime() :
+            Options::getPlayagainstMovetime();
 
         //Compute optimal multipv
         int pv = updateMultiPV();
 
 
         //Scaling moveTime
-        moveTime = (int)(moveTime * ((float)
-                    ((float)pv/(float)MatFinderOptions::getMaxLines())
-                    ));
+        /*
+         *moveTime = (int)(moveTime * ((float)
+         *            ((float)pv/(float)Options::getMaxLines())
+         *            ));
+         */
         if (moveTime <= 600)
             moveTime = 600;
 
         //Initialize vector with empty lines
-        lines_.assign(MatFinderOptions::getMaxLines(), Line::emptyLine);
+        lines_.assign(Options::getMaxLines(), Line::emptyLine);
 
         sendToEngine("go movetime " + to_string(moveTime));
 
@@ -240,7 +130,7 @@ int MatFinder::runFinderOnCurrentPosition()
         Utils::output("[" + Board::to_string(active)
                 + "] Chosen line : \n", 1);
         Utils::output("\t" + getPrettyLine(bestLine,
-                    MatFinderOptions::movesDisplayed) + "\n", 1);
+                    Options::movesDisplayed) + "\n", 1);
 
         string next = bestLine.firstMove();
         Utils::output("\tNext move is " + next + "\n", 3);
@@ -263,164 +153,11 @@ int MatFinder::runFinderOnCurrentPosition()
     return 0;
 }
 
-void MatFinder::sendCurrentPositionToEngine()
-{
-    string position("position ");
-    if (startpos_ != "startpos")
-        position += "fen ";
-    position += startpos_;
-    position += " ";
-    const list<string> moves = cb_->getUciMoves();
-    if (!moves.empty())
-        position += "moves ";
-    for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
-            it != itEnd; ++it)
-        position += (*it) + " ";
-    sendToEngine(position);
-}
-
-void MatFinder::sendOptionToEngine(string optionName, string optionValue)
-{
-    string option("setoption");
-    option += " name ";
-    option += optionName;
-    option += " value ";
-    option += optionValue;
-    sendToEngine(option);
-}
-
-void MatFinder::sendToEngine(string cmd)
-{
-    string toSend(cmd);
-    toSend += "\n";
-    Utils::output(toSend, 3);
-    (*engine_input_) << toSend;
-}
-
-void MatFinder::updateLine(int index, Line &line)
-{
-    if (index >= lines_.size()) {
-        Utils::handleError("Index out of bound !");
-    }
-    lines_[index].update(line);
-}
-
-void MatFinder::updateNps(int newNps)
-{
-    nps_ = newNps;
-}
-
-void MatFinder::updateThinktime(int newThinktime)
-{
-    thinktime_ = newThinktime;
-}
-
-void MatFinder::signalReadyok()
-{
-    pthread_mutex_lock(&readyok_mutex_);
-    Utils::output("Signaling readyok_cond", 5);
-    pthread_cond_signal(&readyok_cond_);
-    pthread_mutex_unlock(&readyok_mutex_);
-}
-
-void MatFinder::signalBestmove(string &bestmove)
-{
-    pthread_mutex_lock(&bestmove_mutex_);
-    Utils::output("Signaling bestmove_cond", 5);
-    pthread_cond_signal(&bestmove_cond_);
-    pthread_mutex_unlock(&bestmove_mutex_);
-}
-
-string MatFinder::getPrettyLines()
-{
-    ostringstream oss;
-    Line curLine;
-    for (int i = 0; i < lines_.size(); ++i) {
-        curLine = lines_[i];
-        if (!curLine.empty()) {
-            oss << "\t[";
-            oss << (i + 1);
-            oss << "] ";
-            oss << getPrettyLine(curLine, MatFinderOptions::movesDisplayed);
-            oss << "\n";
-        }
-    }
-    return oss.str();
-}
-
-string MatFinder::getPrettyLine(Line &line, int limit)
-{
-    ostringstream oss;
-    oss << line.getPrettyEval(cb_->getActiveSide() == Side::BLACK);
-    oss << " : ";
-    oss << cb_->tryUciMoves(line.getMoves(), limit);
-    return oss.str();
-}
-
-/*
- * These are private
- */
-
-Thread *MatFinder::startReceiver()
-{
-    //Starts in separate thread, so that it's handled background
-    Thread *thread = new Thread(static_cast<Runnable *>(uciReceiver_));
-    thread->start();
-    return thread;
-}
-
-void MatFinder::waitReadyok()
-{
-    pthread_mutex_lock(&readyok_mutex_);
-    struct timespec ts;
-    Utils::getTimeout(&ts, MatFinderOptions::isreadyTimeout);
-    pthread_cond_timedwait(&readyok_cond_,
-            &readyok_mutex_,
-            &ts);
-    pthread_mutex_unlock(&readyok_mutex_);
-}
-
-void MatFinder::waitBestmove()
-{
-    pthread_mutex_lock(&bestmove_mutex_);
-    pthread_cond_wait(&bestmove_cond_, &bestmove_mutex_);
-    pthread_mutex_unlock(&bestmove_mutex_);
-}
-
-int MatFinder::getEngineInRead()
-{
-    return in_fds_[0];
-}
-
-int MatFinder::getEngineInWrite()
-{
-    return in_fds_[1];
-}
-
-int MatFinder::getEngineOutRead()
-{
-    return out_fds_[0];
-}
-
-int MatFinder::getEngineOutWrite()
-{
-    return out_fds_[1];
-}
-
-int MatFinder::getEngineErrRead()
-{
-    return err_fds_[0];
-}
-
-int MatFinder::getEngineErrWrite()
-{
-    return err_fds_[1];
-}
 
 int MatFinder::updateMultiPV()
 {
     int diffLimit = 800;
-    int multiPV = MatFinderOptions::getMaxLines();
+    int multiPV = Options::getMaxLines();
     int lastEvalValue = 0;
     bool lastEvalMat = false;
     bool allMat = true;
@@ -446,7 +183,7 @@ int MatFinder::updateMultiPV()
         lastEvalMat = lines_[i].isMat();
     }
     if (allMat)
-        multiPV = MatFinderOptions::getMaxLines();
+        multiPV = Options::getMaxLines();
 
     if (multiPV != nonEmptyLines) {
         Utils::output("Updating MultiPV to " + to_string(multiPV) + "\n", 2);
@@ -463,7 +200,7 @@ int MatFinder::updateMultiPV()
 Line &MatFinder::getBestLine()
 {
     for (int i = 0; i < lines_.size(); ++i) {
-        int limit = MatFinderOptions::getCpTreshold();
+        int limit = Options::getCpTreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines_[i].isMat()) {

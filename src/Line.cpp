@@ -23,7 +23,7 @@
 #include <iostream>
 #include <sstream>
 #include "Line.h"
-#include "MatFinderOptions.h"
+#include "Options.h"
 
 Line::Line() : eval_(0)
 {
@@ -72,7 +72,7 @@ string Line::getPretty(bool invertEval)
     out << ", line : ";
     list<string> tmpList = moves_;
     int i = 0;
-    while (!tmpList.empty() && i < MatFinderOptions::movesDisplayed) {
+    while (!tmpList.empty() && i < Options::movesDisplayed) {
         out << tmpList.front();
         out << " ";
         tmpList.pop_front();

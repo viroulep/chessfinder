@@ -23,7 +23,7 @@
 #include <sstream>
 #include <fstream>
 #include "Utils.h"
-#include "MatFinderOptions.h"
+#include "Options.h"
 #include "Line.h"
 #include "Board.h"
 
@@ -65,7 +65,7 @@ void Utils::handleError(const string &msg, int rc,
 
 void Utils::output(const string &msg, int level/* = 0*/)
 {
-    if (level <= MatFinderOptions::getVerboseLevel())
+    if (level <= Options::getVerboseLevel())
         cout << msg << flush;
 }
 
@@ -82,7 +82,7 @@ string Utils::helpMessage()
         << "\"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\"\n"
         << "\t\t" << "Default value : \"" << DEFAULT_STARTPOS << "\"\n";
     oss << "\n";
-    oss << "\t" << "--moves=moves, -s moves\n";
+    oss << "\t" << "--moves=moves, -m moves\n";
     oss << "\t\t" << "Defines the main line after the starting position.\n"
         << "\t\t" << "Example value : "
         << "\"e2e4 c7d5\"\n"

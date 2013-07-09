@@ -21,88 +21,88 @@
  */
 #include <sstream>
 #include "Utils.h"
-#include "MatFinderOptions.h"
+#include "Options.h"
 
 
 
 //Init static members
-string MatFinderOptions::ENGINE_ = DEFAULT_ENGINE;
-string MatFinderOptions::PATH_ = DEFAULT_PATH;
-PositionList MatFinderOptions::START_POS_LIST_;
-int MatFinderOptions::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
-int MatFinderOptions::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
-int MatFinderOptions::MAX_LINES_ = DEFAULT_MAX_LINES;
-Board::Side MatFinderOptions::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
-int MatFinderOptions::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
-int MatFinderOptions::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
-int MatFinderOptions::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
+string Options::ENGINE_ = DEFAULT_ENGINE;
+string Options::PATH_ = DEFAULT_PATH;
+PositionList Options::START_POS_LIST_;
+int Options::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
+int Options::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
+int Options::MAX_LINES_ = DEFAULT_MAX_LINES;
+Board::Side Options::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
+int Options::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
+int Options::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
+int Options::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
 
 
 
-string MatFinderOptions::getEngine() { return ENGINE_; }
-void MatFinderOptions::setEngine(string engine) { ENGINE_ = engine; }
+string Options::getEngine() { return ENGINE_; }
+void Options::setEngine(string engine) { ENGINE_ = engine; }
 
-string MatFinderOptions::getPath() { return PATH_; }
-void MatFinderOptions::setPath(string path) { PATH_ = path; }
+string Options::getPath() { return PATH_; }
+void Options::setPath(string path) { PATH_ = path; }
 
-const PositionList &MatFinderOptions::getPositionList()
+const PositionList &Options::getPositionList()
 {
     return START_POS_LIST_;
 }
-void MatFinderOptions::setPositionList(PositionList &theList)
+void Options::setPositionList(PositionList &theList)
 {
     START_POS_LIST_.clear();
     //Delete moves from theList and insert into class member
     START_POS_LIST_.splice(START_POS_LIST_.end(), theList);
 }
-void MatFinderOptions::addPositionToList(string pos, list<string> &moves)
+void Options::addPositionToList(string pos, list<string> &moves)
 {
     pair<string, list<string>> toAdd(pos, moves);
     START_POS_LIST_.push_front(toAdd);
 }
 
-int MatFinderOptions::getPlayagainstMovetime()
+int Options::getPlayagainstMovetime()
 {
     return PLAYAGAINST_MOVETIME_;
 }
-void MatFinderOptions::setPlayagainstMovetime(int movetime)
+void Options::setPlayagainstMovetime(int movetime)
 {
     PLAYAGAINST_MOVETIME_ = movetime;
 }
 
-int MatFinderOptions::getPlayforMovetime() { return PLAYFOR_MOVETIME_; }
-void MatFinderOptions::setPlayforMovetime(int movetime)
+int Options::getPlayforMovetime() { return PLAYFOR_MOVETIME_; }
+void Options::setPlayforMovetime(int movetime)
 {
     PLAYFOR_MOVETIME_ = movetime;
 }
 
-int MatFinderOptions::getVerboseLevel() { return VERBOSE_LEVEL_; }
-void MatFinderOptions::setVerboseLevel(int verboseLevel)
+int Options::getVerboseLevel() { return VERBOSE_LEVEL_; }
+void Options::setVerboseLevel(int verboseLevel)
 {
     VERBOSE_LEVEL_ = verboseLevel;
 }
 
-Board::Side MatFinderOptions::getPlayFor() { return PLAY_FOR_; }
-void MatFinderOptions::setPlayFor(Board::Side playFor) { PLAY_FOR_ = playFor; }
+Board::Side Options::getPlayFor() { return PLAY_FOR_; }
+void Options::setPlayFor(Board::Side playFor) { PLAY_FOR_ = playFor; }
 
-int MatFinderOptions::getMaxLines() { return MAX_LINES_; }
-void MatFinderOptions::setMaxLines(int maxLines) { MAX_LINES_ = maxLines; }
+int Options::getMaxLines() { return MAX_LINES_; }
+void Options::setMaxLines(int maxLines) { MAX_LINES_ = maxLines; }
 
-int MatFinderOptions::getHashmapSize() { return HASHMAP_SIZE_; }
-void MatFinderOptions::setHashmapSize(int size)
+int Options::getHashmapSize() { return HASHMAP_SIZE_; }
+void Options::setHashmapSize(int size)
 {
     HASHMAP_SIZE_ = size;
 }
 
-int MatFinderOptions::getCpTreshold() { return CP_TRESHOLD_; }
+int Options::getCpTreshold() { return CP_TRESHOLD_; }
 
-void MatFinderOptions::setCpTreshold(int treshold)
+void Options::setCpTreshold(int treshold)
 {
     CP_TRESHOLD_ = treshold;
 }
 
 
-string MatFinderOptions::getPretty()
+string Options::getPretty()
 {
     ostringstream oss;
     oss << "Options :\n";

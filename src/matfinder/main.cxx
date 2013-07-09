@@ -19,32 +19,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __UCIRECEIVER_H__
-#define __UCIRECEIVER_H__
-
+#include <iostream>
+#include <csignal>
+#include <cstdlib>
+#include <unistd.h>
+#include <memory>
+#include <list>
 #include <string>
+#include <getopt.h>
+
 #include "Thread.h"
-#include "Stream.h"
-#include "Finder.h"
+#include "Engine.h"
+#include "Utils.h"
+#include "Line.h"
+#include "MatFinder.h"
+#include "Options.h"
+#include "CommonMain.h"
 
-/**
- * This class is responsible for parsing commands from engine
- * and updating the finder's state
- */
-class UCIReceiver : public Runnable {
-public:
-    UCIReceiver(Finder *finder);
-    ~UCIReceiver();
-    void *run();
-private:
-    void bestmove(istringstream &is);
-    void readyok(istringstream &is);
-    void info(istringstream &is);
-    void option(istringstream &is);
-    InputStream *input_;
-    Finder *finder_;
-    int parseMessage(std::string msg);
-    std::string strBuf_;
-};
+using namespace std;
 
-#endif
+
+
+int main(int argc, char **argv)
+{
+    //The main object
+    MatFinder *theFinder = new MatFinder();
+
+    CommonMain::theMain(argc, argv, theFinder);
+
+    Utils::output("Deleting Finder", 5);
+    delete theFinder;
+    return 0;
+}

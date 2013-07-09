@@ -22,14 +22,14 @@
 #include <iostream>
 #include "Chessboard.h"
 #include "Utils.h"
-#include "MatFinderOptions.h"
+#include "Options.h"
 
 using namespace std;
 using namespace Board;
 
 int main()
 {
-    //MatFinderOptions::setVerboseLevel(4);
+    //Options::setVerboseLevel(4);
     //string fen = "rnbqkbnr/pp2pppp/8/2ppP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3";
     //string fen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
     string fen = "2r5/3P4/8/8/5K2/8/3k4/8 w - - 0 48";

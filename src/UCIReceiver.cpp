@@ -27,9 +27,9 @@
 
 using namespace std;
 
-UCIReceiver::UCIReceiver(MatFinder *finder) : matFinder_(finder)
+UCIReceiver::UCIReceiver(Finder *finder) : finder_(finder)
 {
-    input_ = new InputStream(matFinder_->getEngineOutRead());
+    input_ = new InputStream(finder_->getEngineOutRead());
 }
 
 UCIReceiver::~UCIReceiver()
@@ -52,7 +52,7 @@ void *UCIReceiver::run()
 void UCIReceiver::readyok(istringstream &is)
 {
     Utils::output("Engine is ready.\n", 1);
-    matFinder_->signalReadyok();
+    finder_->signalReadyok();
 }
 
 void UCIReceiver::info(istringstream &is)
@@ -75,7 +75,7 @@ void UCIReceiver::info(istringstream &is)
             //Drop
         } else if (token == "time") {
             is >> curThinktime;
-            matFinder_->updateThinktime(curThinktime);
+            finder_->updateThinktime(curThinktime);
         } else if (token == "nodes") {
             //Drop
         } else if (token == "pv") {
@@ -106,7 +106,7 @@ void UCIReceiver::info(istringstream &is)
             cerr << "********** Hashfull : " << token << " *******\n";
         } else if (token == "nps") {
             is >> curNps;
-            matFinder_->updateNps(curNps);
+            finder_->updateNps(curNps);
         } else if (token == "tbhits") {
             //TODO
         } else if (token == "cpuload") {
@@ -126,7 +126,7 @@ void UCIReceiver::info(istringstream &is)
         }
         Line curLine(curEval, curDepth, curMoves, curIsMat);
         //Update the line in matFinder
-        matFinder_->updateLine(curLineId - 1/*array in matFinder*/, curLine);
+        finder_->updateLine(curLineId - 1/*array in matFinder*/, curLine);
     }
 }
 
@@ -140,7 +140,7 @@ void UCIReceiver::bestmove(istringstream &is)
     string bm;
     //consume bestmove
     is >> bm;
-    matFinder_->signalBestmove(bm);
+    finder_->signalBestmove(bm);
 }
 
 int UCIReceiver::parseMessage(string msg)

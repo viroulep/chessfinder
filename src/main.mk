@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-ALL_TARGETS += outCxx matfinder
+ALL_TARGETS += outCxx matfinder oraclefinder
 INSTALL_TARGETS += install-matfinder
 CLEAN_TARGETS += clean-matfinder
 
@@ -28,14 +28,17 @@ CLEAN_TARGETS += clean-matfinder
 .SILENT:
 
 
-matfinder_SOURCES           := $(wildcard src/*.cpp)
-matfinder_SOURCES_CXX       := $(wildcard src/*.cxx)
+common_SOURCES           := $(wildcard src/*.cpp)
+matfinder_SOURCES       := $(wildcard src/matfinder/*.cxx)
+oraclefinder_SOURCES       := $(wildcard src/oraclefinder/*.cxx)
 matfinder_HEADERS           := $(wildcard include/*.h)
 matfinder_HEADERS_DEP       := $(wildcard include/*.h)
 
-matfinder_OBJECTS := $(matfinder_SOURCES:.cpp=.o)
-matfinder_OBJECTS += $(matfinder_SOURCES_CXX:.cxx=.o)
+matfinder_OBJECTS := $(common_SOURCES:.cpp=.o)
+matfinder_OBJECTS += $(matfinder_SOURCES:.cxx=.o)
 
+oraclefinder_OBJECTS := $(common_SOURCES:.cpp=.o)
+oraclefinder_OBJECTS += $(oraclefinder_SOURCES:.cxx=.o)
 
 canonical_path := ../$(shell basename $(shell pwd -P))
 
@@ -50,10 +53,14 @@ src/%.o: src/%.cxx $(matfinder_HEADERS_DEP)
 	echo "[matfinder] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
+oraclefinder: $(oraclefinder_OBJECTS)
+	echo "[oraclefinder] Link oraclefinder"
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
 matfinder: $(matfinder_OBJECTS)
 	echo "[matfinder] Link matfinder"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean-matfinder:
 	echo "[matfinder] Clean"
-	rm -f $(matfinder_OBJECTS) matfinder
+	rm -f $(matfinder_OBJECTS) $(oraclefinder_OBJECTS) matfinder oraclefinder

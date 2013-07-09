@@ -44,7 +44,7 @@ using namespace std;
 
 typedef list<pair<string, list<string>>> PositionList;
 
-class MatFinderOptions {
+class Options {
 public:
 
     static string getEngine();
@@ -89,7 +89,7 @@ public:
 
 private:
     //Private (static class)
-    MatFinderOptions();
+    Options();
 
     static string ENGINE_;
     static string PATH_;

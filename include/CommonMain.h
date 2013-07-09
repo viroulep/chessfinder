@@ -19,32 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __UCIRECEIVER_H__
-#define __UCIRECEIVER_H__
+#ifndef __COMMONMAIN_H__
+#define __COMMONMAIN_H__
 
-#include <string>
-#include "Thread.h"
-#include "Stream.h"
-#include "Finder.h"
+class CommonMain {
+    public:
+        static int theMain(int argc, char **argv, Finder *theFinder);
 
-/**
- * This class is responsible for parsing commands from engine
- * and updating the finder's state
- */
-class UCIReceiver : public Runnable {
-public:
-    UCIReceiver(Finder *finder);
-    ~UCIReceiver();
-    void *run();
-private:
-    void bestmove(istringstream &is);
-    void readyok(istringstream &is);
-    void info(istringstream &is);
-    void option(istringstream &is);
-    InputStream *input_;
-    Finder *finder_;
-    int parseMessage(std::string msg);
-    std::string strBuf_;
+    private:
+        static void parseArgs(int argc, char **argv);
 };
-
 #endif

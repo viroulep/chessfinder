@@ -1,5 +1,5 @@
 /*
- * Matfinder, a program to help chess engines to find mat
+ * Oraclefinder, a program to find "perfect" chess game
  *
  * Copyright© 2013 Philippe Virouleau
  *
@@ -19,32 +19,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __UCIRECEIVER_H__
-#define __UCIRECEIVER_H__
+#ifndef __ORACLEFINDER_H__
+#define __ORACLEFINDER_H__
 
 #include <string>
+#include <vector>
+#include "Engine.h"
 #include "Thread.h"
 #include "Stream.h"
+#include "Line.h"
 #include "Finder.h"
 
-/**
- * This class is responsible for parsing commands from engine
- * and updating the finder's state
- */
-class UCIReceiver : public Runnable {
+using namespace std;
+
+//Forward decl
+class UCIReceiver;
+
+class OracleFinder : public Finder {
 public:
-    UCIReceiver(Finder *finder);
-    ~UCIReceiver();
-    void *run();
+    OracleFinder();
+    ~OracleFinder();
+
 private:
-    void bestmove(istringstream &is);
-    void readyok(istringstream &is);
-    void info(istringstream &is);
-    void option(istringstream &is);
-    InputStream *input_;
-    Finder *finder_;
-    int parseMessage(std::string msg);
-    std::string strBuf_;
+    int runFinderOnCurrentPosition();
 };
 
 #endif

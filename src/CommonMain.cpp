@@ -33,11 +33,12 @@
 #include "Utils.h"
 #include "Line.h"
 #include "MatFinder.h"
-#include "MatFinderOptions.h"
+#include "CommonMain.h"
+#include "Options.h"
 
 using namespace std;
 
-void parseArgs(int argc, char **argv)
+void CommonMain::parseArgs(int argc, char **argv)
 {
     //Program options
     const static struct option long_options[] =
@@ -72,7 +73,7 @@ void parseArgs(int argc, char **argv)
 
             case 'v':
                 try {
-                    MatFinderOptions::setVerboseLevel(stoi(optarg));
+                    Options::setVerboseLevel(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing verbose level");
                 }
@@ -83,16 +84,16 @@ void parseArgs(int argc, char **argv)
                 break;
 
             case 'e':
-                MatFinderOptions::setEngine(optarg);
+                Options::setEngine(optarg);
                 break;
 
             case 'i':
                 posList = Utils::positionListFromFile(optarg);
-                MatFinderOptions::setPositionList(posList);
+                Options::setPositionList(posList);
                 break;
 
             case 'p':
-                MatFinderOptions::setPath(optarg);
+                Options::setPath(optarg);
                 break;
 
             case 'm':
@@ -100,17 +101,17 @@ void parseArgs(int argc, char **argv)
                 if (Utils::parseMovelist(moveList, optarg))
                     Utils::handleError("Error parsing movelist");
                 //Adding the move is done after this loop
-                //MatFinderOptions::setUserMoves(moveList);
+                //Options::setUserMoves(moveList);
                 break;
 
             case 'o':
                 playFor = Board::getSideFromString(optarg);
-                MatFinderOptions::setPlayFor(playFor);
+                Options::setPlayFor(playFor);
                 break;
 
             case 'l':
                 try {
-                    MatFinderOptions::setMaxLines(stoi(optarg));
+                    Options::setMaxLines(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing lines option");
                 }
@@ -118,7 +119,7 @@ void parseArgs(int argc, char **argv)
 
             case 't':
                 try {
-                    MatFinderOptions::setHashmapSize(stoi(optarg));
+                    Options::setHashmapSize(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing hasmap size");
                 }
@@ -126,7 +127,7 @@ void parseArgs(int argc, char **argv)
 
             case 'c':
                 try {
-                    MatFinderOptions::setCpTreshold(stoi(optarg));
+                    Options::setCpTreshold(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing centipawn treshold");
                 }
@@ -134,7 +135,7 @@ void parseArgs(int argc, char **argv)
 
             case 'f':
                 try {
-                    MatFinderOptions::setPlayforMovetime(stoi(optarg));
+                    Options::setPlayforMovetime(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing playfor movetime");
                 }
@@ -142,7 +143,7 @@ void parseArgs(int argc, char **argv)
 
             case 'a':
                 try {
-                    MatFinderOptions::setPlayagainstMovetime(stoi(optarg));
+                    Options::setPlayagainstMovetime(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing playagainst movetime");
                 }
@@ -164,15 +165,15 @@ void parseArgs(int argc, char **argv)
         startingPos = "startpos";
 
     if (startingPos.size() > 0)
-        MatFinderOptions::addPositionToList(startingPos, moveList);
+        Options::addPositionToList(startingPos, moveList);
 
 }
 
 
-int main(int argc, char **argv)
+int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 {
     parseArgs(argc, argv);
-    Utils::output(MatFinderOptions::getPretty(), 1);
+    Utils::output(Options::getPretty(), 1);
 
     // Child error signal install
     struct sigaction action;
@@ -183,8 +184,6 @@ int main(int argc, char **argv)
         Utils::handleError("SIGUSR1 install error");
     }
 
-    //The main object
-    MatFinder *theFinder = new MatFinder();
 
     pid_t pid;
     // Create child process; both processes continue from here
@@ -213,7 +212,5 @@ int main(int argc, char **argv)
         Utils::handleError("Error: fork failed");
     }
 
-    Utils::output("Deleting Finder", 5);
-    delete theFinder;
     return 0;
 }

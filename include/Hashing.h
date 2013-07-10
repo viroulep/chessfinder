@@ -1,5 +1,5 @@
 /*
- * Oraclefinder, a program to find "perfect" chess game
+ * Matfinder, a program to help chess engines to find mat
  *
  * Copyright© 2013 Philippe Virouleau
  *
@@ -19,37 +19,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <iostream>
-#include <csignal>
-#include <cstdlib>
-#include <unistd.h>
-#include <memory>
-#include <list>
-#include <string>
-#include <getopt.h>
+#ifndef __HASHING_H__
+#define __HASHING_H__
 
-#include "Thread.h"
-#include "Engine.h"
-#include "Utils.h"
-#include "Line.h"
-#include "Finder.h"
-#include "OracleFinder.h"
-#include "Options.h"
-#include "CommonMain.h"
+#include <cstdint>
+#include "Chessboard.h"
+#include "Board.h"
+
+#ifdef _MSC_VER
+#define U64(u) (u##ui64)
+#else
+#define U64(u) (u##ULL)
+#endif
 
 using namespace std;
 
-
-
-int main(int argc, char **argv)
+class Hashing
 {
-    CommonMain::parseArgs(argc, argv);
-    //The main object
-    OracleFinder *theFinder = new OracleFinder();
+public:
+    static uint64_t hashFEN(string fenString);
+    static uint64_t hashBoard(Chessboard *cb);
 
-    int retVal = CommonMain::theMain(argc, argv, theFinder);
+private:
 
-    Utils::output("Deleting Finder", 5);
-    delete theFinder;
-    return retVal;
-}
+    static int pieceOffset(int kind, Board::Rank r, Board::File f);
+    static uint64_t turnFromFEN(string side);
+    static uint64_t piecesFromFEN(string pos);
+
+    static const uint64_t Random64_[781];
+};
+#endif

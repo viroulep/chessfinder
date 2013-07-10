@@ -41,7 +41,7 @@ public:
     bool isMat();
     float getEval();
     bool empty();
-    string firstMove();
+    Board::UCIMove firstMove();
     const list<string> &getMoves();
     bool operator<(const Line &rhs);
 

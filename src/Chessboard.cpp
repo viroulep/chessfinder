@@ -285,6 +285,78 @@ const list<string> Chessboard::getUciMoves()
     return moves;
 }
 
+SimplePos Chessboard::getSimplePos()
+{
+    SimplePos sp;
+    int pad = 0;
+    for (Rank r = 8; r >= 1; r--)
+        for (int f = A; f <= H; f++) {
+            Square *sq = board_[(File)f][r];
+            Piece *p = sq->getPiece();
+            if (p) {
+                if (pad > 0) {
+                    sp += std::to_string(pad);
+                    pad = 0;
+                }
+                Board::Side c = p->getColor();
+                switch (p->getKind()) {
+                    case Piece::Kind::QUEEN:
+                        if (c == Board::Side::WHITE)
+                            sp += "Q";
+                        else
+                            sp += "q";
+                        break;
+                    case Piece::Kind::ROOK:
+                        if (c == Board::Side::WHITE)
+                            sp += "R";
+                        else
+                            sp += "r";
+                        break;
+                    case Piece::Kind::BISHOP:
+                        if (c == Board::Side::WHITE)
+                            sp += "B";
+                        else
+                            sp += "b";
+                        break;
+                    case Piece::Kind::KNIGHT:
+                        if (c == Board::Side::WHITE)
+                            sp += "N";
+                        else
+                            sp += "n";
+                        break;
+                    case Piece::Kind::PAWN:
+                        if (c == Board::Side::WHITE)
+                            sp += "P";
+                        else
+                            sp += "p";
+                        break;
+                    case Piece::Kind::KING:
+                        if (c == Board::Side::WHITE)
+                            sp += "K";
+                        else
+                            sp += "k";
+                        break;
+                }
+            } else {
+                pad++;
+            }
+            if (f == H) {
+                if (pad > 0)
+                    sp += std::to_string(pad);
+                if (r != 1) {
+                    pad = 0;
+                    sp += "/";
+                }
+            }
+        }
+    sp += " ";
+    if (active_ == Board::Side::WHITE)
+        sp += "w";
+    else
+        sp += "b";
+    return sp;
+}
+
 Chessboard *Chessboard::createChessboard()
 {
     return createFromFEN(CHESS_STARTPOS);

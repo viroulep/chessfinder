@@ -24,6 +24,9 @@
 
 #include <string>
 #include <vector>
+#include <list>
+#include <vector>
+#include <unordered_map>
 #include "Engine.h"
 #include "Thread.h"
 #include "Stream.h"
@@ -35,6 +38,44 @@ using namespace std;
 //Forward decl
 class UCIReceiver;
 
+enum Status {
+    MATE,
+    STALEMATE,
+    TRESHOLD,
+    DRAW
+};
+
+class Node;
+
+typedef pair<Board::UCIMove, Node *> MoveNode;
+
+//TODO: better this (was struct)
+class Node {
+public:
+    SimplePos pos;
+    Status st;
+    /*
+     * legal_moves.size() = 1 when active side is playfor side
+     * legal_moves contains all possible moves when playing
+     * for opposite side
+     */
+    vector<MoveNode> legal_moves;
+};
+
+
+/*
+ * Hash->Node
+ */
+//TODO: move to hashing
+typedef unordered_multimap<uint64_t, Node *> HashTable;
+
+string to_string(HashTable &ht);
+string to_string(Node &n);
+string to_string(Status s);
+void clearAndFree(HashTable &ht);
+
+typedef array<vector<Line *>, 2> SortedLines;
+
 class OracleFinder : public Finder {
 public:
     OracleFinder();
@@ -42,6 +83,11 @@ public:
 
 private:
     int runFinderOnCurrentPosition();
+    SortedLines getLines();
+    void proceedUnbalancedLines(vector<Line *> unbalanced);
+    HashTable oracleTable_;
+    Node *rootNode_ = NULL;
+    list<Node *> toProceed_;
 };
 
 #endif

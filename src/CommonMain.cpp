@@ -172,7 +172,6 @@ void CommonMain::parseArgs(int argc, char **argv)
 
 int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 {
-    parseArgs(argc, argv);
     Utils::output(Options::getPretty(), 1);
 
     // Child error signal install

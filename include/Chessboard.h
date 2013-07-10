@@ -27,8 +27,11 @@
 #include "Board.h"
 
 using namespace Board;
+class Hashing;
+
 class Chessboard {
 public:
+    friend class Hashing;
 
     ~Chessboard();
     const string to_string();
@@ -44,9 +47,11 @@ public:
 
     const list<string> getUciMoves();
 
+    const string exportToFEN(Chessboard &board);
+    SimplePos getSimplePos();
+
     static Chessboard *createChessboard();
     static Chessboard *createFromFEN(string fenString);
-    static string exportToFEN(Chessboard board);
 
     static const string CHESS_STARTPOS;
     static const string ALAMOS_STARTPOS;

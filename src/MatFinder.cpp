@@ -50,6 +50,7 @@ int MatFinder::runFinderOnCurrentPosition()
     Utils::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
+    lines_.assign(Options::getMaxLines(), Line::emptyLine);
     sendToEngine("go movetime "
             + to_string(Options::getPlayforMovetime()));
     waitBestmove();
@@ -78,11 +79,9 @@ int MatFinder::runFinderOnCurrentPosition()
 
 
         //Scaling moveTime
-        /*
-         *moveTime = (int)(moveTime * ((float)
-         *            ((float)pv/(float)Options::getMaxLines())
-         *            ));
-         */
+        moveTime = (int)(moveTime * ((float)
+                    ((float)pv/(float)Options::getMaxLines())
+                    ));
         if (moveTime <= 600)
             moveTime = 600;
 

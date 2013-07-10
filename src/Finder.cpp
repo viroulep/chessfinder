@@ -134,7 +134,6 @@ int Finder::runFinder()
         //Fresh finder
         startpos_ = pos;
         addedMoves_ = 0;
-        lines_.assign(Options::getMaxLines(), Line::emptyLine);
 
         //Run
         runFinderOnCurrentPosition();
@@ -156,7 +155,7 @@ int Finder::runFinder()
 void Finder::updateLine(int index, Line &line)
 {
     if (index >= lines_.size()) {
-        Utils::handleError("Index out of bound !");
+        Utils::handleError("Index '" + to_string(index) + "' out of bound !");
     }
     lines_[index].update(line);
 }

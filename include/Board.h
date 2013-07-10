@@ -112,6 +112,11 @@ namespace Board {
         Piece::Kind promoteTo = Piece::Kind::KING;
     } Move;
 
+    typedef string UCIMove;
+    //2 first element of fen
+    typedef string SimplePos;
+
+
     Side getSideFromString(string sidestr);
     bool checkMove(string move);
 }

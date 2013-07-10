@@ -116,7 +116,7 @@ bool Line::empty()
     return moves_.empty();
 }
 
-string Line::firstMove()
+Board::UCIMove Line::firstMove()
 {
     return moves_.front();
 }

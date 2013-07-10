@@ -23,6 +23,8 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
+#include <array>
+#include <vector>
 #include <unistd.h>
 #include "Finder.h"
 #include "OracleFinder.h"
@@ -30,34 +32,84 @@
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
+#include "Hashing.h"
 
+string to_string(Status s)
+{
+    switch (s) {
+        case MATE:
+            return "mate";
+        case STALEMATE:
+            return "stalemate";
+        case DRAW:
+            return "draw";
+        case TRESHOLD:
+            return "treshold";
+    }
+}
 
+string to_string(Node &n)
+{
+    string retVal;
+    //TODO: display moves ?
+    retVal += "(" + to_string(n.st) + "," + n.pos + ")";
+    return retVal;
+}
+
+string to_string(HashTable &ht)
+{
+    string retVal;
+    for (HashTable::iterator it = ht.begin(), itEnd = ht.end();
+            it != itEnd; ++it) {
+        Node n = *(it->second);
+        retVal += "#" + to_string(it->first) + ":" + to_string(n) + "\n";
+    }
+    if (ht.size() == 0)
+        retVal += "<empty>";
+    return retVal;
+}
+
+void clearAndFree(HashTable &ht)
+{
+    for (HashTable::iterator it = ht.begin(), itEnd = ht.end();
+            it != itEnd; ++it) {
+        delete(it->second);
+    }
+    ht.clear();
+}
 
 OracleFinder::OracleFinder() : Finder()
 {
     //engine_side_ = cb_->getActiveSide();
-    engine_play_for_ = cb_->getActiveSide();
     //engine_play_for_ = Options::getPlayFor();
 }
 
 OracleFinder::~OracleFinder()
 {
+    clearAndFree(oracleTable_);
 }
-
 
 int OracleFinder::runFinderOnCurrentPosition()
 {
-    Board::Side sideToMove = cb_->getActiveSide();
+    int maxMoves = 254;
+    engine_play_for_ = cb_->getActiveSide();
+
+    Utils::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
+    sendOptionToEngine("MultiPV", to_string(maxMoves));
+    sendToEngine("isready");
+    waitReadyok();
 
     Utils::output("Starting board is :\n" + cb_->to_string() + "\n");
     Utils::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
+    lines_.assign(maxMoves, Line::emptyLine);
     sendToEngine("go movetime "
             + to_string(Options::getPlayforMovetime()));
     waitBestmove();
     Utils::output("Evaluation is :\n");
     Utils::output(getPrettyLines());
+    lines_.clear();
 
     //Main loop
     while (true) {
@@ -76,8 +128,7 @@ int OracleFinder::runFinderOnCurrentPosition()
 
 
         //Initialize vector with empty lines
-        //TODO change
-        lines_.assign(Options::getMaxLines(), Line::emptyLine);
+        lines_.assign(maxMoves, Line::emptyLine);
 
         sendToEngine("go movetime " + to_string(moveTime));
 
@@ -87,7 +138,23 @@ int OracleFinder::runFinderOnCurrentPosition()
         //Wait for engine to finish thinking
         waitBestmove();
 
+        SortedLines all = getLines();
+        //Add all the imbalanced line to the hashtable (either mat or "treshold")
+        proceedUnbalancedLines(all[1]);
+
+        vector<Line *> balancedLines = all[0];
+
+        if (engine_play_for_ == active) {
+            //Get all draw lines (if empty = stalemate or mate)
+            //check if one in hashtable, if not push the first next pos to proceed
+
+        } else {
+            //get all draw lines and push them
+
+        }
+
         Utils::output(getPrettyLines(), 2);
+        break;
     }
 
     //Display info at the end of computation
@@ -95,7 +162,55 @@ int OracleFinder::runFinderOnCurrentPosition()
     Utils::output(cb_->to_string() + "\n");
 
 
+    Utils::output("Hashtable is : \n");
+    Utils::output(to_string(oracleTable_) + "\n");
+
+
     return 0;
 }
 
 
+SortedLines OracleFinder::getLines()
+{
+    vector<Line *> balanced;
+    vector<Line *> unbalanced;
+    SortedLines retVal;
+    for (int i = 0; i < lines_.size(); ++i) {
+        Line l = lines_[i];
+        if (l.empty())
+            continue;
+        int limit = Options::getCpTreshold();
+        if (fabs(l.getEval()) <= limit)
+            balanced.push_back(&(lines_[i]));
+        else
+            unbalanced.push_back(&(lines_[i]));
+    }
+    retVal[0] = balanced;
+    retVal[1] = unbalanced;
+    return retVal;
+}
+
+void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
+{
+    //Do not check access, assume Line * is legal addr
+    for (int i = 0; i < unbalanced.size(); ++i) {
+        Line *l = unbalanced[i];
+        if (!l)
+            Utils::handleError("An unbalanced line is null ("
+                    + to_string(i) + ")");
+        Status s = TRESHOLD;
+        if (l->isMat())
+            s = MATE;
+        Node *toAdd = new Node();
+        vector<MoveNode> moves;
+        UCIMove next = l->firstMove();
+        toAdd->legal_moves = moves;
+        cb_->uciApplyMove(next);
+        toAdd->pos = cb_->getSimplePos();
+        uint64_t hash = Hashing::hashBoard(cb_);
+        cb_->undoMove();
+        toAdd->st = s;
+        pair<uint64_t, Node *> p(hash, toAdd);
+        oracleTable_.insert(p);
+    }
+}

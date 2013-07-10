@@ -25,8 +25,6 @@
 class CommonMain {
     public:
         static int theMain(int argc, char **argv, Finder *theFinder);
-
-    private:
         static void parseArgs(int argc, char **argv);
 };
 #endif

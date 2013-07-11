@@ -33,7 +33,7 @@ int main()
 {
     //Options::setVerboseLevel(4);
     //string fen = "rnbqkbnr/pp2pppp/8/2ppP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3";
-    //string fen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
+    string fenfen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
     string fen = "2r5/3P4/8/8/5K2/8/3k4/8 w - - 0 48";
     //Chessboard *test = Chessboard::createChessboard();
     Chessboard *test = Chessboard::createFromFEN(fen);
@@ -46,7 +46,12 @@ int main()
     Utils::output("FEN   : " + to_string(hashFen) + "\n");
     Utils::output("Fens : \n");
     Utils::output("Orig  : " + fen + "\n");
-    Utils::output("Board : " + test->getSimplePos() + "\n");
+    Utils::output("Board : " + test->exportToFEN() + "\n");
+    test->reInitFromFEN(fenfen);
+    Utils::output(test->to_string() + "\n");
+    Utils::output("Fens : \n");
+    Utils::output("Orig  : " + fenfen + "\n");
+    Utils::output("Board : " + test->exportToFEN() + "\n");
 
     /*
      *test->uciApplyMove("e2e4");

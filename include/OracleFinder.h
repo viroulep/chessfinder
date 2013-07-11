@@ -67,11 +67,14 @@ public:
  * Hash->Node
  */
 //TODO: move to hashing
+//+refactor this
 typedef unordered_multimap<uint64_t, Node *> HashTable;
 
 string to_string(HashTable &ht);
 string to_string(Node &n);
 string to_string(Status s);
+//TODO: rename simplepos to FEN
+Node *find(SimplePos sp, HashTable &table);
 void clearAndFree(HashTable &ht);
 
 typedef array<vector<Line *>, 2> SortedLines;

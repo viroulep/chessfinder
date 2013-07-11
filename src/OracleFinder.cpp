@@ -24,6 +24,7 @@
 #include <sstream>
 #include <cmath>
 #include <array>
+#include <queue>
 #include <vector>
 #include <unistd.h>
 #include "Finder.h"
@@ -78,6 +79,29 @@ void clearAndFree(HashTable &ht)
     ht.clear();
 }
 
+Node *find(SimplePos sp, HashTable &table)
+{
+    uint64_t hash = Hashing::hashFEN(sp);
+    auto range = table.equal_range(hash);
+    Node *found = NULL;
+    queue<string> infos;
+    stringstream ss(sp);
+    string tmpInfo;
+    while (getline(ss, tmpInfo, ' '))
+        infos.push(tmpInfo);
+    string simpleFen = infos.front();
+    infos.pop();
+    simpleFen += " " + infos.front();
+    Utils::output("Looking for " + simpleFen + "\n", 3);
+    for (auto it = range.first, itEnd = range.second;
+            it != itEnd && !found ; ++it) {
+        Utils::output("against " + it->second->pos + "\n", 3);
+        if (simpleFen == it->second->pos.substr(0, simpleFen.size()))
+            found = it->second;
+    }
+    return found;
+}
+
 OracleFinder::OracleFinder() : Finder()
 {
     //engine_side_ = cb_->getActiveSide();
@@ -111,13 +135,30 @@ int OracleFinder::runFinderOnCurrentPosition()
     Utils::output(getPrettyLines());
     lines_.clear();
 
+    Node *init = new Node();
+    Node *rootNode_ = init;
+    init->pos = cb_->exportToFEN();
+    //depth-first
+    toProceed_.push_front(rootNode_);
+
     //Main loop
-    while (true) {
+    while (toProceed_.size() != 0) {
+        Node *current = toProceed_.front();
+        toProceed_.pop_front();
+
         Line bestLine;
+        //Set the chessboard to current pos
+        cb_->reInitFromFEN(current->pos);
         Side active = cb_->getActiveSide();
 
+        //Register current pos in the table
+        //(we shouldn't be visiting the same position twice)
+        uint64_t curHash = Hashing::hashBoard(cb_);
+        pair<uint64_t, Node *> p(curHash, current);
+        oracleTable_.insert(p);
+
         Utils::output("[" + Board::to_string(active)
-                + "] Depth " + to_string(addedMoves_) + "\n");
+                + "] Proceed size : " + to_string(toProceed_.size()) + "\n");
 
         sendCurrentPositionToEngine();
 
@@ -137,24 +178,104 @@ int OracleFinder::runFinderOnCurrentPosition()
 
         //Wait for engine to finish thinking
         waitBestmove();
+        Utils::output(getPrettyLines(), 2);
 
+        bestLine = lines_[0];
+        if (bestLine.empty()) {
+            //STALEMATE
+            current->st = STALEMATE;
+            Utils::output("[" + Board::to_string(active)
+                    + "] Bestline is stalemate (cut)\n", 2);
+            //Proceed to next node...
+            continue;
+        } else if (bestLine.isMat()) {
+            //TODO: register if winning or losing ?
+            current->st = MATE;
+            Utils::output("[" + Board::to_string(active)
+                    + "] Bestline is mate (cut)\n", 2);
+            continue;
+        } else if (fabs(bestLine.getEval()) > Options::getCpTreshold()) {
+            //TODO: register if winning or losing ?
+            current->st = TRESHOLD;
+            Utils::output("[" + Board::to_string(active)
+                    + "] Bestline is above treshold (cut)\n", 2);
+            continue;
+        }
+        //If we are here, bestLine is draw, and we should continue to explore
         SortedLines all = getLines();
+        current->st = DRAW;
+
         //Add all the imbalanced line to the hashtable (either mat or "treshold")
+        //(save some iterations in main loop : we could also push all the
+        //unbalanced lines and see...)
         proceedUnbalancedLines(all[1]);
 
         vector<Line *> balancedLines = all[0];
 
+        //Then proceed the balanced lines according to the side the engine
+        //play for.
         if (engine_play_for_ == active) {
-            //Get all draw lines (if empty = stalemate or mate)
-            //check if one in hashtable, if not push the first next pos to proceed
+            //check if one in hashtable, if not push the first
+            //balanced line to proceed
+            Node *next = NULL;
+            Line *l = NULL;
+            Board::UCIMove mv;
+            SimplePos sp;
+            //Here balancedLines shouldn't be empty, if so it's a bug
+            //(Go reverse to have the bestLine at last)
+            for (int i = balancedLines.size() - 1; i >= 0; --i) {
+                l = balancedLines[i];
+                //l is not null (or bug)
+                mv = l->firstMove();
+                cb_->uciApplyMove(mv);
+                //This is the next pose
+                sp = cb_->exportToFEN();
+                cb_->undoMove();
+                next = find(sp, oracleTable_);
+                if (next)
+                    break;
+            }
+
+            if (!next) {
+                //no next position in the table, push the node to stack
+                next = new Node();
+                next->pos = sp;
+                Utils::output("[" + Board::to_string(active)
+                        + "] Pushed first line : " + sp + "\n", 2);
+                toProceed_.push_front(next);
+            } else
+                Utils::output("[" + Board::to_string(active)
+                        + "] Found a line in table !\n", 2);
+            //Whatever the move goes, add it to our move list
+            MoveNode move(mv, next);
+            current->legal_moves.push_back(move);
 
         } else {
             //get all draw lines and push them
 
+            for (int i = 0; i < balancedLines.size(); ++i) {
+                Line *l = balancedLines[i];
+                Board::UCIMove mv = l->firstMove();
+                cb_->uciApplyMove(mv);
+                SimplePos sp = cb_->exportToFEN();
+                cb_->undoMove();
+                Node *next = find(sp, oracleTable_);
+                if (!next) {
+                    //Pos is not in the table, push the node to stack
+                    Utils::output("[" + Board::to_string(active)
+                            + "] Pushed a draw (" + to_string(l->getEval())
+                            + ") line : " + sp + "\n", 2);
+                    next = new Node();
+                    next->pos = sp;
+                    toProceed_.push_front(next);
+                } else
+                    Utils::output("[" + Board::to_string(active)
+                            + "] Found a line in table !\n", 2);
+                MoveNode move(mv, next);
+                current->legal_moves.push_back(move);
+            }
         }
 
-        Utils::output(getPrettyLines(), 2);
-        break;
     }
 
     //Display info at the end of computation
@@ -162,7 +283,8 @@ int OracleFinder::runFinderOnCurrentPosition()
     Utils::output(cb_->to_string() + "\n");
 
 
-    Utils::output("Hashtable is : \n");
+    Utils::output("Hashtable is (size = " 
+            + std::to_string(oracleTable_.size()) + ") : \n");
     Utils::output(to_string(oracleTable_) + "\n");
 
 
@@ -180,7 +302,9 @@ SortedLines OracleFinder::getLines()
         if (l.empty())
             continue;
         int limit = Options::getCpTreshold();
-        if (fabs(l.getEval()) <= limit)
+        if (l.isMat())
+            unbalanced.push_back(&(lines_[i]));
+        else if (fabs(l.getEval()) <= limit)
             balanced.push_back(&(lines_[i]));
         else
             unbalanced.push_back(&(lines_[i]));
@@ -206,7 +330,7 @@ void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
         UCIMove next = l->firstMove();
         toAdd->legal_moves = moves;
         cb_->uciApplyMove(next);
-        toAdd->pos = cb_->getSimplePos();
+        toAdd->pos = cb_->exportToFEN();
         uint64_t hash = Hashing::hashBoard(cb_);
         cb_->undoMove();
         toAdd->st = s;

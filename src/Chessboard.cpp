@@ -113,7 +113,51 @@ const string Chessboard::to_string()
         }
     oss << "   a b c d e f g h\n\n";
     oss << prettyHistoryToString() << "\n";
+    oss << historyToString() << "\n";
     return oss.str();
+}
+
+void Chessboard::reInitFromFEN(string fenString)
+{
+    //TODO: replace handleError by throw runtime_error(error)
+    queue<string> infos;
+    stringstream ss(fenString);
+    string tmpInfo;
+    while (getline(ss, tmpInfo, ' '))
+        infos.push(tmpInfo);
+
+    //FEN has 6 data fields
+    if (infos.size() != 6)
+        Utils::handleError("Invalid input fen : must have 6 field");
+
+    clear();
+    while (!infos.empty()) {
+        string info = infos.front();
+        switch (infos.size()) {
+            case 6:
+                posFromFEN(info);
+                break;
+            case 5:
+                sideFromFEN(info);
+                break;
+            case 4:
+                castleFromFEN(info);
+                break;
+            case 3:
+                enpassantFromFEN(info);
+                break;
+            case 2:
+                halfmoveCkFromFEN(info);
+                break;
+            case 1:
+                fullmoveCkFromFEN(info);
+                break;
+            default:
+                break;
+
+        }
+        infos.pop();
+    }
 }
 
 int Chessboard::uciApplyMove(string uciMove)
@@ -285,7 +329,7 @@ const list<string> Chessboard::getUciMoves()
     return moves;
 }
 
-SimplePos Chessboard::getSimplePos()
+const string Chessboard::exportToFEN()
 {
     SimplePos sp;
     int pad = 0;
@@ -354,6 +398,26 @@ SimplePos Chessboard::getSimplePos()
         sp += "w";
     else
         sp += "b";
+    sp += " ";
+    string castleString = "";
+    if (castle_ & WKCASTLE)
+        castleString += "k";
+    if (castle_ & WQCASTLE)
+        castleString += "q";
+    if (castle_ & BKCASTLE)
+        castleString += "K";
+    if (castle_ & BQCASTLE)
+        castleString += "Q";
+    if (castleString == "")
+        castleString = "-";
+    sp += castleString;
+    sp += " ";
+    if (enpassant_)
+        sp += enpassant_->to_string();
+    else
+        sp += "-";
+    sp += " " + std::to_string(halfmoveClock_);
+    sp += " " + std::to_string(fullmoveClock_);
     return sp;
 }
 
@@ -565,21 +629,62 @@ const string Chessboard::prettyHistoryToString()
     return oss.str();
 }
 
+const string Chessboard::historyToString()
+{
+    ostringstream oss;
+    int printed = 0;
+    for (list<Move>::iterator it = moveHistory_.begin(),
+            itEnd = moveHistory_.end();
+            it != itEnd; ++it) {
+        oss << it->from->to_string() << it->to->to_string() << " ";
+        printed++;
+        if (printed%10 == 0)
+            oss << "\n";
+    }
+    return oss.str();
+}
+
 bool Chessboard::isValidMove(Move theMove)
 {
     Square *from = theMove.from;
     Square *to = theMove.to;
     if (!from || !to || from == to) {
-        Utils::output("Invalid move : invalid squares\n", 3);
+        Utils::output("/!\\Invalid move : invalid squares\n");
         return false;
     }
     Piece *toMove = from->getPiece();
     if (!toMove) {
-        Utils::output("Invalid move : no piece to move\n", 3);
+        Utils::output("/!\\Invalid move : no piece to move\n");
+        Utils::output("/!\\\tmove : " + from->to_string()
+                + to->to_string() + "\n");
         return false;
     }
     //TODO (maybe) : check for move validity
     return true;
+}
+
+void Chessboard::clear()
+{
+    //Free all the data
+    Utils::output("Deleting pieces\n", 5);
+    for (int f = A; f <= H; f++)
+        for (Rank r = 1; r <= 8; r++) {
+            Piece *p = board_[(File)f][r]->getPiece();
+            board_[(File)f][r]->changePiece(NULL);
+            if (p)
+                delete p;
+        }
+    Utils::output("Deleting taken pieces\n", 5);
+    while (!takenPieces_.empty()) {
+        Piece *p = takenPieces_.back();
+        delete p;
+        takenPieces_.pop_back();
+    }
+    enpassant_ = NULL;
+    halfmoveClock_ = 0;
+    fullmoveClock_ = 1;
+    active_ = Side::WHITE;
+    int castle_ = 0x0;
 }
 
 void Chessboard::posFromFEN(string pos)

@@ -34,8 +34,8 @@ uint64_t Hashing::hashFEN(string fenString)
     while (getline(ss, tmpInfo, ' '))
         infos.push(tmpInfo);
 
-    //Here fen is a "simplified fen" with 2 data fields
-    if (infos.size() != 6 && infos.size() != 2)
+    //Here fen is a "simplified fen" with 4 data fields
+    if (infos.size() != 6 && infos.size() != 4)
         Utils::handleError("Invalid input fen : must have 2 or 6 fields");
 
     uint64_t fenHash = U64(0x0);
@@ -43,11 +43,11 @@ uint64_t Hashing::hashFEN(string fenString)
         string info = infos.front();
         switch (infos.size()) {
             case 6:
-            case 2:
+            case 4:
                 fenHash ^= piecesFromFEN(info);
                 break;
             case 5:
-            case 1:
+            case 3:
                 fenHash ^= turnFromFEN(info);
                 break;
             default:
@@ -55,7 +55,7 @@ uint64_t Hashing::hashFEN(string fenString)
 
         }
         infos.pop();
-        if (infos.size() == 0 || infos.size() == 4)
+        if (infos.size() == 2 || infos.size() == 4)
             break;
     }
     return fenHash;

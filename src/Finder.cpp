@@ -126,6 +126,7 @@ int Finder::runFinder()
                 + Utils::listToString(userMoves) + "\n");
 
 
+        //TODO: usereinit chessboard
         //Build chessboard
         cb_ = Chessboard::createFromFEN(fenpos);
         //Apply user moves
@@ -163,18 +164,24 @@ void Finder::updateLine(int index, Line &line)
 
 void Finder::sendCurrentPositionToEngine()
 {
-    string position("position ");
-    if (startpos_ != "startpos")
-        position += "fen ";
-    position += startpos_;
-    position += " ";
-    const list<string> moves = cb_->getUciMoves();
-    if (!moves.empty())
-        position += "moves ";
-    for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
-            it != itEnd; ++it)
-        position += (*it) + " ";
-    sendToEngine(position);
+    //TODO test this
+    string fenPos = "position fen ";
+    fenPos += cb_->exportToFEN();
+    /*
+     *string position("position ");
+     *if (startpos_ != "startpos")
+     *    position += "fen ";
+     *position += startpos_;
+     *position += " ";
+     *const list<string> moves = cb_->getUciMoves();
+     *if (!moves.empty())
+     *    position += "moves ";
+     *for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
+     *        it != itEnd; ++it)
+     *    position += (*it) + " ";
+     *sendToEngine(position);
+     */
+    sendToEngine(fenPos);
 }
 
 void Finder::sendOptionToEngine(string optionName, string optionValue)

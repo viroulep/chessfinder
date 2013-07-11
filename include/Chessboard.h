@@ -35,6 +35,8 @@ public:
 
     ~Chessboard();
     const string to_string();
+    //Reinit the board with another pos
+    void reInitFromFEN(string fenString);
     //Return the pretty move
     int uciApplyMove(string uciMove);
     int uciApplyMoves(list<string> uciMoves);
@@ -47,8 +49,7 @@ public:
 
     const list<string> getUciMoves();
 
-    const string exportToFEN(Chessboard &board);
-    SimplePos getSimplePos();
+    const string exportToFEN();
 
     static Chessboard *createChessboard();
     static Chessboard *createFromFEN(string fenString);
@@ -64,7 +65,9 @@ private:
     bool isValidMove(Move theMove);
     const string getPrettyMove(Move mv);
     const string prettyHistoryToString();
+    const string historyToString();
 
+    void clear();
     void posFromFEN(string pos);
     void sideFromFEN(string side);
     void castleFromFEN(string castle);

@@ -145,6 +145,10 @@ int OracleFinder::runFinderOnCurrentPosition()
     while (toProceed_.size() != 0) {
         Node *current = toProceed_.front();
         toProceed_.pop_front();
+        //FIXME: this cond is only useful when breads first searching,
+        //should be a way to not add the node if in the stack.
+        if (find(current->pos, oracleTable_))
+            continue;
 
         Line bestLine;
         //Set the chessboard to current pos
@@ -231,18 +235,28 @@ int OracleFinder::runFinderOnCurrentPosition()
                 //This is the next pose
                 sp = cb_->exportToFEN();
                 cb_->undoMove();
+                //Jean Louis' idea to force finding positions in oracle
+#if 1
                 next = find(sp, oracleTable_);
                 if (next)
                     break;
+#endif
             }
-
+            //TODO: what if positive eval ?
             if (!next) {
                 //no next position in the table, push the node to stack
                 next = new Node();
                 next->pos = sp;
                 Utils::output("[" + Board::to_string(active)
                         + "] Pushed first line : " + sp + "\n", 2);
+#if 0
+                //can also make opposite positions prior on 'ours'
+                //depth first
                 toProceed_.push_front(next);
+#else
+                //Breads first
+                toProceed_.push_back(next);
+#endif
             } else
                 Utils::output("[" + Board::to_string(active)
                         + "] Found a line in table !\n", 2);
@@ -267,7 +281,14 @@ int OracleFinder::runFinderOnCurrentPosition()
                             + ") line : " + sp + "\n", 2);
                     next = new Node();
                     next->pos = sp;
+#if 1
+                    //can also make our positions prior on 'opposite'
+                    //depth first
                     toProceed_.push_front(next);
+#else
+                    //Breads first
+                    toProceed_.push_back(next);
+#endif
                 } else
                     Utils::output("[" + Board::to_string(active)
                             + "] Found a line in table !\n", 2);

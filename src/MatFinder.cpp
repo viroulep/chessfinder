@@ -79,15 +79,19 @@ int MatFinder::runFinderOnCurrentPosition()
 
 
         //Scaling moveTime
+        //According to number of lines
         moveTime = (int)(moveTime * ((float)
                     ((float)pv/(float)Options::getMaxLines())
                     ));
         if (moveTime <= 600)
             moveTime = 600;
+        //Acccording to depth
+        moveTime += 10 * addedMoves_;
 
         //Initialize vector with empty lines
         lines_.assign(Options::getMaxLines(), Line::emptyLine);
 
+        //Increase movetime with depth
         sendToEngine("go movetime " + to_string(moveTime));
 
         Utils::output("[" + Board::to_string(active)
@@ -219,6 +223,9 @@ Line &MatFinder::getBestLine()
             //If the line is a draw we don't want it
             if (fabs(lines_[i].getEval()) > limit)
                 return lines_[i];
+            else
+                return Line::emptyLine;
+            //FIXME: looks complicated...
         }
     }
     //if all are draw, return the same line

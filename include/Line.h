@@ -45,6 +45,7 @@ public:
     const list<string> &getMoves();
     bool operator<(const Line &rhs);
 
+    static bool compareLineLength(Line *lhs, Line *rhs);
     static Line emptyLine;
 private:
     //Line Evaluation

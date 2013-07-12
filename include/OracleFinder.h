@@ -32,35 +32,14 @@
 #include "Stream.h"
 #include "Line.h"
 #include "Finder.h"
+#include "Hashing.h"
 
 using namespace std;
 
 //Forward decl
 class UCIReceiver;
 
-enum Status {
-    MATE,
-    STALEMATE,
-    TRESHOLD,
-    DRAW
-};
 
-class Node;
-
-typedef pair<Board::UCIMove, Node *> MoveNode;
-
-//TODO: better this (was struct)
-class Node {
-public:
-    SimplePos pos;
-    Status st;
-    /*
-     * legal_moves.size() = 1 when active side is playfor side
-     * legal_moves contains all possible moves when playing
-     * for opposite side
-     */
-    vector<MoveNode> legal_moves;
-};
 
 
 /*
@@ -68,14 +47,8 @@ public:
  */
 //TODO: move to hashing
 //+refactor this
-typedef unordered_multimap<uint64_t, Node *> HashTable;
+//typedef unordered_multimap<uint64_t, Node *> HashTable;
 
-string to_string(HashTable &ht);
-string to_string(Node &n);
-string to_string(Status s);
-//TODO: rename simplepos to FEN
-Node *find(SimplePos sp, HashTable &table);
-void clearAndFree(HashTable &ht);
 
 typedef array<vector<Line *>, 2> SortedLines;
 
@@ -88,7 +61,7 @@ private:
     int runFinderOnCurrentPosition();
     SortedLines getLines();
     void proceedUnbalancedLines(vector<Line *> unbalanced);
-    HashTable oracleTable_;
+    HashTable *oracleTable_;
     Node *rootNode_ = NULL;
     list<Node *> toProceed_;
 };

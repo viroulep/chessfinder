@@ -172,22 +172,25 @@ int Chessboard::uciApplyMove(string uciMove)
     mv.halfMoveCk = halfmoveClock_;
     mv.enpassantSquare = enpassant_;
     if (uciMove.size() == 5) {
-        switch (uciMove[4]) {
-            case 'q':
-                mv.promoteTo = Piece::Kind::QUEEN;
-                break;
-            case 'n':
-                mv.promoteTo = Piece::Kind::KNIGHT;
-                break;
-            case 'b':
-                mv.promoteTo = Piece::Kind::BISHOP;
-                break;
-            case 'r':
-                mv.promoteTo = Piece::Kind::ROOK;
-                break;
-            default:
-                Utils::handleError("Invalid promotion");
-        }
+        mv.promoteTo = Board::promotionFromChar(uciMove[4]);
+        /*
+         *switch (uciMove[4]) {
+         *    case 'q':
+         *        mv.promoteTo = Piece::Kind::QUEEN;
+         *        break;
+         *    case 'n':
+         *        mv.promoteTo = Piece::Kind::KNIGHT;
+         *        break;
+         *    case 'b':
+         *        mv.promoteTo = Piece::Kind::BISHOP;
+         *        break;
+         *    case 'r':
+         *        mv.promoteTo = Piece::Kind::ROOK;
+         *        break;
+         *    default:
+         *        Utils::handleError("Invalid promotion");
+         *}
+         */
     }
     return applyMove(mv);
 }
@@ -329,7 +332,7 @@ const list<string> Chessboard::getUciMoves()
     return moves;
 }
 
-const string Chessboard::exportToFEN()
+const string Chessboard::exportToFEN(bool removeClock)
 {
     SimplePos sp;
     int pad = 0;
@@ -416,8 +419,12 @@ const string Chessboard::exportToFEN()
         sp += enpassant_->to_string();
     else
         sp += "-";
-    sp += " " + std::to_string(halfmoveClock_);
-    sp += " " + std::to_string(fullmoveClock_);
+    if (removeClock)
+        sp += " - -";
+    else {
+        sp += " " + std::to_string(halfmoveClock_);
+        sp += " " + std::to_string(fullmoveClock_);
+    }
     return sp;
 }
 

@@ -20,6 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <iostream>
+#include <fstream>
 #include <cstdint>
 #include "Chessboard.h"
 #include "Hashing.h"
@@ -34,11 +35,11 @@ int main()
     //Options::setVerboseLevel(4);
     //string fen = "rnbqkbnr/pp2pppp/8/2ppP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3";
     string fenfen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
-    string fen = "2r5/3P4/8/8/5K2/8/3k4/8 w - - 0 48";
+    string fen = "2r5/3P4/8/8/5K2/8/3k4/8 w - - 0 38";
     //Chessboard *test = Chessboard::createChessboard();
     Chessboard *test = Chessboard::createFromFEN(fen);
-    uint64_t hash = Hashing::hashBoard(test);
-    uint64_t hashFen = Hashing::hashFEN(fen);
+    uint64_t hash = HashTable::hashBoard(test);
+    uint64_t hashFen = HashTable::hashFEN(fen);
 
     Utils::output(test->to_string() + "\n");
     Utils::output("Hashs : \n");
@@ -52,6 +53,28 @@ int main()
     Utils::output("Fens : \n");
     Utils::output("Orig  : " + fenfen + "\n");
     Utils::output("Board : " + test->exportToFEN() + "\n");
+
+    UCIMove mv = "e2e4n";
+    Utils::output("e2e4n : " + to_string(Board::uciToPolyglot(mv)) + "\n");
+    Utils::output("4892 : " + Board::polyglotToUci(4892) + "\n");
+
+    HashTable *tableTest = new HashTable();
+    Node *node = new Node();
+    node->pos = fen;
+    MoveNode mn;
+    mn.first = "f4f5";
+    mn.second = NULL;
+    node->legal_moves.push_back(mn);
+    node->st = Node::DRAW;
+
+    pair<uint64_t, Node *> p(HashTable::hashFEN(fen), node);
+    tableTest->insert(p);
+    Utils::output(tableTest->to_string() + "\n");
+
+    ofstream outputFile("oracleGardner.bin", ios::binary);
+    tableTest->toPolyglot(outputFile);
+
+    delete tableTest;
 
     /*
      *test->uciApplyMove("e2e4");

@@ -281,6 +281,151 @@ namespace Board {
             return true;
     }
 
+    Piece::Kind promotionFromChar(char p)
+    {
+        switch (p) {
+            case 'q':
+                return Piece::Kind::QUEEN;
+                break;
+            case 'n':
+                return Piece::Kind::KNIGHT;
+                break;
+            case 'b':
+                return Piece::Kind::BISHOP;
+                break;
+            case 'r':
+                return Piece::Kind::ROOK;
+                break;
+            default:
+                Utils::handleError("Invalid promotion");
+        }
+        return Piece::Kind::QUEEN;
+    }
+
+    void squareFromString(string str, File *f, Rank *r)
+    {
+        if (str.size() != 2)
+            Utils::handleError("Error parsing square string : " + str);
+        char file = str[0];
+        char rank = str[1];
+        if (file < 'a' || file > 'h')
+            Utils::handleError("Error parsing square string : " + str);
+        (*f) = (File)(file - 'a');
+        if (rank < '1' || rank > '8')
+            Utils::handleError("Error parsing square string : " + str);
+        (*r) = (rank - '0');
+        Utils::output(string("Returning square ") + to_char(*f)
+                + to_char(*r) + "\n", 4);
+    }
+
+    /*
+     *bits                meaning
+     *===================================
+     *0,1,2               to file
+     *3,4,5               to row
+     *6,7,8               from file
+     *9,10,11             from row
+     *12,13,14            promotion piece
+     *"promotion piece" is encoded as follows
+     *none       0
+     *knight     1
+     *bishop     2
+     *rook       3
+     *queen      4
+     */
+    uint16_t uciToPolyglot(UCIMove &mv)
+    {
+        File f;
+        Rank r;
+        uint16_t encodedMove = 0x0;
+        if (mv.size() != 4 && mv.size() != 5)
+            Utils::handleError("Error parsing uci move");
+        if (mv.size() == 5) {
+            Piece::Kind promote = promotionFromChar(mv[4]);
+            switch (promote) {
+                case Piece::KNIGHT:
+                    encodedMove |= 0x1;
+                    break;
+                case Piece::BISHOP:
+                    encodedMove |= 0x2;
+                    break;
+                case Piece::ROOK:
+                    encodedMove |= 0x3;
+                    break;
+                case Piece::QUEEN:
+                    encodedMove |= 0x4;
+                    break;
+                default:
+                    break;
+            }
+            encodedMove <<= 3;
+        }
+        string from = mv.substr(0, 2);
+        Board::squareFromString(from, &f, &r);
+        //Rank in 1..8, go to 0..7
+        encodedMove |= (r - 1);
+        encodedMove <<= 3;
+        //File already on 0..7
+        encodedMove |= (uint16_t)f;
+        encodedMove <<= 3;
+
+        string to = mv.substr(2, 2);
+        Board::squareFromString(to, &f, &r);
+        //Rank in 1..8, go to 0..7
+        encodedMove |= (r - 1);
+        encodedMove <<= 3;
+        //File already on 0..7
+        encodedMove |= (uint16_t)f;
+        //encodedMove <<= 3;
+        Utils::output("Move " + mv + " is " + std::to_string(encodedMove)
+                + ", decimal\n", 3);
+        return encodedMove;
+    }
+
+    UCIMove polyglotToUci(uint16_t mv)
+    {
+        File f;
+        Rank r;
+        UCIMove uci = "";
+        f = (File)(mv & 0x7);
+        mv >>= 3;
+        r = mv & 0x7;
+        mv >>= 3;
+        //To
+        //uci += std::to_string(to_char(f)) + std::to_string(to_char(r+1));
+        uci += to_char(f);
+        uci += to_char(r + 1);
+
+        f = (File)(mv & 0x7);
+        mv >>= 3;
+        r = mv & 0x7;
+        mv >>= 3;
+        //From
+        string from;
+        from += to_char(f);
+        from += to_char(r + 1);
+        uci = from + uci;
+
+        switch (mv) {
+            case 1:
+                uci += "n";
+                break;
+            case 2:
+                uci += "b";
+                break;
+            case 3:
+                uci += "r";
+                break;
+            case 4:
+                uci += "q";
+                break;
+            default:
+                break;
+        }
+        Utils::output(std::to_string(mv) + ", decimal is move "
+                + uci + "\n", 3);
+        return uci;
+    }
 }
 
 

@@ -43,7 +43,7 @@ public:
     static void output(const string &msg, int level = 0);
 
     static string helpMessage();
-    static string listToString(list<string> &theList);
+    static string listToString(const list<string> &theList);
     static void getTimeout(struct timespec *ts, int seconds);
     static const string RED;
     static const string RESET;

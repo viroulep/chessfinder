@@ -152,6 +152,7 @@ int MatFinder::runFinderOnCurrentPosition()
     Utils::output(getPrettyLines());
     Utils::output("[End] Full best line is : \n");
     Utils::output("[End] " + getPrettyLine(lines_[0]) + "\n");
+    Utils::output("[End] " + Utils::listToString(lines_[0].getMoves()) + "\n");
 
     return 0;
 }

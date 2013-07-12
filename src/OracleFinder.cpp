@@ -26,6 +26,7 @@
 #include <array>
 #include <queue>
 #include <vector>
+#include <algorithm>
 #include <unistd.h>
 #include "Finder.h"
 #include "OracleFinder.h"
@@ -35,82 +36,18 @@
 #include "Utils.h"
 #include "Hashing.h"
 
-string to_string(Status s)
-{
-    switch (s) {
-        case MATE:
-            return "mate";
-        case STALEMATE:
-            return "stalemate";
-        case DRAW:
-            return "draw";
-        case TRESHOLD:
-            return "treshold";
-    }
-}
 
-string to_string(Node &n)
-{
-    string retVal;
-    //TODO: display moves ?
-    retVal += "(" + to_string(n.st) + "," + n.pos + ")";
-    return retVal;
-}
-
-string to_string(HashTable &ht)
-{
-    string retVal;
-    for (HashTable::iterator it = ht.begin(), itEnd = ht.end();
-            it != itEnd; ++it) {
-        Node n = *(it->second);
-        retVal += "#" + to_string(it->first) + ":" + to_string(n) + "\n";
-    }
-    if (ht.size() == 0)
-        retVal += "<empty>";
-    return retVal;
-}
-
-void clearAndFree(HashTable &ht)
-{
-    for (HashTable::iterator it = ht.begin(), itEnd = ht.end();
-            it != itEnd; ++it) {
-        delete(it->second);
-    }
-    ht.clear();
-}
-
-Node *find(SimplePos sp, HashTable &table)
-{
-    uint64_t hash = Hashing::hashFEN(sp);
-    auto range = table.equal_range(hash);
-    Node *found = NULL;
-    queue<string> infos;
-    stringstream ss(sp);
-    string tmpInfo;
-    while (getline(ss, tmpInfo, ' '))
-        infos.push(tmpInfo);
-    string simpleFen = infos.front();
-    infos.pop();
-    simpleFen += " " + infos.front();
-    Utils::output("Looking for " + simpleFen + "\n", 3);
-    for (auto it = range.first, itEnd = range.second;
-            it != itEnd && !found ; ++it) {
-        Utils::output("against " + it->second->pos + "\n", 3);
-        if (simpleFen == it->second->pos.substr(0, simpleFen.size()))
-            found = it->second;
-    }
-    return found;
-}
 
 OracleFinder::OracleFinder() : Finder()
 {
     //engine_side_ = cb_->getActiveSide();
     //engine_play_for_ = Options::getPlayFor();
+    oracleTable_ = new HashTable();
 }
 
 OracleFinder::~OracleFinder()
 {
-    clearAndFree(oracleTable_);
+    delete oracleTable_;
 }
 
 int OracleFinder::runFinderOnCurrentPosition()
@@ -137,7 +74,7 @@ int OracleFinder::runFinderOnCurrentPosition()
 
     Node *init = new Node();
     Node *rootNode_ = init;
-    init->pos = cb_->exportToFEN();
+    init->pos = cb_->exportToFEN(true);
     //depth-first
     toProceed_.push_front(rootNode_);
 
@@ -147,7 +84,7 @@ int OracleFinder::runFinderOnCurrentPosition()
         toProceed_.pop_front();
         //FIXME: this cond is only useful when breads first searching,
         //should be a way to not add the node if in the stack.
-        if (find(current->pos, oracleTable_))
+        if (oracleTable_->findPos(current->pos))
             continue;
 
         Line bestLine;
@@ -157,9 +94,9 @@ int OracleFinder::runFinderOnCurrentPosition()
 
         //Register current pos in the table
         //(we shouldn't be visiting the same position twice)
-        uint64_t curHash = Hashing::hashBoard(cb_);
+        uint64_t curHash = HashTable::hashBoard(cb_);
         pair<uint64_t, Node *> p(curHash, current);
-        oracleTable_.insert(p);
+        oracleTable_->insert(p);
 
         Utils::output("[" + Board::to_string(active)
                 + "] Proceed size : " + to_string(toProceed_.size()) + "\n");
@@ -187,27 +124,27 @@ int OracleFinder::runFinderOnCurrentPosition()
         bestLine = lines_[0];
         if (bestLine.empty()) {
             //STALEMATE
-            current->st = STALEMATE;
+            current->st = Node::STALEMATE;
             Utils::output("[" + Board::to_string(active)
                     + "] Bestline is stalemate (cut)\n", 2);
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
             //TODO: register if winning or losing ?
-            current->st = MATE;
+            current->st = Node::MATE;
             Utils::output("[" + Board::to_string(active)
                     + "] Bestline is mate (cut)\n", 2);
             continue;
         } else if (fabs(bestLine.getEval()) > Options::getCpTreshold()) {
             //TODO: register if winning or losing ?
-            current->st = TRESHOLD;
+            current->st = Node::TRESHOLD;
             Utils::output("[" + Board::to_string(active)
                     + "] Bestline is above treshold (cut)\n", 2);
             continue;
         }
         //If we are here, bestLine is draw, and we should continue to explore
         SortedLines all = getLines();
-        current->st = DRAW;
+        current->st = Node::DRAW;
 
         //Add all the imbalanced line to the hashtable (either mat or "treshold")
         //(save some iterations in main loop : we could also push all the
@@ -225,6 +162,9 @@ int OracleFinder::runFinderOnCurrentPosition()
             Line *l = NULL;
             Board::UCIMove mv;
             SimplePos sp;
+            //Sort the balanced line so that we take the shortest
+            //std::sort(balancedLines.begin(), balancedLines.end(),
+                    //Line::compareLineLength);
             //Here balancedLines shouldn't be empty, if so it's a bug
             //(Go reverse to have the bestLine at last)
             for (int i = balancedLines.size() - 1; i >= 0; --i) {
@@ -233,11 +173,11 @@ int OracleFinder::runFinderOnCurrentPosition()
                 mv = l->firstMove();
                 cb_->uciApplyMove(mv);
                 //This is the next pose
-                sp = cb_->exportToFEN();
+                sp = cb_->exportToFEN(true);
                 cb_->undoMove();
                 //Jean Louis' idea to force finding positions in oracle
 #if 1
-                next = find(sp, oracleTable_);
+                next = oracleTable_->findPos(sp);
                 if (next)
                     break;
 #endif
@@ -248,8 +188,10 @@ int OracleFinder::runFinderOnCurrentPosition()
                 next = new Node();
                 next->pos = sp;
                 Utils::output("[" + Board::to_string(active)
-                        + "] Pushed first line : " + sp + "\n", 2);
-#if 0
+                        + "] Pushed first line ("
+                        + to_string(l->getMoves().size()) + " moves) : "
+                        + sp + "\n", 2);
+#if 1
                 //can also make opposite positions prior on 'ours'
                 //depth first
                 toProceed_.push_front(next);
@@ -257,9 +199,11 @@ int OracleFinder::runFinderOnCurrentPosition()
                 //Breads first
                 toProceed_.push_back(next);
 #endif
-            } else
-                Utils::output("[" + Board::to_string(active)
-                        + "] Found a line in table !\n", 2);
+            }
+                /*
+                 *Utils::output("[" + Board::to_string(active)
+                 *        + "] Found a line in table !\n", 2);
+                 */
             //Whatever the move goes, add it to our move list
             MoveNode move(mv, next);
             current->legal_moves.push_back(move);
@@ -267,18 +211,22 @@ int OracleFinder::runFinderOnCurrentPosition()
         } else {
             //get all draw lines and push them
 
+            Utils::output("Pushed lines : ", 2);
             for (int i = 0; i < balancedLines.size(); ++i) {
                 Line *l = balancedLines[i];
                 Board::UCIMove mv = l->firstMove();
                 cb_->uciApplyMove(mv);
-                SimplePos sp = cb_->exportToFEN();
+                SimplePos sp = cb_->exportToFEN(true);
                 cb_->undoMove();
-                Node *next = find(sp, oracleTable_);
+                Node *next = oracleTable_->findPos(sp);
                 if (!next) {
                     //Pos is not in the table, push the node to stack
-                    Utils::output("[" + Board::to_string(active)
-                            + "] Pushed a draw (" + to_string(l->getEval())
-                            + ") line : " + sp + "\n", 2);
+                    /*
+                     *Utils::output("[" + Board::to_string(active)
+                     *        + "] Pushed a draw (" + to_string(l->getEval())
+                     *        + ") line : " + sp + "\n", 2);
+                     */
+                    Utils::output("+", 2);
                     next = new Node();
                     next->pos = sp;
 #if 1
@@ -290,11 +238,15 @@ int OracleFinder::runFinderOnCurrentPosition()
                     toProceed_.push_back(next);
 #endif
                 } else
-                    Utils::output("[" + Board::to_string(active)
-                            + "] Found a line in table !\n", 2);
+                    Utils::output("-", 2);
+                    /*
+                     *Utils::output("[" + Board::to_string(active)
+                     *        + "] Found a line in table !\n", 2);
+                     */
                 MoveNode move(mv, next);
                 current->legal_moves.push_back(move);
             }
+            Utils::output("\n", 2);
         }
 
     }
@@ -304,9 +256,10 @@ int OracleFinder::runFinderOnCurrentPosition()
     Utils::output(cb_->to_string() + "\n");
 
 
-    Utils::output("Hashtable is (size = " 
-            + std::to_string(oracleTable_.size()) + ") : \n");
-    Utils::output(to_string(oracleTable_) + "\n");
+    Utils::output("Hashtable size = " 
+            + std::to_string(oracleTable_->size()) + ") : \n");
+    Utils::output(oracleTable_->to_string() + "\n", 2);
+    Utils::output("(size = " + std::to_string(oracleTable_->size()) + ") : \n", 2);
 
 
     return 0;
@@ -343,19 +296,19 @@ void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
         if (!l)
             Utils::handleError("An unbalanced line is null ("
                     + to_string(i) + ")");
-        Status s = TRESHOLD;
+        Node::Status s = Node::TRESHOLD;
         if (l->isMat())
-            s = MATE;
+            s = Node::MATE;
         Node *toAdd = new Node();
         vector<MoveNode> moves;
         UCIMove next = l->firstMove();
         toAdd->legal_moves = moves;
         cb_->uciApplyMove(next);
-        toAdd->pos = cb_->exportToFEN();
-        uint64_t hash = Hashing::hashBoard(cb_);
+        toAdd->pos = cb_->exportToFEN(true);
+        uint64_t hash = HashTable::hashBoard(cb_);
         cb_->undoMove();
         toAdd->st = s;
         pair<uint64_t, Node *> p(hash, toAdd);
-        oracleTable_.insert(p);
+        oracleTable_->insert(p);
     }
 }

@@ -27,11 +27,11 @@
 #include "Board.h"
 
 using namespace Board;
-class Hashing;
+class HashTable;
 
 class Chessboard {
 public:
-    friend class Hashing;
+    friend class HashTable;
 
     ~Chessboard();
     const string to_string();
@@ -49,7 +49,7 @@ public:
 
     const list<string> getUciMoves();
 
-    const string exportToFEN();
+    const string exportToFEN(bool removeClock = false);
 
     static Chessboard *createChessboard();
     static Chessboard *createFromFEN(string fenString);

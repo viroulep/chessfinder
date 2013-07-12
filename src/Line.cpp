@@ -126,4 +126,11 @@ bool Line::operator<(const Line &rhs)
     return fabs(eval_) < fabs(rhs.eval_);
 }
 
+bool Line::compareLineLength(Line *lhs, Line *rhs)
+{
+    if (!lhs || !rhs)
+        return true;
+    return lhs->moves_.size() < rhs->moves_.size();
+}
+
 Line Line::emptyLine;

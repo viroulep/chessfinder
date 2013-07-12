@@ -26,7 +26,123 @@
 #include "Chessboard.h"
 using namespace std;
 
-uint64_t Hashing::hashFEN(string fenString)
+
+
+string Node::to_string()
+{
+    string retVal;
+    //TODO: display moves ?
+    retVal += "(" + to_string(st) + "," + pos + ")";
+    return retVal;
+}
+
+string Node::to_string(Status s)
+{
+    switch (s) {
+        case MATE:
+            return "mate";
+        case STALEMATE:
+            return "stalemate";
+        case DRAW:
+            return "draw";
+        case TRESHOLD:
+            return "treshold";
+    }
+    return "";
+}
+
+HashTable::~HashTable()
+{
+    for (HashTable::iterator it = begin(), itEnd = end();
+            it != itEnd; ++it) {
+        delete(it->second);
+    }
+    clear();
+}
+
+string HashTable::to_string()
+{
+    string retVal;
+    for (HashTable::iterator it = begin(), itEnd = end();
+            it != itEnd; ++it) {
+        Node n = *(it->second);
+        retVal += "#" + std::to_string(it->first) + ":" + n.to_string() + "\n";
+    }
+    if (size() == 0)
+        retVal += "<empty>";
+    return retVal;
+}
+
+  Node *HashTable::findPos(SimplePos sp)
+{
+    uint64_t hash = HashTable::hashFEN(sp);
+    auto it = find(hash);
+    if (it == end())
+        return NULL;
+    else
+        return it->second;
+}
+/*
+ *Node *HashTable::find(SimplePos sp)
+ *{
+ *    //FIXME: according to specification, hash is almost unique,
+ *    //so replace this by regular find from multimap
+ *    uint64_t hash = HashTable::hashFEN(sp);
+ *    auto range = equal_range(hash);
+ *    Node *found = NULL;
+ *    queue<string> infos;
+ *    stringstream ss(sp);
+ *    string tmpInfo;
+ *    while (getline(ss, tmpInfo, ' '))
+ *        infos.push(tmpInfo);
+ *    string simpleFen = infos.front();
+ *    infos.pop();
+ *    simpleFen += " " + infos.front();
+ *    Utils::output("Looking for " + simpleFen + "\n", 3);
+ *    for (auto it = range.first, itEnd = range.second;
+ *            it != itEnd && !found ; ++it) {
+ *        Utils::output("against " + it->second->pos + "\n", 3);
+ *        if (simpleFen == it->second->pos.substr(0, simpleFen.size()))
+ *            found = it->second;
+ *    }
+ *    return found;
+ *}
+ *
+ */
+void HashTable::toPolyglot(ostream &os)
+{
+    for (HashTable::iterator it = begin(), itEnd = end();
+            it != itEnd; ++it) {
+        Node n = *(it->second);
+        uint64_t hash = it->first;
+        //write hash
+        os.write((char *)&hash, sizeof(uint64_t));
+        uint16_t move = 0x0;
+        uint16_t weight = 0x0;
+        uint32_t learn = 0x0;
+        if (n.legal_moves.size() == 1)
+            move = uciToPolyglot(n.legal_moves.front().first);
+        //else multiple move = other side of oracle
+        //write move
+        os.write((char *)&move, sizeof(uint16_t));
+
+        if (n.st == Node::STALEMATE || n.st == Node::DRAW)
+            weight++;
+        //write weight
+        os.write((char *)&weight, sizeof(uint16_t));
+        learn = (uint32_t)n.st;
+        //write learn
+        os.write((char *)&learn, sizeof(uint32_t));
+    }
+}
+
+static HashTable *fromPolyglot(istream &is)
+{
+    HashTable *retValue = new HashTable();
+    return retValue;
+}
+
+uint64_t HashTable::hashFEN(string fenString)
 {
     queue<string> infos;
     stringstream ss(fenString);
@@ -62,7 +178,7 @@ uint64_t Hashing::hashFEN(string fenString)
 }
 
 
-uint64_t Hashing::hashBoard(Chessboard *cb)
+uint64_t HashTable::hashBoard(Chessboard *cb)
 {
     if (!cb)
         return U64(0x0);
@@ -104,13 +220,13 @@ uint64_t Hashing::hashBoard(Chessboard *cb)
     return boardHash;
 }
 
-int Hashing::pieceOffset(int kind, Board::Rank r, Board::File f)
+int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {
     //r-1 to have rank in 0-7
     return 64 * kind + 8 * (r - 1) + f;
 }
 
-uint64_t Hashing::turnFromFEN(string side)
+uint64_t HashTable::turnFromFEN(string side)
 {
     if (side == "w")
         return Random64_[780];//RandomTurn offset (last entry)
@@ -121,7 +237,7 @@ uint64_t Hashing::turnFromFEN(string side)
     return U64(0x0);
 }
 
-uint64_t Hashing::piecesFromFEN(string pos)
+uint64_t HashTable::piecesFromFEN(string pos)
 {
     queue<string> ranks;
     stringstream ss(pos);
@@ -212,7 +328,7 @@ uint64_t Hashing::piecesFromFEN(string pos)
     }
     return piecesKey;
 }
-const uint64_t Hashing::Random64_[] = {
+const uint64_t HashTable::Random64_[] = {
     U64(0x9D39247E33776D41), U64(0x2AF7398005AAA5C7),
     U64(0x44DB015024623547), U64(0x9C15F73E62A76AE2),
     U64(0x75834465489C0C89), U64(0x3290AC3A203001BF),

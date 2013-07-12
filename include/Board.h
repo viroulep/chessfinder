@@ -116,6 +116,11 @@ namespace Board {
     //2 first element of fen
     typedef string SimplePos;
 
+    void squareFromString(string str, File *f, Rank *r);
+    Piece::Kind promotionFromChar(char p);
+
+    uint16_t uciToPolyglot(UCIMove &mv);
+    UCIMove polyglotToUci(uint16_t mv);
 
     Side getSideFromString(string sidestr);
     bool checkMove(string move);

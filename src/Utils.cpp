@@ -161,12 +161,12 @@ string Utils::helpMessage()
 const string Utils::RED = "\e[31;1m";
 const string Utils::RESET = "\e[0m";
 
-string Utils::listToString(list<string> &theList)
+string Utils::listToString(const list<string> &theList)
 {
     ostringstream oss;
     if (theList.empty())
         oss << "<none>";
-    for (list<string>::iterator it = theList.begin(),
+    for (list<string>::const_iterator it = theList.begin(),
             itEnd = theList.end();
             it != itEnd; ++it) {
         if (it != theList.begin())

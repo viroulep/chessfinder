@@ -38,6 +38,8 @@ int Options::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
 int Options::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
 
 
+string Options::INPUT_ = DEFAULT_INPUT_FILE;
+string Options::OUTPUT_ = DEFAULT_OUTPUT_FILE;
 
 string Options::getEngine() { return ENGINE_; }
 void Options::setEngine(string engine) { ENGINE_ = engine; }
@@ -99,6 +101,24 @@ int Options::getCpTreshold() { return CP_TRESHOLD_; }
 void Options::setCpTreshold(int treshold)
 {
     CP_TRESHOLD_ = treshold;
+}
+
+string Options::getOutputFile()
+{
+    return OUTPUT_;
+}
+void Options::setOutputFile(string file)
+{
+    OUTPUT_ = file;
+}
+
+string Options::getInputFile()
+{
+    return INPUT_;
+}
+void Options::setInputFile(string file)
+{
+    INPUT_ = file;
 }
 
 

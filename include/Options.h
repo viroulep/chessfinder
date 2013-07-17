@@ -33,6 +33,8 @@
 #define DEFAULT_HASHMAP_SIZE 4096
 #define DEFAULT_PLAYFOR_MOVETIME_ 1500
 #define DEFAULT_PLAYAGAINST_MOVETIME_ 1000
+#define DEFAULT_OUTPUT_FILE ""
+#define DEFAULT_INPUT_FILE ""
 #define DEFAULT_STARTPOS "startpos"
 #define DEFAULT_ENGINE "stockfish"
 #define DEFAULT_PATH "/usr/local/bin"
@@ -78,6 +80,13 @@ public:
     static int getCpTreshold();
     static void setCpTreshold(int treshold);
 
+    static string getOutputFile();
+    static void setOutputFile(string file);
+
+    static string getInputFile();
+    static void setInputFile(string file);
+
+
     //Pretty-print the options
     static string getPretty();
 
@@ -117,6 +126,10 @@ private:
 
     //Stores all the position to be processed : a list of pair (starting position, user moves)
     static PositionList START_POS_LIST_;
+
+    //The file loaded or exported
+    static string INPUT_;
+    static string OUTPUT_;
 };
 
 

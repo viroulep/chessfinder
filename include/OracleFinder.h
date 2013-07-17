@@ -42,13 +42,6 @@ class UCIReceiver;
 
 
 
-/*
- * Hash->Node
- */
-//TODO: move to hashing
-//+refactor this
-//typedef unordered_multimap<uint64_t, Node *> HashTable;
-
 
 typedef array<vector<Line *>, 2> SortedLines;
 

@@ -27,6 +27,10 @@
 using namespace std;
 
 
+Node::~Node()
+{
+
+}
 
 string Node::to_string()
 {
@@ -136,9 +140,31 @@ void HashTable::toPolyglot(ostream &os)
     }
 }
 
-static HashTable *fromPolyglot(istream &is)
+HashTable *HashTable::fromPolyglot(istream &is)
 {
     HashTable *retValue = new HashTable();
+    uint64_t hash = 0x0;
+    uint16_t move = 0x0;
+    uint16_t weight = 0x0;
+    uint32_t learn = 0x0;
+    Utils::output("Import hashtable.\n", 1);
+    while (is) {
+        is.read((char *)&hash, sizeof(uint64_t));
+        is.read((char *)&move, sizeof(uint16_t));
+        is.read((char *)&weight, sizeof(uint16_t));
+        is.read((char *)&learn, sizeof(uint32_t));
+        if (!is.good())
+            break;
+        Node *toAdd = new Node();
+        toAdd->pos = "";//No position when loading table
+        toAdd->st = (Node::Status)learn;
+        MoveNode mn(polyglotToUci(move), NULL);
+        toAdd->legal_moves.push_back(mn);
+        pair<uint64_t, Node *> p(hash, toAdd);
+        retValue->insert(p);
+        Utils::output("Inserting pos in hashtable.\n", 3);
+    }
+    Utils::output("Data successfully imported.\n", 1);
     return retValue;
 }
 

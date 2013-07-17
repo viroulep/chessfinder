@@ -56,6 +56,8 @@ void CommonMain::parseArgs(int argc, char **argv)
         {"pf_movetime", required_argument, 0, 'f'},
         {"pa_movetime", required_argument, 0, 'a'},
         {"cp_treshold", required_argument, 0, 'c'},
+        {"output_file", required_argument, 0, 'u'},
+        {"input_file", required_argument, 0, 'n'},
     };
 
     int c;
@@ -67,7 +69,7 @@ void CommonMain::parseArgs(int argc, char **argv)
     PositionList posList;
 
     while ((c = getopt_long(argc, argv,
-                "hi:v:s:e:o:p:m:l:t:c:f:a:",
+                "hi:v:s:e:o:p:m:l:t:c:f:a:u:n:",
                 long_options, &option_index)) != -1) {
         switch (c) {
 
@@ -153,6 +155,15 @@ void CommonMain::parseArgs(int argc, char **argv)
                 Utils::output(Utils::helpMessage());
                 exit(EXIT_SUCCESS);
                 break;
+
+            case 'u':
+                Options::setOutputFile(optarg);
+                break;
+
+            case 'n':
+                Options::setInputFile(optarg);
+                break;
+
             case '?':
                 /* getopt_long already printed an error message. */
                 exit(EXIT_FAILURE);

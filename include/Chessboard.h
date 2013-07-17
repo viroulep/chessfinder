@@ -51,6 +51,9 @@ public:
 
     const string exportToFEN(bool removeClock = false);
 
+    //Return true if board has sufficient material to not draw
+    bool sufficientMaterial();
+
     static Chessboard *createChessboard();
     static Chessboard *createFromFEN(string fenString);
 

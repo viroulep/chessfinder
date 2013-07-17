@@ -142,8 +142,8 @@ int Finder::runFinder()
         delete cb_;
     }
     if (allPositions.empty())
-        Utils::output("No position to run matfinder on. Please adjust --startingpos"\
-                " and/or --position_file\n");
+        Utils::output("No position to run the finder on. Please adjust"\
+                " --startingpos and/or --position_file\n");
 
     Utils::output("Exiting receiver and joining threads\n", 4);
     (*receiver_input_) << "quit\n";

@@ -42,11 +42,32 @@ OracleFinder::OracleFinder() : Finder()
 {
     //engine_side_ = cb_->getActiveSide();
     //engine_play_for_ = Options::getPlayFor();
-    oracleTable_ = new HashTable();
+    string inputFilename = Options::getInputFile();
+    if (inputFilename.size() > 0) {
+        Utils::output("Loading table from " + inputFilename + ".\n", 2);
+        ifstream inputFile(inputFilename, ios::binary);
+        if (!inputFile.good())
+            Utils::handleError("Unable to load table from file "
+                    + inputFilename);
+        oracleTable_ = HashTable::fromPolyglot(inputFile);
+    } else {
+        Utils::output("Creating new empty table.\n", 2);
+        oracleTable_ = new HashTable();
+    }
 }
 
 OracleFinder::~OracleFinder()
 {
+    string outputFilename = Options::getOutputFile();
+    if (outputFilename.size() > 0) {
+        Utils::output("Saving table to " + outputFilename + ".\n", 2);
+        ofstream outputFile(outputFilename, ios::binary);
+        if (!outputFile.good())
+            Utils::output("Unable to save table to file "
+                    + outputFilename + "\n");
+        else
+            oracleTable_->toPolyglot(outputFile);
+    }
     delete oracleTable_;
 }
 
@@ -84,8 +105,10 @@ int OracleFinder::runFinderOnCurrentPosition()
         toProceed_.pop_front();
         //FIXME: this cond is only useful when breads first searching,
         //should be a way to not add the node if in the stack.
-        if (oracleTable_->findPos(current->pos))
+        if (oracleTable_->findPos(current->pos)) {
+            Utils::output("Position already in table.\n", 3);
             continue;
+        }
 
         Line bestLine;
         //Set the chessboard to current pos
@@ -97,6 +120,15 @@ int OracleFinder::runFinderOnCurrentPosition()
         uint64_t curHash = HashTable::hashBoard(cb_);
         pair<uint64_t, Node *> p(curHash, current);
         oracleTable_->insert(p);
+
+        if (!cb_->sufficientMaterial()) {
+            current->st = Node::DRAW;
+            Utils::output("[" + Board::to_string(active)
+                    + "] Insuficient material.\n", 2);
+            //Proceed to next node...
+            continue;
+        }
+
 
         Utils::output("[" + Board::to_string(active)
                 + "] Proceed size : " + to_string(toProceed_.size()) + "\n");
@@ -173,6 +205,7 @@ int OracleFinder::runFinderOnCurrentPosition()
                 mv = l->firstMove();
                 cb_->uciApplyMove(mv);
                 //This is the next pose
+                //TODO: do not remove clock ?
                 sp = cb_->exportToFEN(true);
                 cb_->undoMove();
                 //Jean Louis' idea to force finding positions in oracle

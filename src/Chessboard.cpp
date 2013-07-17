@@ -419,13 +419,47 @@ const string Chessboard::exportToFEN(bool removeClock)
         sp += enpassant_->to_string();
     else
         sp += "-";
-    if (removeClock)
-        sp += " - -";
-    else {
+    if (removeClock) {
+        if (halfmoveClock_ > 47)
+            sp += " " + std::to_string(halfmoveClock_);
+        else
+            sp += " " + std::to_string(halfmoveClock_ + 47);
+        sp += " -";
+    } else {
         sp += " " + std::to_string(halfmoveClock_);
         sp += " " + std::to_string(fullmoveClock_);
     }
     return sp;
+}
+
+bool Chessboard::sufficientMaterial()
+{
+    list<Piece *> allPieces;
+    for (Rank r = 8; r >= 1; r--)
+        for (int f = A; f <= H; f++) {
+            Square *sq = board_[(File)f][r];
+            Piece *p = sq->getPiece();
+            if (p)
+                allPieces.push_back(p);
+        }
+    if (allPieces.size() > 3)
+        return true;
+    else if (allPieces.size() == 2)
+        return false;
+    else {
+        Piece *notKing;
+        for (auto it = allPieces.begin(), itEnd = allPieces.end();
+                it != itEnd; ++it)
+            if ((*it)->getKind() != Piece::KING)
+                notKing = (*it);
+        if (!notKing) {
+            Utils::output("Warning : 3 kings on the board ?!\n");
+            return false;
+        } else {
+            return !(notKing->getKind() == Piece::BISHOP
+                    || notKing->getKind() == Piece::KNIGHT);
+        }
+    }
 }
 
 Chessboard *Chessboard::createChessboard()

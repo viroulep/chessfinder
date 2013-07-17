@@ -43,6 +43,7 @@ typedef pair<Board::UCIMove, Node *> MoveNode;
 
 class Node {
 public:
+    ~Node();
     enum Status {
         TRESHOLD,
         MATE,
@@ -52,14 +53,13 @@ public:
     SimplePos pos;
     /*
      * FIXME: only store the move !
+     * OR : store as many info, then export only needed
      * legal_moves.size() = 1 when active side is playfor side
      * legal_moves contains all possible moves when playing
      * for opposite side
      */
     //vector<UCIMove> legal_moves;
     vector<MoveNode> legal_moves;
-    //0 if mate or trehshold, 1 else
-    uint16_t move;
     //Polyglot "learn" field, uint32_t
     Status st;
     string to_string();
@@ -78,8 +78,8 @@ public:
     //TODO: rename simplepos to FEN
     Node *findPos(SimplePos sp);
     void toPolyglot(ostream &os);
-private:
     static HashTable *fromPolyglot(istream &is);
+private:
     static int pieceOffset(int kind, Board::Rank r, Board::File f);
     static uint64_t turnFromFEN(string side);
     static uint64_t piecesFromFEN(string pos);

@@ -195,8 +195,6 @@ int OracleFinder::runFinderOnCurrentPosition()
             Board::UCIMove mv;
             SimplePos sp;
             //Sort the balanced line so that we take the shortest
-            //std::sort(balancedLines.begin(), balancedLines.end(),
-                    //Line::compareLineLength);
             //Here balancedLines shouldn't be empty, if so it's a bug
             //(Go reverse to have the bestLine at last)
             for (int i = balancedLines.size() - 1; i >= 0; --i) {
@@ -217,6 +215,24 @@ int OracleFinder::runFinderOnCurrentPosition()
             }
             //TODO: what if positive eval ?
             if (!next) {
+#if 0
+                //Retrieve best line or shortest line
+                std::sort(balancedLines.begin(), balancedLines.end(),
+                        Line::compareLineLength);
+                if (balancedLines[0]->getMoves().size() 
+                        < l->getMoves().size()) {
+                    //Find a shortest line if the "best" line
+                    //is not one of the shortest
+                    l = balancedLines[0];
+                    //l is not null (or bug)
+                    mv = l->firstMove();
+                    cb_->uciApplyMove(mv);
+                    //This is the next pose
+                    //TODO: do not remove clock ?
+                    sp = cb_->exportToFEN(true);
+                    cb_->undoMove();
+                }
+#endif
                 //no next position in the table, push the node to stack
                 next = new Node();
                 next->pos = sp;

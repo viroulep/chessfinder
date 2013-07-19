@@ -419,7 +419,7 @@ const string Chessboard::exportToFEN(bool removeClock)
         sp += enpassant_->to_string();
     else
         sp += "-";
-    if (removeClock) {
+    if (false) {
         if (halfmoveClock_ > 47)
             sp += " " + std::to_string(halfmoveClock_);
         else

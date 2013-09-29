@@ -56,6 +56,21 @@ int MatFinder::runFinderOnCurrentPosition()
     waitBestmove();
     Utils::output("Evaluation is :\n");
     Utils::output(getPrettyLines());
+    //TODO: check
+    if (!lines_[0].empty()) {
+        Side winning;
+        if ((lines_[0].getEval() < 0 && sideToMove == Side::WHITE)
+                || (lines_[0].getEval() > 0 && sideToMove == Side::BLACK))
+            winning = Side::BLACK;
+        else
+            winning = Side::WHITE;
+        engine_play_for_ = (winning == Side::WHITE)?
+            Side::BLACK:Side::WHITE;
+
+    }
+    Utils::output("Engine will play for : "
+            + Board::to_string(engine_play_for_) + "\n");
+
 
     //Main loop
     while (true) {
@@ -203,30 +218,25 @@ int MatFinder::updateMultiPV()
  */
 Line &MatFinder::getBestLine()
 {
+    Side active = cb_->getActiveSide();
     for (int i = 0; i < lines_.size(); ++i) {
         int limit = Options::getCpTreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines_[i].isMat()) {
-            //if (lines_[i].getEval() > 0)
-                    /*NOTE: this cond can be used to explore all the lost
-                     * line, if the side we play for is not the side starting
-                     * to move !
-                     *&& !(addedMoves_.size() == 0
-                     *&& engine_side_ != engine_play_for_))
-                     */
-                //This line is a win !
-                //eval is relative to engine side, ie positive eval is
-                //good for us
-                return lines_[i];
-            //Else this line is lost and we don't wan't it
+            //Best line is closed !
+            return lines_[i];
         } else {
-            //If the line is a draw we don't want it
-            if (fabs(lines_[i].getEval()) > limit)
-                return lines_[i];
-            else
+            if (fabs(lines_[i].getEval()) > limit) {
+                //We should only considered lost positions according to
+                //the side the engine play for
+                if ((lines_[i].getEval() < 0 && active == engine_play_for_) ||
+                        (lines_[i].getEval() > 0 && active != engine_play_for_))
+                    return lines_[i];
+            } else {
+                //If the line is a draw we don't want it
                 return Line::emptyLine;
-            //FIXME: looks complicated...
+            }
         }
     }
     //if all are draw, return the same line

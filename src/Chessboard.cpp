@@ -548,7 +548,7 @@ int Chessboard::applyMove(Move theMove)
     Piece *toTake;
 
     //Handle piece taken, if any
-    if (enpassant_ == to)
+    if (enpassant_ == to && toMove->getKind() == Piece::Kind::PAWN)
         toTake = board_[to->getFile()][from->getRank()]->getPiece();
     else
         toTake = to->getPiece(); 

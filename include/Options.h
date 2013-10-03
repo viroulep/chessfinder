@@ -119,7 +119,7 @@ private:
 
     //in centipawn
     static int CP_TRESHOLD_;
-
+    static int MATEEQUIV_;
     static Board::Side PLAY_FOR_;
 
     // 0 = minimal output
@@ -133,7 +133,8 @@ private:
 
     //Stores all the position to be processed : a list of pair (starting position, user moves)
     static PositionList START_POS_LIST_;
-
+    //Threads
+    static int THREADS_;
     //The file loaded or exported
     static string INPUT_;
     static string OUTPUT_;

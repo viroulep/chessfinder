@@ -37,7 +37,7 @@
 #define DEFAULT_INPUT_FILE ""
 #define DEFAULT_STARTPOS "startpos"
 #define DEFAULT_ENGINE "stockfish"
-#define DEFAULT_PATH "/usr/local/bin"
+#define DEFAULT_PATH "./."
 #define DEFAULT_TRESHOLD 100
 #define TIMEOUT_READY 5
 #define MOVES_DISPLAYED 5

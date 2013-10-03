@@ -42,7 +42,7 @@
 #define TIMEOUT_READY 5
 #define MOVES_DISPLAYED 5
 #define DEFAULT_MATEEQUIV 100000
-
+#define THREADS 4
 using namespace std;
 
 typedef list<pair<string, list<string>>> PositionList;
@@ -84,6 +84,9 @@ public:
     static int getMateEquiv();
     static void setMateEquiv(int treshold);
 
+    static int getThreads();
+    static void setThreads(int threads);
+    
     static string getOutputFile();
     static void setOutputFile(string file);
 

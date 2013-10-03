@@ -145,7 +145,18 @@ string Utils::helpMessage()
         "\t\tAll lines with an evaluation (in centipawn) below this value\n"\
         "\t\t  will be ignored.\n"
         << "\t\t" << "Default value : "
-        << to_string(DEFAULT_HASHMAP_SIZE) << "\n";
+        << to_string(DEFAULT_CP_TRESHOLD) << "\n";
+    oss << "\t\t" << "mate equivalent : defines the threshold value for\n"\
+        "\t\t  an evaluation to be considered.\n"\
+        "\t\tAll lines with an evaluation (in centipawn) higherthan this value\n"\
+        "\t\t  will be consideredas mate .\n"
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_MATEEQUIV) << "\n";
+    oss << "\n";
+    oss << "\n";
+    oss << "\t\t" << "Threads : defines the number of threads (CPUs)\n"\
+        << "\t\t" << "Default value : "
+        << to_string(DEFAULT_THREADS) << "\n";
     oss << "\n";
     oss << "\t" << "--input_file=file, -n file\n";
     oss << "\t\t" << "Defines the input file from which to load the table\n"\

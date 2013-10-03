@@ -41,6 +41,7 @@
 #define DEFAULT_TRESHOLD 100
 #define TIMEOUT_READY 5
 #define MOVES_DISPLAYED 5
+#define DEFAULT_MATEEQUIV 100000
 
 using namespace std;
 
@@ -79,6 +80,9 @@ public:
 
     static int getCpTreshold();
     static void setCpTreshold(int treshold);
+    
+    static int getMateEquiv();
+    static void setMateEquiv(int treshold);
 
     static string getOutputFile();
     static void setOutputFile(string file);

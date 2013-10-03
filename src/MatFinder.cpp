@@ -117,7 +117,7 @@ int MatFinder::runFinderOnCurrentPosition()
 
         Utils::output(getPrettyLines(), 2);
         bestLine = getBestLine();
-        if (bestLine.empty() || bestLine.isMat()) {
+        if (bestLine.empty() || bestLine.isMat()||(fabs(bestLine.getEval())>Options::getMateEquiv())) {
             //Handle the case where we should backtrack
             if (addedMoves_ > 0) {
                 Utils::output("\tBacktracking " + cb_->getUciMoves().back()

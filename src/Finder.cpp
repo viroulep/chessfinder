@@ -107,6 +107,7 @@ int Finder::runFinder()
     sendOptionToEngine("Hash", to_string(Options::getHashmapSize()));
     sendOptionToEngine("UCI_AnalyseMode", "true");
     sendOptionToEngine("MultiPV", to_string(Options::getMaxLines()));
+    sendOptionToEngine("Threads",to_string(Options::getThreads()));
     sendToEngine("ucinewgame");
 
     sendToEngine("isready");

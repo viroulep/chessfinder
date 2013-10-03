@@ -24,7 +24,7 @@ TOPDIR=$(shell pwd)
 #include $(TOPDIR)/common.mk
 
 
-LDFLAGS += -L/usr/lib/x86_64-linux-gnu -lpthread
+LDFLAGS += -lpthread
 SUBDIRS:=
 
 ALL_TARGETS =

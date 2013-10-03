@@ -123,6 +123,14 @@ int MatFinder::runFinderOnCurrentPosition()
                 Utils::output("\tBacktracking " + cb_->getUciMoves().back()
                     + " (addedMove#" + to_string(addedMoves_)
                     + ")\n");
+                
+                
+				// bestline lower than limit allows to detect tricky position for which
+				// backtraking should be improved (lower limit associated to evaluate position 
+				// dont bother if score less than x (we have an alternative) for now we just 
+				//manually increase attacking time to avoid bad lines
+				if (bestLine.empty())  Utils::output("\n\n\n\n DEFENDER SURVIVE \n\n\n\n ",1);
+
                 //Remove opposite side previous move
                 addedMoves_--;
                 cb_->undoMove();

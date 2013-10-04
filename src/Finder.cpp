@@ -56,9 +56,8 @@ Finder::Finder() :
     //Create our UCIReceiver
     uciReceiver_ = new UCIReceiver(this);
 
-
-    //engine_side_ = cb_->getActiveSide();
-    engine_play_for_ = Options::getPlayFor();
+    //Arbitrary choice
+    engine_play_for_ = Side::WHITE;
 }
 
 Finder::~Finder()

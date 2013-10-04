@@ -71,9 +71,6 @@ public:
     static int getVerboseLevel();
     static void setVerboseLevel(int verboseLevel);
 
-    static Board::Side getPlayFor();
-    static void setPlayFor(Board::Side playFor);
-
     static int getMaxLines();
     static void setMaxLines(int maxLines);
 

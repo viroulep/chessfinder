@@ -47,7 +47,6 @@ void CommonMain::parseArgs(int argc, char **argv)
         {"verbose", required_argument, 0, 'v'},
         {"startpos", required_argument, 0, 's'},
         {"engine", required_argument, 0, 'e'},
-        {"playfor", required_argument, 0, 'o'},
         {"path", required_argument, 0, 'p'},
         {"moves", required_argument, 0, 'm'},
         {"lines", required_argument, 0, 'l'},
@@ -67,11 +66,10 @@ void CommonMain::parseArgs(int argc, char **argv)
     int option_index = 0;
     string startingPos;
     list<string> moveList;
-    Board::Side playFor;
     PositionList posList;
 
     while ((c = getopt_long(argc, argv,
-                "hi:v:s:e:o:p:m:l:t:c:f:a:u:n:w:x:",
+                "hi:v:s:e:p:m:l:t:c:f:a:u:n:w:x:",
                 long_options, &option_index)) != -1) {
         switch (c) {
 
@@ -106,11 +104,6 @@ void CommonMain::parseArgs(int argc, char **argv)
                     Utils::handleError("Error parsing movelist");
                 //Adding the move is done after this loop
                 //Options::setUserMoves(moveList);
-                break;
-
-            case 'o':
-                playFor = Board::getSideFromString(optarg);
-                Options::setPlayFor(playFor);
                 break;
 
             case 'l':

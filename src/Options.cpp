@@ -32,7 +32,6 @@ PositionList Options::START_POS_LIST_;
 int Options::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
 int Options::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
 int Options::MAX_LINES_ = DEFAULT_MAX_LINES;
-Board::Side Options::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
 int Options::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
 int Options::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
 int Options::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
@@ -85,9 +84,6 @@ void Options::setVerboseLevel(int verboseLevel)
     VERBOSE_LEVEL_ = verboseLevel;
 }
 
-Board::Side Options::getPlayFor() { return PLAY_FOR_; }
-void Options::setPlayFor(Board::Side playFor) { PLAY_FOR_ = playFor; }
-
 int Options::getMaxLines() { return MAX_LINES_; }
 void Options::setMaxLines(int maxLines) { MAX_LINES_ = maxLines; }
 
@@ -137,7 +133,6 @@ string Options::getPretty()
     oss << "Options :\n";
     oss << "\t" << "Engine\t\t\t" << " = " << ENGINE_ << endl;
     oss << "\t" << "Path\t\t\t" << " = " << PATH_ << endl;
-    oss << "\t" << "Playfor\t\t\t" << " = " << Board::to_string(PLAY_FOR_) << endl;
     oss << "\t" << "Playfor Movetime\t" << " = " << PLAYFOR_MOVETIME_ << endl;
     oss << "\t" << "Playagainst Movetime\t" << " = "
         << PLAYAGAINST_MOVETIME_ << endl;

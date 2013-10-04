@@ -101,11 +101,6 @@ string Utils::helpMessage()
     oss << "\t\t" << "Defines the uci engine command.\n"
         << "\t\t" << "Default value : \"" << DEFAULT_ENGINE << "\"\n";
     oss << "\n";
-    oss << "\t" << "--playfor=side, -o side\n";
-    oss << "\t\t" << "Defines the side the engine plays for.\n"
-        << "\t\t" << "Default value : \""
-        << Board::to_string(Board::Side::DEFAULT_PLAY_FOR) << "\"\n";
-    oss << "\n";
     oss << "\t" << "--path=path, -p path\n";
     oss << "\t\t" << "Defines the engine binary's path.\n"
         << "\t\t" << "Default value : \"" << DEFAULT_PATH << "\"\n";

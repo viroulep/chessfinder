@@ -117,12 +117,22 @@ int MatFinder::runFinderOnCurrentPosition()
 
         Utils::output(getPrettyLines(), 2);
         bestLine = getBestLine();
-        if (bestLine.empty() || bestLine.isMat()) {
+        if (bestLine.empty() || bestLine.isMat() ||
+                fabs(bestLine.getEval()) > Options::getMateEquiv()) {
             //Handle the case where we should backtrack
             if (addedMoves_ > 0) {
                 Utils::output("\tBacktracking " + cb_->getUciMoves().back()
                     + " (addedMove#" + to_string(addedMoves_)
                     + ")\n");
+
+                /*
+                 * We did a "mistake" : a line previously unbalanced is now a
+                 * draw, we should better the backtracking by, for example,
+                 * increasing attacking time
+                 */
+                if (bestLine.empty())
+                    Utils::output("\n\n\n\n DEFENDER SURVIVED \n\n\n\n ", 1);
+
                 //Remove opposite side previous move
                 addedMoves_--;
                 cb_->undoMove();

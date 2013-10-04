@@ -36,8 +36,9 @@ Board::Side Options::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
 int Options::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
 int Options::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
 int Options::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
+int Options::MATE_EQUIV_ = DEFAULT_MATE_EQUIV;
 
-
+int Options::ENGINE_THREADS_ = DEFAULT_THREADS;
 string Options::INPUT_ = DEFAULT_INPUT_FILE;
 string Options::OUTPUT_ = DEFAULT_OUTPUT_FILE;
 
@@ -103,6 +104,14 @@ void Options::setCpTreshold(int treshold)
     CP_TRESHOLD_ = treshold;
 }
 
+int Options::getEngineThreads() { return ENGINE_THREADS_; }
+void Options::setEngineThreads(int threads) { ENGINE_THREADS_ = threads; }
+
+
+int Options::getMateEquiv() { return MATE_EQUIV_; }
+
+void Options::setMateEquiv(int mate_equiv) { MATE_EQUIV_ = mate_equiv; }
+
 string Options::getOutputFile()
 {
     return OUTPUT_;
@@ -136,6 +145,9 @@ string Options::getPretty()
     oss << "\t" << "Verbose level\t\t" << " = " << VERBOSE_LEVEL_ << endl;
     oss << "\t" << "Hashmap size\t\t" << " = " << HASHMAP_SIZE_ << endl;
     oss << "\t" << "Centipawn treshold\t" << " = " << CP_TRESHOLD_ << endl;
-
+    oss << "\t" << "Eval equivalent to mate  \t" << " = "
+        << MATE_EQUIV_ << endl;
+    oss << "\t" << "Engine threads  \t" << " = "
+        << ENGINE_THREADS_ << endl;
     return oss.str();
 }

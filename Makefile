@@ -23,8 +23,12 @@ TOPDIR=$(shell pwd)
 
 #include $(TOPDIR)/common.mk
 
+UNAME_S:=$(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	LDFLAGS += -L/usr/lib/x86_64-linux-gnu
+endif
 
-LDFLAGS += -L/usr/lib/x86_64-linux-gnu -lpthread
+LDFLAGS += -lpthread
 SUBDIRS:=
 
 ALL_TARGETS =

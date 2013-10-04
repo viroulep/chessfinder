@@ -58,6 +58,8 @@ void CommonMain::parseArgs(int argc, char **argv)
         {"cp_treshold", required_argument, 0, 'c'},
         {"output_file", required_argument, 0, 'u'},
         {"input_file", required_argument, 0, 'n'},
+        {"mateq", required_argument, 0, 'w'},
+        {"engine_threads", required_argument, 0, 'x'},
     };
 
     int c;
@@ -69,7 +71,7 @@ void CommonMain::parseArgs(int argc, char **argv)
     PositionList posList;
 
     while ((c = getopt_long(argc, argv,
-                "hi:v:s:e:o:p:m:l:t:c:f:a:u:n:",
+                "hi:v:s:e:o:p:m:l:t:c:f:a:u:n:w:x:",
                 long_options, &option_index)) != -1) {
         switch (c) {
 
@@ -162,6 +164,22 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'n':
                 Options::setInputFile(optarg);
+                break;
+
+            case 'w':
+                try {
+                    Options::setMateEquiv(stoi(optarg));
+                } catch (...) {
+                    Utils::handleError("Error parsing mateq value");
+                }
+                break;
+
+            case 'x':
+                try {
+                    Options::setEngineThreads(stoi(optarg));
+                } catch (...) {
+                    Utils::handleError("Error parsing engine threads");
+                }
                 break;
 
             case '?':

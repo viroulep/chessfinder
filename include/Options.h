@@ -31,16 +31,19 @@
 #define DEFAULT_PLAY_FOR WHITE
 #define DEFAULT_VERBOSE_LEVEL 0
 #define DEFAULT_HASHMAP_SIZE 4096
-#define DEFAULT_PLAYFOR_MOVETIME_ 1500
-#define DEFAULT_PLAYAGAINST_MOVETIME_ 1000
+#define DEFAULT_PLAYFOR_MOVETIME_ 2500
+#define DEFAULT_PLAYAGAINST_MOVETIME_ 2000
 #define DEFAULT_OUTPUT_FILE ""
 #define DEFAULT_INPUT_FILE ""
 #define DEFAULT_STARTPOS "startpos"
 #define DEFAULT_ENGINE "stockfish"
 #define DEFAULT_PATH "/usr/local/bin"
 #define DEFAULT_TRESHOLD 100
+#define DEFAULT_MATE_EQUIV 100000
+#define DEFAULT_THREADS 4
+
 #define TIMEOUT_READY 5
-#define MOVES_DISPLAYED 8
+#define MOVES_DISPLAYED 5
 
 using namespace std;
 
@@ -80,6 +83,12 @@ public:
     static int getCpTreshold();
     static void setCpTreshold(int treshold);
 
+    static int getMateEquiv();
+    static void setMateEquiv(int treshold);
+
+    static int getEngineThreads();
+    static void setEngineThreads(int threads);
+
     static string getOutputFile();
     static void setOutputFile(string file);
 
@@ -113,6 +122,12 @@ private:
     //in centipawn
     static int CP_TRESHOLD_;
 
+    /*
+     * Value equivalent to mate (if we want to close the position at a given
+     * evaluation
+     */
+    static int MATE_EQUIV_;
+
     static Board::Side PLAY_FOR_;
 
     // 0 = minimal output
@@ -124,8 +139,14 @@ private:
     // in Mo
     static int HASHMAP_SIZE_;
 
-    //Stores all the position to be processed : a list of pair (starting position, user moves)
+    /*
+     * Stores all the position to be processed :
+     * a list of pair (starting position, user moves)
+     */
     static PositionList START_POS_LIST_;
+
+    //Number of threads used by stockfish
+    static int ENGINE_THREADS_;
 
     //The file loaded or exported
     static string INPUT_;

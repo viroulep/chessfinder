@@ -71,14 +71,16 @@ void Thread::start() {
 void Thread::kill() 
 {
     int status = pthread_cancel(PthreadThreadID_);
-    //Utils::handleError("pthread_cancel failed at", status,
-        //__FILE__, __LINE__);
+    Utils::handleError("pthread_cancel failed at", status,
+        __FILE__, __LINE__);
 }
 
 
 void Thread::detach()
 {
     int status = pthread_detach(PthreadThreadID_);
+    Utils::handleError("pthread_detach failed at", status,
+        __FILE__, __LINE__);
 }
 
 void *Thread::join()

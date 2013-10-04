@@ -261,7 +261,7 @@ int OracleFinder::runFinderOnCurrentPosition()
             //get all draw lines and push them
 
             Utils::output("Pushed lines : ", 2);
-            for (int i = 0; i < balancedLines.size(); ++i) {
+            for (int i = 0; i < (int) balancedLines.size(); ++i) {
                 Line *l = balancedLines[i];
                 Board::UCIMove mv = l->firstMove();
                 cb_->uciApplyMove(mv);
@@ -320,7 +320,7 @@ SortedLines OracleFinder::getLines()
     vector<Line *> balanced;
     vector<Line *> unbalanced;
     SortedLines retVal;
-    for (int i = 0; i < lines_.size(); ++i) {
+    for (int i = 0; i < (int) lines_.size(); ++i) {
         Line l = lines_[i];
         if (l.empty())
             continue;
@@ -340,7 +340,7 @@ SortedLines OracleFinder::getLines()
 void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
 {
     //Do not check access, assume Line * is legal addr
-    for (int i = 0; i < unbalanced.size(); ++i) {
+    for (int i = 0; i < (int) unbalanced.size(); ++i) {
         Line *l = unbalanced[i];
         if (!l)
             Utils::handleError("An unbalanced line is null ("

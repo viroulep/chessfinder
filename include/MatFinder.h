@@ -38,7 +38,7 @@ class UCIReceiver;
 class MatFinder : public Finder {
 public:
     MatFinder();
-    ~MatFinder();
+    virtual ~MatFinder();
 
 private:
     int runFinderOnCurrentPosition();

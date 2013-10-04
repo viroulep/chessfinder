@@ -191,11 +191,11 @@ int MatFinder::updateMultiPV()
     bool lastEvalMat = false;
     bool allMat = true;
     int nonEmptyLines = 0;
-    for (int i = 0; i < lines_.size(); ++i)
+    for (int i = 0; i < (int) lines_.size(); ++i)
         if (!lines_[i].empty())
             nonEmptyLines++;
     Utils::output("Non empty : " + to_string(nonEmptyLines) + "\n", 3);
-    for (int i = 0; i < lines_.size(); ++i) {
+    for (int i = 0; i < (int) lines_.size(); ++i) {
         if (i > 0) {
             if (lastEvalMat 
                     || fabs(lines_[i].getEval() - lastEvalValue) > diffLimit) {
@@ -229,7 +229,7 @@ int MatFinder::updateMultiPV()
 Line &MatFinder::getBestLine()
 {
     Side active = cb_->getActiveSide();
-    for (int i = 0; i < lines_.size(); ++i) {
+    for (int i = 0; i < (int) lines_.size(); ++i) {
         int limit = Options::getCpTreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn

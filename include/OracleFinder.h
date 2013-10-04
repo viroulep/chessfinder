@@ -48,14 +48,16 @@ typedef array<vector<Line *>, 2> SortedLines;
 class OracleFinder : public Finder {
 public:
     OracleFinder();
-    ~OracleFinder();
+    virtual ~OracleFinder();
 
 private:
     int runFinderOnCurrentPosition();
     SortedLines getLines();
     void proceedUnbalancedLines(vector<Line *> unbalanced);
     HashTable *oracleTable_;
-    Node *rootNode_ = NULL;
+    /*
+     *Node *rootNode_ = NULL;
+     */
     list<Node *> toProceed_;
 };
 

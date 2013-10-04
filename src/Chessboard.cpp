@@ -284,7 +284,6 @@ const string Chessboard::tryUciMoves(const list<string> &moves, int limit)
     int movePlayed = 0;
     int stop = (limit == -1)?moves.size():limit;
     oss << moveClock << ".";
-    int notPar = moveHistory_.size()%2;
     if ((int)active_) {
         oss << "..";
         halfMove++;
@@ -301,7 +300,7 @@ const string Chessboard::tryUciMoves(const list<string> &moves, int limit)
     }
     for (int i = 0; i < movePlayed; i++)
         undoMove();
-    if (movePlayed < moves.size())
+    if (movePlayed < (int) moves.size())
         oss << "[...moves...]";
     /*
      *for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
@@ -512,7 +511,7 @@ Chessboard *Chessboard::createFromFEN(string fenString)
     return cb;
 }
 
-Chessboard::Chessboard() : board_(), takenPieces_()
+Chessboard::Chessboard() : takenPieces_(), board_()
 {
     //need to initialize all the datas
     for (int f = A; f <= H; f++)
@@ -568,7 +567,7 @@ int Chessboard::applyMove(Move theMove)
         //Update enpassant square
         if (to->getRank() - (int)from->getRank() == 2)
             enpassant_ = board_[from->getFile()][from->getRank() + 1];
-        else if (to->getRank() - (int)from->getRank() == -2)
+        else if ((int) to->getRank() - (int)from->getRank() == -2)
             enpassant_ = board_[from->getFile()][from->getRank() - 1];
     }
 
@@ -725,7 +724,7 @@ void Chessboard::clear()
     halfmoveClock_ = 0;
     fullmoveClock_ = 1;
     active_ = Side::WHITE;
-    int castle_ = 0x0;
+    castle_ = 0x0;
 }
 
 void Chessboard::posFromFEN(string pos)

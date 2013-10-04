@@ -155,7 +155,7 @@ int Finder::runFinder()
 
 void Finder::updateLine(int index, Line &line)
 {
-    if (index >= lines_.size()) {
+    if (index >= (int) lines_.size()) {
         Utils::handleError("Index '" + to_string(index) + "' out of bound !");
     }
     lines_[index].update(line);
@@ -232,7 +232,7 @@ string Finder::getPrettyLines()
 {
     ostringstream oss;
     Line curLine;
-    for (int i = 0; i < lines_.size(); ++i) {
+    for (int i = 0; i < (int) lines_.size(); ++i) {
         curLine = lines_[i];
         if (!curLine.empty()) {
             oss << "\t[";

@@ -31,7 +31,7 @@ Line::Line() : eval_(0)
 }
 
 Line::Line(float ev, int depth, list<string> mv, bool isMat) :
-    eval_(ev), depth_(depth), isMat_(isMat)
+    eval_(ev), isMat_(isMat), depth_(depth)
 {
     //*copy* the moves from mv to move_
     moves_.insert(moves_.end(), mv.begin(), mv.end());
@@ -78,7 +78,7 @@ string Line::getPretty(bool invertEval)
         tmpList.pop_front();
         i++;
     }
-    if (i < tmpList.size())
+    if (i < (int) tmpList.size())
         out << "[...moves...]";
     out << "\n";
 

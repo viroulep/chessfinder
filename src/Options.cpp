@@ -36,8 +36,9 @@ Board::Side Options::PLAY_FOR_ = Board::Side::DEFAULT_PLAY_FOR;
 int Options::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
 int Options::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
 int Options::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
+int Options::MATEEQUIV_ = DEFAULT_MATEEQUIV;
 
-
+int Options::THREADS_ = DEFAULT_THREADS;
 string Options::INPUT_ = DEFAULT_INPUT_FILE;
 string Options::OUTPUT_ = DEFAULT_OUTPUT_FILE;
 
@@ -103,6 +104,21 @@ void Options::setCpTreshold(int treshold)
     CP_TRESHOLD_ = treshold;
 }
 
+nt Options::getThreads() { return THREADS_; }
+
+void Options::setThreads(int threads)
+{
+    THREADS_ = threads;
+}
+
+
+int Options::getMateEquiv() { return MATEEQUIV_; }
+
+void Options::setMateEquiv(int mateequiv)
+{
+    MATEEQUIV_ = mateequiv;
+}
+
 string Options::getOutputFile()
 {
     return OUTPUT_;
@@ -136,6 +152,7 @@ string Options::getPretty()
     oss << "\t" << "Verbose level\t\t" << " = " << VERBOSE_LEVEL_ << endl;
     oss << "\t" << "Hashmap size\t\t" << " = " << HASHMAP_SIZE_ << endl;
     oss << "\t" << "Centipawn treshold\t" << " = " << CP_TRESHOLD_ << endl;
-
+    oss << "\t" << "Maximal eval value wanted  \t" << " = " << MATEEQUIV_ << endl;
+    oss << "\t" << "Threads  \t" << " = " << THREADS_ << endl;
     return oss.str();
 }

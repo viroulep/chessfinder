@@ -27,21 +27,22 @@
 #include <utility>
 #include "Board.h"
 
-#define DEFAULT_MAX_LINES 8
+#define DEFAULT_MAX_LINES 5
 #define DEFAULT_PLAY_FOR WHITE
 #define DEFAULT_VERBOSE_LEVEL 0
-#define DEFAULT_HASHMAP_SIZE 4096
-#define DEFAULT_PLAYFOR_MOVETIME_ 1500
-#define DEFAULT_PLAYAGAINST_MOVETIME_ 1000
+#define DEFAULT_HASHMAP_SIZE 1024
+#define DEFAULT_PLAYFOR_MOVETIME_ 2500
+#define DEFAULT_PLAYAGAINST_MOVETIME_ 2000
 #define DEFAULT_OUTPUT_FILE ""
 #define DEFAULT_INPUT_FILE ""
 #define DEFAULT_STARTPOS "startpos"
 #define DEFAULT_ENGINE "stockfish"
-#define DEFAULT_PATH "/usr/local/bin"
+#define DEFAULT_PATH "./."
 #define DEFAULT_TRESHOLD 100
 #define TIMEOUT_READY 5
-#define MOVES_DISPLAYED 8
-
+#define MOVES_DISPLAYED 5
+#define DEFAULT_MATEEQUIV 100000
+#define THREADS 4
 using namespace std;
 
 typedef list<pair<string, list<string>>> PositionList;
@@ -79,7 +80,13 @@ public:
 
     static int getCpTreshold();
     static void setCpTreshold(int treshold);
+    
+    static int getMateEquiv();
+    static void setMateEquiv(int treshold);
 
+    static int getThreads();
+    static void setThreads(int threads);
+    
     static string getOutputFile();
     static void setOutputFile(string file);
 
@@ -112,7 +119,7 @@ private:
 
     //in centipawn
     static int CP_TRESHOLD_;
-
+    static int MATEEQUIV_;
     static Board::Side PLAY_FOR_;
 
     // 0 = minimal output
@@ -126,7 +133,8 @@ private:
 
     //Stores all the position to be processed : a list of pair (starting position, user moves)
     static PositionList START_POS_LIST_;
-
+    //Threads
+    static int THREADS_;
     //The file loaded or exported
     static string INPUT_;
     static string OUTPUT_;

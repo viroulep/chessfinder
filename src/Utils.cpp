@@ -146,6 +146,7 @@ string Utils::helpMessage()
         "\t\t  will be ignored.\n"
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_CP_TRESHOLD) << "\n";
+    oss << "\t" << "--mateq=mateeq, -w mateeq\n";
     oss << "\t\t" << "mate equivalent : defines the threshold value for\n"\
         "\t\t  an evaluation to be considered.\n"\
         "\t\tAll lines with an evaluation (in centipawn) higherthan this value\n"\
@@ -153,7 +154,7 @@ string Utils::helpMessage()
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_MATEEQUIV) << "\n";
     oss << "\n";
-    oss << "\n";
+    oss << "\t" << "--threads=threads, -h threads\n";
     oss << "\t\t" << "Threads : defines the number of threads (CPUs)\n"\
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_THREADS) << "\n";

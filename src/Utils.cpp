@@ -134,7 +134,7 @@ string Utils::helpMessage()
         << "\t\t" << "Default value : "
         << to_string(DEFAULT_HASHMAP_SIZE) << "\n";
     oss << "\n";
-    oss << "\t" << "--cp_treshold=limit, -t limit\n";
+    oss << "\t" << "--cp_treshold=limit, -c limit\n";
     oss << "\t\t" << "Centipawn treshold : defines the treshold value for\n"\
         "\t\t  an evaluation to be considered.\n"\
         "\t\tAll lines with an evaluation (in centipawn) below this value\n"\

@@ -15,7 +15,7 @@ It has been tested on Unix and Mac.
 ## Overview
 
 The aim of matfinder is to close an unbalanced positions by mates.
-It will explore a the best line deep first until it finds a mate, and then backtrack until it found that the best line is not mate, and re-iterate this process.
+It will explore the best line deep first until it finds a mate, and then backtrack until it finds that the best line is not mate, and re-iterate this process until the best line is mate.
 
 This works because the chess engine does keep the known line in its memory. If you doesn't set correctly (ie: high enough) the amount of memory used by the chess engine, then matfinder may not terminate.
 

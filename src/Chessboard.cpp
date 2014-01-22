@@ -23,6 +23,7 @@
 #include <queue>
 #include <cstdlib>
 #include "Chessboard.h"
+#include "Line.h"
 #include "Utils.h"
 
 using namespace Board;
@@ -96,20 +97,19 @@ const string Chessboard::to_string()
                 } else if (r == 3) {
                     oss << "| Castling : ";
                     if (castle_ & WKCASTLE)
-                        oss << "k";
-                    if (castle_ & WQCASTLE)
-                        oss << "q";
-                    if (castle_ & BKCASTLE)
                         oss << "K";
-                    if (castle_ & BQCASTLE)
+                    if (castle_ & WQCASTLE)
                         oss << "Q";
+                    if (castle_ & BKCASTLE)
+                        oss << "k";
+                    if (castle_ & BQCASTLE)
+                        oss << "q";
                     oss << "\n";
                 } else {
                     oss << "|\n";
                 }
                 oss << "  -----------------\n";
             }
-            
         }
     oss << "   a b c d e f g h\n\n";
     oss << prettyHistoryToString() << "\n";
@@ -162,6 +162,11 @@ void Chessboard::reInitFromFEN(string fenString)
 
 int Chessboard::uciApplyMove(string uciMove)
 {
+    return applyMove(getMoveFromUci(uciMove));
+}
+
+Move Chessboard::getMoveFromUci(string uciMove)
+{
     if (uciMove.size() < 4 || uciMove.size() > 5)
         Utils::handleError("Error parsing uci move");
     Square *from = squareFromString(uciMove.substr(0, 2));
@@ -171,28 +176,11 @@ int Chessboard::uciApplyMove(string uciMove)
     mv.to = to;
     mv.halfMoveCk = halfmoveClock_;
     mv.enpassantSquare = enpassant_;
-    if (uciMove.size() == 5) {
+    if (to->getPiece())
+        mv.takePiece = true;
+    if (uciMove.size() == 5)
         mv.promoteTo = Board::promotionFromChar(uciMove[4]);
-        /*
-         *switch (uciMove[4]) {
-         *    case 'q':
-         *        mv.promoteTo = Piece::Kind::QUEEN;
-         *        break;
-         *    case 'n':
-         *        mv.promoteTo = Piece::Kind::KNIGHT;
-         *        break;
-         *    case 'b':
-         *        mv.promoteTo = Piece::Kind::BISHOP;
-         *        break;
-         *    case 'r':
-         *        mv.promoteTo = Piece::Kind::ROOK;
-         *        break;
-         *    default:
-         *        Utils::handleError("Invalid promotion");
-         *}
-         */
-    }
-    return applyMove(mv);
+    return mv;
 }
 
 int Chessboard::uciApplyMoves(list<string> uciMoves)
@@ -216,7 +204,6 @@ void Chessboard::undoMove()
     prettyMoveHistory_.pop_back();
     Square *from = lastMove.to;
     Square *to = lastMove.from;
-    
 
     if (!from || !to)
         Utils::handleError("Unexpected error : cannot undo move.");
@@ -310,6 +297,25 @@ const string Chessboard::tryUciMoves(const list<string> &moves, int limit)
     return oss.str();
 }
 
+/*Return true if lhs < rhs*/
+bool Chessboard::compareTake(Line *lhs, Line *rhs)
+{
+    Move lhsM = getMoveFromUci(lhs->firstMove());
+    Move rhsM = getMoveFromUci(rhs->firstMove());
+    if (!lhsM.takePiece && !rhsM.takePiece)
+        return false;
+    else if (lhsM.takePiece)
+        return true;
+    else if (rhsM.takePiece)
+        return false;
+    else {
+        Piece *lhsP = lhsM.to->getPiece();
+        Piece *rhsP = rhsM.to->getPiece();
+        return lhsP->getKind() < rhsP->getKind();
+    }
+}
+
+
 const Side Chessboard::getActiveSide()
 {
     return active_;
@@ -331,7 +337,7 @@ const list<string> Chessboard::getUciMoves()
     return moves;
 }
 
-const string Chessboard::exportToFEN(bool removeClock)
+const string Chessboard::exportToFEN()
 {
     SimplePos sp;
     int pad = 0;
@@ -403,13 +409,13 @@ const string Chessboard::exportToFEN(bool removeClock)
     sp += " ";
     string castleString = "";
     if (castle_ & WKCASTLE)
-        castleString += "k";
-    if (castle_ & WQCASTLE)
-        castleString += "q";
-    if (castle_ & BKCASTLE)
         castleString += "K";
-    if (castle_ & BQCASTLE)
+    if (castle_ & WQCASTLE)
         castleString += "Q";
+    if (castle_ & BKCASTLE)
+        castleString += "k";
+    if (castle_ & BQCASTLE)
+        castleString += "q";
     if (castleString == "")
         castleString = "-";
     sp += castleString;
@@ -418,16 +424,19 @@ const string Chessboard::exportToFEN(bool removeClock)
         sp += enpassant_->to_string();
     else
         sp += "-";
-    if (false) {
-        if (halfmoveClock_ > 47)
-            sp += " " + std::to_string(halfmoveClock_);
-        else
-            sp += " " + std::to_string(halfmoveClock_ + 47);
-        sp += " -";
-    } else {
-        sp += " " + std::to_string(halfmoveClock_);
-        sp += " " + std::to_string(fullmoveClock_);
-    }
+    /*if (removeClock) {*/
+        /*
+         *if (halfmoveClock_ > 47)
+         *    sp += " " + std::to_string(halfmoveClock_);
+         *else
+         *    sp += " " + std::to_string(halfmoveClock_ + 47);
+         */
+        /*sp += " -";*/
+        /*sp += " 50 1";*/
+    /*} else {*/
+    sp += " " + std::to_string(halfmoveClock_);
+    sp += " " + std::to_string(fullmoveClock_);
+    /*}*/
     return sp;
 }
 
@@ -550,7 +559,7 @@ int Chessboard::applyMove(Move theMove)
     if (enpassant_ == to && toMove->getKind() == Piece::Kind::PAWN)
         toTake = board_[to->getFile()][from->getRank()]->getPiece();
     else
-        toTake = to->getPiece(); 
+        toTake = to->getPiece();
 
     enpassant_ = NULL;
 
@@ -639,7 +648,7 @@ const string Chessboard::getPrettyMove(Move mv)
 const string Chessboard::prettyHistoryToString()
 {
     int printed = 0;
-    int moveIndexFirst = fullmoveClock_ - 
+    int moveIndexFirst = fullmoveClock_ -
         (prettyMoveHistory_.size() + !(int)active_)/2;
     int moveIndex = moveIndexFirst;
     //This is not related to halfmove clock
@@ -838,16 +847,16 @@ void Chessboard::castleFromFEN(string castle)
         char c;
         while ((c = *ccastle++)) {
             switch (c) {
-                case 'k':
+                case 'K':
                     castle_ |= WKCASTLE;
                     break;
-                case 'q':
+                case 'Q':
                     castle_ |= WQCASTLE;
                     break;
-                case 'K':
+                case 'k':
                     castle_ |= BKCASTLE;
                     break;
-                case 'Q':
+                case 'q':
                     castle_ |= BQCASTLE;
                     break;
                 default:

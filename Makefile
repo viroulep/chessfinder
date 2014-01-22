@@ -36,7 +36,7 @@ INSTALL_TARGETS =
 CLEAN_TARGETS =
 DISTCLEAN_TARGETS =
 
-CPPFLAGS += -Iinclude -std=c++11 -Wall
+CPPFLAGS += -Iinclude -fno-rtti -std=c++11 -Wall
 
 all: real-all
 

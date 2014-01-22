@@ -87,7 +87,6 @@ namespace Board {
                     + " on " + piece_->to_string());
         //handle by the chessboard
             //piece_->moveTo(NULL);
-            
         //we moved a piece from the square
         piece_ = newPiece;
 

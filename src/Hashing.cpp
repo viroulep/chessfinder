@@ -176,29 +176,31 @@ uint64_t HashTable::hashFEN(string fenString)
     while (getline(ss, tmpInfo, ' '))
         infos.push(tmpInfo);
 
-    //Here fen is a "simplified fen" with 4 data fields
-    if (infos.size() != 6 && infos.size() != 4)
-        Utils::handleError("Invalid input fen : must have 2 or 6 fields");
+    if (infos.size() != 6)
+        Utils::handleError("Invalid input fen : must have 6 fields");
 
     uint64_t fenHash = U64(0x0);
     while (!infos.empty()) {
         string info = infos.front();
         switch (infos.size()) {
             case 6:
-            case 4:
                 fenHash ^= piecesFromFEN(info);
                 break;
             case 5:
-            case 3:
                 fenHash ^= turnFromFEN(info);
                 break;
+            case 4:
+                fenHash ^= castleFromFEN(info);
+                break;
+            case 3:
+                fenHash ^= enpassantFromFEN(info);
+                break;
             default:
+                /*Drop the clocks*/
                 break;
 
         }
         infos.pop();
-        if (infos.size() == 2 || infos.size() == 4)
-            break;
     }
     return fenHash;
 }
@@ -208,6 +210,9 @@ uint64_t HashTable::hashBoard(Chessboard *cb)
 {
     if (!cb)
         return U64(0x0);
+    else
+        return hashFEN(cb->exportToFEN());
+#if 0
     uint64_t boardHash = U64(0x0);
     //Active side
     boardHash ^= (cb->active_ == Board::WHITE)?Random64_[780]:U64(0x0);
@@ -243,17 +248,25 @@ uint64_t HashTable::hashBoard(Chessboard *cb)
                 boardHash ^= Random64_[offset];
             }
         }
+    //TODO: castle
     return boardHash;
+#endif
 }
 
 int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {
+    /*
+     *Utils::output("pieceOffset(" + std::to_string(kind) + "," + to_char(r)
+     *        + "," + to_char(f) + ")\n");
+     *Utils::output("offset : " + std::to_string(64*kind+8*(r-1)+f) + "\n");
+     */
     //r-1 to have rank in 0-7
     return 64 * kind + 8 * (r - 1) + f;
 }
 
 uint64_t HashTable::turnFromFEN(string side)
 {
+    /*Utils::output("Turn : " + side + "\n");*/
     if (side == "w")
         return Random64_[780];//RandomTurn offset (last entry)
     else if (side == "b")
@@ -261,6 +274,55 @@ uint64_t HashTable::turnFromFEN(string side)
     else
         Utils::handleError("Invalid input fen : can't determine active side");
     return U64(0x0);
+}
+
+uint64_t HashTable::enpassantFromFEN(string enpassant)
+{
+    /*Utils::output("Enpassant : " + enpassant + "\n");*/
+    if (enpassant == "-") {
+        return U64(0x0);
+    } else if (enpassant.length() != 2) {
+        Utils::handleError("Invalid input fen : can't determine enpassant");
+        return U64(0x0);
+    } else {
+        Board::File f;
+        Board::Rank r;
+        Board::squareFromString(enpassant, &f, &r);
+        Utils::output("File : " + std::to_string(f) + "\n");
+        Utils::output("Value : " + std::to_string(Random64_[772+f]) + "\n");
+        return Random64_[772 + f];
+    }
+}
+
+uint64_t HashTable::castleFromFEN(string castle)
+{
+    /*Utils::output("Castle : " + castle + "\n");*/
+    if (castle == "-")
+        return U64(0x0);
+    else {
+        uint64_t castleKey = U64(0x0);
+        const char *ccastle = castle.c_str();
+        char c;
+        while ((c = *ccastle++)) {
+            switch (c) {
+                case 'K':
+                    castleKey ^= Random64_[768];
+                    break;
+                case 'Q':
+                    castleKey ^= Random64_[769];
+                    break;
+                case 'k':
+                    castleKey ^= Random64_[770];
+                    break;
+                case 'q':
+                    castleKey ^= Random64_[771];
+                    break;
+                default:
+                    Utils::handleError("Invalid input fen : can't get castle");
+            }
+        }
+        return castleKey;
+    }
 }
 
 uint64_t HashTable::piecesFromFEN(string pos)
@@ -747,6 +809,7 @@ const uint64_t HashTable::Random64_[] = {
     U64(0x003A93D8B2806962), U64(0x1C99DED33CB890A1),
     U64(0xCF3145DE0ADD4289), U64(0xD0E4427A5514FB72),
     U64(0x77C621CC9FB3A483), U64(0x67A34DAC4356550B),
+    /* RandomTurn */
     U64(0xF8D626AAAF278509),
 };
 

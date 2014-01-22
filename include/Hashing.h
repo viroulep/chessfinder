@@ -40,6 +40,7 @@ using namespace std;
 class Node;
 
 typedef pair<Board::UCIMove, Node *> MoveNode;
+typedef vector<MoveNode> LegalNodes;
 
 class Node {
 public:
@@ -50,16 +51,15 @@ public:
         STALEMATE,
         DRAW
     };
+    /*Fen string without clock informations*/
+    /*Actually its the full fen*/
     SimplePos pos;
     /*
      * FIXME: only store the move !
-     * OR : store as many info, then export only needed
-     * legal_moves.size() = 1 when active side is playfor side
-     * legal_moves contains all possible moves when playing
-     * for opposite side
+     * And sort according to the natural ordering
      */
     //vector<UCIMove> legal_moves;
-    vector<MoveNode> legal_moves;
+    LegalNodes legal_moves;
     //Polyglot "learn" field, uint32_t
     Status st;
     string to_string();
@@ -83,6 +83,8 @@ private:
     static int pieceOffset(int kind, Board::Rank r, Board::File f);
     static uint64_t turnFromFEN(string side);
     static uint64_t piecesFromFEN(string pos);
+    static uint64_t enpassantFromFEN(string enpassant);
+    static uint64_t castleFromFEN(string castle);
 
     static const uint64_t Random64_[781];
 };

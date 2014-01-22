@@ -25,6 +25,7 @@
 #include <string>
 #include <list>
 #include "Board.h"
+#include "Line.h"
 
 using namespace Board;
 class HashTable;
@@ -39,17 +40,21 @@ public:
     void reInitFromFEN(string fenString);
     //Return the pretty move
     int uciApplyMove(string uciMove);
+    Move getMoveFromUci(string uciMove);
     int uciApplyMoves(list<string> uciMoves);
     void undoMove();
     //Play the moves, backtrack them, then return
     //corresponding prettyMovesHistory
     const string tryUciMoves(const list<string> &moves, int limit = -1);
 
+    /*Move comparators*/
+    bool compareTake(Line *lhs, Line *rhs);
+
     const Side getActiveSide();
 
     const list<string> getUciMoves();
 
-    const string exportToFEN(bool removeClock = false);
+    const string exportToFEN();
 
     //Return true if board has sufficient material to not draw
     bool sufficientMaterial();
@@ -77,6 +82,8 @@ private:
     void enpassantFromFEN(string ep);
     void halfmoveCkFromFEN(string clock);
     void fullmoveCkFromFEN(string clock);
+
+
 
     list<Piece *> takenPieces_;
     list<Move> moveHistory_;

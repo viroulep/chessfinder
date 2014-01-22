@@ -26,7 +26,7 @@
 using namespace std;
 
 Engine::Engine(const string engineName, const string binPrefix,
-        const string startpos) : 
+        const string startpos) :
     name_(engineName), prefix_(binPrefix), startpos_(startpos)
 {
     //TODO: work on this ?

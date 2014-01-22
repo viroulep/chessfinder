@@ -53,6 +53,7 @@ public:
 private:
     int runFinderOnCurrentPosition();
     SortedLines getLines();
+    Board::LegalMoves getAllMoves();
     void proceedUnbalancedLines(vector<Line *> unbalanced);
     HashTable *oracleTable_;
     /*

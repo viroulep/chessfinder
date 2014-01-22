@@ -22,6 +22,7 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 #include <string>
+#include <vector>
 #include <sstream>
 
 using namespace std;
@@ -48,7 +49,7 @@ namespace Board {
     const char to_char(Rank theRank);
 
     class Piece;
-    class Square { 
+    class Square {
     public:
         Square(File file, Rank rank);
         Square(File file, Rank rank, Piece *piece);
@@ -66,7 +67,7 @@ namespace Board {
     };
 
 
-    class Piece { 
+    class Piece {
     public:
         enum Kind {
             PAWN,
@@ -113,7 +114,8 @@ namespace Board {
     } Move;
 
     typedef string UCIMove;
-    //2 first element of fen
+    typedef vector<UCIMove> LegalMoves;
+    //4 first element of fen
     typedef string SimplePos;
 
     void squareFromString(string str, File *f, Rank *r);

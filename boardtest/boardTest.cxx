@@ -34,79 +34,90 @@ int main()
 {
     Options::setVerboseLevel(2);
     //string fen = "rnbqkbnr/pp2pppp/8/2ppP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3";
+    /*string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";*/
+    string startFen = "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2";
+    /*string startFen = "rnbqkbnr/p1pppppp/8/8/PpP4P/8/1P1PPPP1/RNBQKBNR b KQkq c3 0 3";*/
+    /*string startFen = "rnbq1bnr/ppp1pkpp/8/3pPp2/8/8/PPPPKPPP/RNBQ1BNR w - - 0 4";*/
+    /*uint64_t expected = 0x823c9b50fd114196;*/
+    uint64_t expected = 0x0756b94461c50fb0;
+    uint64_t display  = 0xCF3145DE0ADD4289;
     string fenfen = "rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
     string fen = "2r5/3P4/8/8/5K2/8/3k4/8 w - - 0 38";
     string fenInsuficient = "8/8/8/3k4/3b4/3K4/8/8 w - - 0 1";
     //Chessboard *test = Chessboard::createChessboard();
-    Chessboard *test = Chessboard::createFromFEN(fen);
-    uint64_t hash = HashTable::hashBoard(test);
-    uint64_t hashFen = HashTable::hashFEN(fen);
+    Chessboard *test = Chessboard::createFromFEN(startFen);
+    /*uint64_t hash = HashTable::hashBoard(test);*/
+    uint64_t hashFen = HashTable::hashFEN(startFen);
 
     Utils::output(test->to_string() + "\n");
     Utils::output("Sufficient  : " + to_string(test->sufficientMaterial())
             + "\n");
     Utils::output("Hashs : \n");
-    Utils::output("Board : " + to_string(hash) + "\n");
+    /*Utils::output("Board : " + to_string(hash) + "\n");*/
     Utils::output("FEN   : " + to_string(hashFen) + "\n");
+    Utils::output("Expected   : " + to_string(expected) + "\n");
+    Utils::output("Display   : " + to_string(display) + "\n");
     Utils::output("Fens : \n");
-    Utils::output("Orig  : " + fen + "\n");
+    Utils::output("Orig  : " + startFen + "\n");
     Utils::output("Board : " + test->exportToFEN() + "\n");
-    test->reInitFromFEN(fenfen);
-    Utils::output(test->to_string() + "\n");
-    Utils::output("Sufficient  : " + to_string(test->sufficientMaterial())
-            + "\n");
-    Utils::output("Fens : \n");
-    Utils::output("Orig  : " + fenfen + "\n");
-    Utils::output("Board : " + test->exportToFEN() + "\n");
-
-    UCIMove mv = "e2e4n";
-    Utils::output("e2e4n : " + to_string(Board::uciToPolyglot(mv)) + "\n");
-    Utils::output("4892 : " + Board::polyglotToUci(4892) + "\n");
-    Utils::output("\n");
-
-    HashTable *tableTest = new HashTable();
-    Node *node = new Node();
-    node->pos = fen;
-    MoveNode mn;
-    mn.first = "f4f5";
-    mn.second = NULL;
-    node->legal_moves.push_back(mn);
-    node->st = Node::DRAW;
-    pair<uint64_t, Node *> p(HashTable::hashFEN(fen), node);
-    tableTest->insert(p);
-
-    Node *node2 = new Node();
-    node2->pos = fen;
-    mn.first = "e2e4";
-    mn.second = NULL;
-    node2->legal_moves.push_back(mn);
-    node2->st = Node::MATE;
-    pair<uint64_t, Node *> p2(HashTable::hashFEN(fenfen), node2);
-    tableTest->insert(p2);
-
-    Utils::output(tableTest->to_string() + "\n");
-
-    Utils::output("Ouput to file\n");
-    ofstream outputFile("oracleGardner.bin", ios::binary);
-    tableTest->toPolyglot(outputFile);
-    outputFile.close();
-
-    test->reInitFromFEN(fenInsuficient);
-    Utils::output(test->to_string() + "\n");
-    Utils::output("Sufficient  : " + to_string(test->sufficientMaterial())
-            + "\n");
-
-
-    delete tableTest;
-
-
-    Utils::output("Input from file\n");
-    ifstream inputFile("oracleGardner.bin", ios::binary);
-    HashTable *other = HashTable::fromPolyglot(inputFile);
-    Utils::output("Table :\n");
-    Utils::output(other->to_string() + "\n");
-    delete other;
-    inputFile.close();
+/*
+ *    test->reInitFromFEN(startFen);
+ *    Utils::output(test->to_string() + "\n");
+ *    Utils::output("Sufficient  : " + to_string(test->sufficientMaterial())
+ *            + "\n");
+ *    Utils::output("Fens : \n");
+ *    Utils::output("Orig  : " + startFen + "\n");
+ *    Utils::output("Board : " + test->exportToFEN() + "\n");
+ *
+ *    UCIMove mv = "e2e4n";
+ *    Utils::output("e2e4n : " + to_string(Board::uciToPolyglot(mv)) + "\n");
+ *    Utils::output("4892 : " + Board::polyglotToUci(4892) + "\n");
+ *    Utils::output("\n");
+ *
+ *    HashTable *tableTest = new HashTable();
+ *    Node *node = new Node();
+ *    node->pos = fen;
+ *    MoveNode mn;
+ *    mn.first = "f4f5";
+ *    mn.second = NULL;
+ *    node->legal_moves.push_back(mn);
+ *    node->st = Node::DRAW;
+ *    pair<uint64_t, Node *> p(HashTable::hashFEN(fen), node);
+ *    tableTest->insert(p);
+ *
+ *    Node *node2 = new Node();
+ *    node2->pos = fen;
+ *    mn.first = "e2e4";
+ *    mn.second = NULL;
+ *    node2->legal_moves.push_back(mn);
+ *    node2->st = Node::MATE;
+ *    pair<uint64_t, Node *> p2(HashTable::hashFEN(fenfen), node2);
+ *    tableTest->insert(p2);
+ *
+ *    Utils::output(tableTest->to_string() + "\n");
+ *
+ *    Utils::output("Ouput to file\n");
+ *    ofstream outputFile("oracleGardner.bin", ios::binary);
+ *    tableTest->toPolyglot(outputFile);
+ *    outputFile.close();
+ *
+ *    test->reInitFromFEN(fenInsuficient);
+ *    Utils::output(test->to_string() + "\n");
+ *    Utils::output("Sufficient  : " + to_string(test->sufficientMaterial())
+ *            + "\n");
+ *
+ *
+ *    delete tableTest;
+ *
+ *
+ *    Utils::output("Input from file\n");
+ *    ifstream inputFile("oracleGardner.bin", ios::binary);
+ *    HashTable *other = HashTable::fromPolyglot(inputFile);
+ *    Utils::output("Table :\n");
+ *    Utils::output(other->to_string() + "\n");
+ *    delete other;
+ *    inputFile.close();
+ */
 
 
     /*

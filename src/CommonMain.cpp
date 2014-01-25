@@ -59,6 +59,7 @@ void CommonMain::parseArgs(int argc, char **argv)
         {"input_file", required_argument, 0, 'n'},
         {"mateq", required_argument, 0, 'w'},
         {"engine_threads", required_argument, 0, 'x'},
+        {"comparator", required_argument, 0, 'o'},
     };
 
     int c;
@@ -229,6 +230,7 @@ int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 
         //Kill the child to exit properly
         kill(pid, SIGTERM);
+        Options::setMoveComparator(nullptr);
     } else {
         Utils::handleError("Error: fork failed");
     }

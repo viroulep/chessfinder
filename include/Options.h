@@ -26,6 +26,7 @@
 #include <list>
 #include <utility>
 #include "Board.h"
+#include "CompareMove.h"
 
 #define DEFAULT_MAX_LINES 8
 #define DEFAULT_PLAY_FOR WHITE
@@ -92,6 +93,9 @@ public:
     static string getInputFile();
     static void setInputFile(string file);
 
+    static MoveComparator *getMoveComparator();
+    static void setMoveComparator(MoveComparator *mc);
+
 
     //Pretty-print the options
     static string getPretty();
@@ -148,6 +152,9 @@ private:
     //The file loaded or exported
     static string INPUT_;
     static string OUTPUT_;
+
+    // The move comparator to be used
+    static MoveComparator *MOVE_COMPARATOR_;
 };
 
 

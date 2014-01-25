@@ -22,6 +22,7 @@
 #include <sstream>
 #include "Utils.h"
 #include "Options.h"
+#include "CompareMove.h"
 
 
 
@@ -40,6 +41,8 @@ int Options::MATE_EQUIV_ = DEFAULT_MATE_EQUIV;
 int Options::ENGINE_THREADS_ = DEFAULT_THREADS;
 string Options::INPUT_ = DEFAULT_INPUT_FILE;
 string Options::OUTPUT_ = DEFAULT_OUTPUT_FILE;
+
+MoveComparator *Options::MOVE_COMPARATOR_ = new MapMoveComparator;
 
 string Options::getEngine() { return ENGINE_; }
 void Options::setEngine(string engine) { ENGINE_ = engine; }
@@ -124,6 +127,19 @@ string Options::getInputFile()
 void Options::setInputFile(string file)
 {
     INPUT_ = file;
+}
+
+MoveComparator *Options::getMoveComparator()
+{
+    if (!MOVE_COMPARATOR_)
+        Utils::handleError("MoveComparator used but not initialized");
+    return MOVE_COMPARATOR_;
+}
+void Options::setMoveComparator(MoveComparator *mc)
+{
+    if (MOVE_COMPARATOR_)
+        delete mc;
+    MOVE_COMPARATOR_ = mc;
 }
 
 

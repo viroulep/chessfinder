@@ -23,6 +23,7 @@
 #include <queue>
 #include <cstdlib>
 #include "Chessboard.h"
+#include "CompareMove.h"
 #include "Line.h"
 #include "Utils.h"
 
@@ -302,17 +303,8 @@ bool Chessboard::compareTake(Line *lhs, Line *rhs)
 {
     Move lhsM = getMoveFromUci(lhs->firstMove());
     Move rhsM = getMoveFromUci(rhs->firstMove());
-    if (!lhsM.takePiece && !rhsM.takePiece)
-        return false;
-    else if (lhsM.takePiece)
-        return true;
-    else if (rhsM.takePiece)
-        return false;
-    else {
-        Piece *lhsP = lhsM.to->getPiece();
-        Piece *rhsP = rhsM.to->getPiece();
-        return lhsP->getKind() < rhsP->getKind();
-    }
+    /*Optionally add some restriction on the line*/
+    return comparator_->compare(lhsM, rhsM);
 }
 
 
@@ -520,7 +512,8 @@ Chessboard *Chessboard::createFromFEN(string fenString)
     return cb;
 }
 
-Chessboard::Chessboard() : takenPieces_(), board_()
+Chessboard::Chessboard() : comparator_(Options::getMoveComparator()),
+    takenPieces_(), board_()
 {
     //need to initialize all the datas
     for (int f = A; f <= H; f++)

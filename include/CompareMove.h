@@ -23,12 +23,30 @@
 #define __COMPAREMOVE_H__
 
 #include "Board.h"
-#include "Line.h"
 
+class MoveComparator {
+    public:
+        virtual ~MoveComparator();
+        bool compare(Board::Move &lhs, Board::Move &rhs);
+        virtual uint16_t evaluateMove(Board::Move &mv) = 0;
+
+};
+
+class DefaultMoveComparator : public MoveComparator {
+    public:
+        virtual ~DefaultMoveComparator();
+        uint16_t evaluateMove(Board::Move &mv);
+};
+
+class MapMoveComparator : public MoveComparator {
+    public:
+        uint16_t evaluateMove(Board::Move &mv);
+};
 
 namespace CompareMove {
 
-bool compareTake(Line *lhs, Line *rhs);
+bool compareTake(Board::Move &lhs, Board::Move &rhs);
+
 }
 
 #endif

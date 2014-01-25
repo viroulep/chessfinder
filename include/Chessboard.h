@@ -25,6 +25,7 @@
 #include <string>
 #include <list>
 #include "Board.h"
+#include "CompareMove.h"
 #include "Line.h"
 
 using namespace Board;
@@ -83,7 +84,7 @@ private:
     void halfmoveCkFromFEN(string clock);
     void fullmoveCkFromFEN(string clock);
 
-
+    MoveComparator *comparator_;
 
     list<Piece *> takenPieces_;
     list<Move> moveHistory_;

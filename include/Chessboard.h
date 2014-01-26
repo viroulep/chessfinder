@@ -49,7 +49,7 @@ public:
     const string tryUciMoves(const list<string> &moves, int limit = -1);
 
     /*Move comparators*/
-    bool compareTake(Line *lhs, Line *rhs);
+    bool compareLines(Line *lhs, Line *rhs);
 
     const Side getActiveSide();
 

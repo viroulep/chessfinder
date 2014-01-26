@@ -299,7 +299,7 @@ const string Chessboard::tryUciMoves(const list<string> &moves, int limit)
 }
 
 /*Return true if lhs < rhs*/
-bool Chessboard::compareTake(Line *lhs, Line *rhs)
+bool Chessboard::compareLines(Line *lhs, Line *rhs)
 {
     Move lhsM = getMoveFromUci(lhs->firstMove());
     Move rhsM = getMoveFromUci(rhs->firstMove());

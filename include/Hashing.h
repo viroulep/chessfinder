@@ -46,6 +46,7 @@ class Node {
 public:
     ~Node();
     enum Status {
+        AGAINST,
         TRESHOLD,
         MATE,
         STALEMATE,

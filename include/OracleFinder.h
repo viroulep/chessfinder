@@ -55,6 +55,8 @@ private:
     SortedLines getLines();
     Board::LegalMoves getAllMoves();
     void proceedUnbalancedLines(vector<Line *> unbalanced);
+    void pushAllLines(Node *currentNode);
+    bool cutNode(Node *currentNode);
     HashTable *oracleTable_;
     /*
      *Node *rootNode_ = NULL;

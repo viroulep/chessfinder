@@ -43,6 +43,8 @@ string Node::to_string()
 string Node::to_string(Status s)
 {
     switch (s) {
+        case AGAINST:
+            return "against";
         case MATE:
             return "mate";
         case STALEMATE:

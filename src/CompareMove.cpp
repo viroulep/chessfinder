@@ -15,9 +15,10 @@ MoveComparator::~MoveComparator()
 }
 
 
+/* m1 < m2 means that m1 is *better* than m2 ! */
 bool MoveComparator::compare(Board::Move &lhs, Board::Move &rhs)
 {
-    return evaluateMove(lhs) < evaluateMove(rhs);
+    return evaluateMove(lhs) > evaluateMove(rhs);
 }
 
 

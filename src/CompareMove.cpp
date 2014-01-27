@@ -131,3 +131,12 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
     evaluation = (encodedMove << 9) | (encodedSquare << 3) | encodedPiece;
     return evaluation;
 }
+
+/*
+uint16_t SampleMoveComparator::evaluateMove(Board::Move &mv)
+{
+    //Do some computation here
+    return 1;
+}
+*/
+

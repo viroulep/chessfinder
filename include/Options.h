@@ -95,6 +95,7 @@ public:
 
     static MoveComparator *getMoveComparator();
     static void setMoveComparator(MoveComparator *mc);
+    static void setMoveComparator(std::string smc);
 
 
     //Pretty-print the options

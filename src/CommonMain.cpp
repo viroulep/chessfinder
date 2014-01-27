@@ -55,11 +55,11 @@ void CommonMain::parseArgs(int argc, char **argv)
         {"pf_movetime", required_argument, 0, 'f'},
         {"pa_movetime", required_argument, 0, 'a'},
         {"cp_treshold", required_argument, 0, 'c'},
-        {"output_file", required_argument, 0, 'u'},
+        {"output_file", required_argument, 0, 'o'},
         {"input_file", required_argument, 0, 'n'},
         {"mateq", required_argument, 0, 'w'},
         {"engine_threads", required_argument, 0, 'x'},
-        {"comparator", required_argument, 0, 'o'},
+        {"comparator", required_argument, 0, 'u'},
     };
 
     int c;
@@ -70,7 +70,7 @@ void CommonMain::parseArgs(int argc, char **argv)
     PositionList posList;
 
     while ((c = getopt_long(argc, argv,
-                "hi:v:s:e:p:m:l:t:c:f:a:u:n:w:x:",
+                "hi:v:s:e:p:m:l:t:c:f:a:o:u:n:w:x:",
                 long_options, &option_index)) != -1) {
         switch (c) {
 
@@ -152,8 +152,12 @@ void CommonMain::parseArgs(int argc, char **argv)
                 exit(EXIT_SUCCESS);
                 break;
 
-            case 'u':
+            case 'o':
                 Options::setOutputFile(optarg);
+                break;
+
+            case 'u':
+                Options::setMoveComparator(optarg);
                 break;
 
             case 'n':

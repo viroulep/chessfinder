@@ -43,6 +43,16 @@ class MapMoveComparator : public MoveComparator {
         uint16_t evaluateMove(Board::Move &mv);
 };
 
+
+/*
+class SampleMoveComparator : public MoveComparator {
+    public:
+        uint16_t evaluateMove(Board::Move &mv);
+};
+*/
+
+
+
 namespace CompareMove {
 
 bool compareTake(Board::Move &lhs, Board::Move &rhs);

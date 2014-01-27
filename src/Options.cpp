@@ -135,11 +135,29 @@ MoveComparator *Options::getMoveComparator()
         Utils::handleError("MoveComparator used but not initialized");
     return MOVE_COMPARATOR_;
 }
+
 void Options::setMoveComparator(MoveComparator *mc)
 {
     if (MOVE_COMPARATOR_)
-        delete mc;
+        delete MOVE_COMPARATOR_;
     MOVE_COMPARATOR_ = mc;
+}
+
+void Options::setMoveComparator(string smc)
+{
+    MoveComparator *mc = nullptr;
+    if (smc == "map") {
+        mc = new MapMoveComparator;
+    } else if (smc == "default") {
+        mc = new DefaultMoveComparator;
+    /* Sample adding of a comparator :
+    } else if (smc == "sample") {
+        mc = new SampleMoveComparator;
+    */
+    } else {
+        Utils::handleError("Unknown move comparator : " + smc);
+    }
+    setMoveComparator(mc);
 }
 
 

@@ -290,8 +290,6 @@ uint64_t HashTable::enpassantFromFEN(string enpassant)
         Board::File f;
         Board::Rank r;
         Board::squareFromString(enpassant, &f, &r);
-        Utils::output("File : " + std::to_string(f) + "\n");
-        Utils::output("Value : " + std::to_string(Random64_[772+f]) + "\n");
         return Random64_[772 + f];
     }
 }

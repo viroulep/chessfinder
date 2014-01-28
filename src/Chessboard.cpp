@@ -22,6 +22,7 @@
 #include <sstream>
 #include <queue>
 #include <cstdlib>
+#include <cmath>
 #include "Chessboard.h"
 #include "CompareMove.h"
 #include "Line.h"
@@ -303,6 +304,20 @@ bool Chessboard::compareLines(Line *lhs, Line *rhs)
 {
     Move lhsM = getMoveFromUci(lhs->firstMove());
     Move rhsM = getMoveFromUci(rhs->firstMove());
+    /*
+     * First check the eval if they are too different.
+     * (For example if the cp_treshold is 300 cp, then lines at -2.2 and +1.2
+     * are equivalent, but the last one is better !)
+     */
+    float lhsEv = lhs->getEval();
+    float rhsEv = rhs->getEval();
+    Utils::output("Comparing " + std::to_string(lhsEv) + " to "
+            + std::to_string(rhsEv) + "\n", 3);
+    /*Set the limit to .5 eval*/
+    if (abs(lhsEv - rhsEv) > 20) {
+        return lhsEv > rhsEv;
+    }
+
     /*Optionally add some restriction on the line*/
     return comparator_->compare(lhsM, rhsM);
 }

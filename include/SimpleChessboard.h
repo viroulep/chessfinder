@@ -77,7 +77,9 @@ namespace Board {
             const std::string fen() const;
             //FIXME tmp debug
             Piece board_[64];
+            void applyMove(Move m) throw(InvalidMoveException);
             void applyPseudoMove(Move m) throw(InvalidMoveException);
+            bool kingInCheck(Color c);
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/
             Color active_;

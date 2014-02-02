@@ -25,6 +25,7 @@
 #include "ChessboardTypes.h"
 #include "SimpleChessboard.h"
 #include <set>
+#include <vector>
 
 namespace Board {
 
@@ -51,7 +52,7 @@ namespace Board {
      * Generates the list of squares where there is a piece of color c attacking
      * the 'target'.
      */
-    std::set<Square> gen_attacker(Color c, const Square target, const Position &pos);
+    std::set<Square> gen_attackers(Color c, const Square target, const Position &pos);
 
     /*
      * Generates the list of all moves for the given piece
@@ -59,7 +60,7 @@ namespace Board {
      * */
     /*TODO actual move gen, with castling, and pawn promotion*/
     template<PieceKind K>
-        std::set<Move> gen_moves(const Square from, const Position &pos);
+        std::vector<Move> gen_moves(const Square from, Position &pos);
 
 
 

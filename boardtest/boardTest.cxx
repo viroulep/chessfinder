@@ -39,6 +39,14 @@ for (Square s : setName) {\
 }\
 cout << "\n";
 
+#define DISPLAY_MOVES(vectorName) \
+cout << "Display moves :";\
+for (Move m : vectorName) {\
+    cout << " (" << square_to_string(m.from)\
+    << square_to_string(m.to) << "," << movetype_to_string(m.type) << ")";\
+}\
+cout << "\n";
+
 #define TEST_ATTACK(target, color, setName) \
     setName = Board::gen_attacker(color, target, pos);\
 cout << "Attacking " << square_to_string(target) << " as "\
@@ -82,7 +90,11 @@ pos.set(startFen);
     mVar.from = fromSQ;\
 mVar.to = toSQ;\
 mVar.type = moveType;\
-pos.applyPseudoMove(mVar);
+pos.applyMove(mVar);
+
+#define TEST_GENMOVE(type, from, vector) \
+    vector = Board::gen_moves<type>(from, pos);
+
 
 int main()
 {
@@ -95,6 +107,7 @@ int main()
     cout << pos.pretty() << endl;
 
     set<Square> gen;
+    vector<Move> moves;
 
     Move m;
     try {
@@ -106,26 +119,34 @@ int main()
         cout << pos.pretty() << endl;
         APPLY(m, SQ_D7, SQ_D5, NORMAL);
         cout << pos.pretty() << endl;
-        APPLY(m, SQ_F1, SQ_C4, NORMAL);
+        APPLY(m, SQ_F1, SQ_B5, NORMAL);
         cout << pos.pretty() << endl;
-        APPLY(m, SQ_E7, SQ_E6, NORMAL);
+        TEST_GENMOVE(QUEEN, SQ_D8, moves);
+        DISPLAY_MOVES(moves);
+        APPLY(m, SQ_D8, SQ_D7, NORMAL);
         cout << pos.pretty() << endl;
-        APPLY(m, SQ_G1, SQ_F3, NORMAL);
-        cout << pos.pretty() << endl;
-        APPLY(m, SQ_G8, SQ_F6, NORMAL);
-        cout << pos.pretty() << endl;
-        APPLY(m, SQ_E1, SQ_G1, CASTLING);
-        cout << pos.pretty() << endl;
-        APPLY(m, SQ_D5, SQ_C4, NORMAL);
-        cout << pos.pretty() << endl;
-        pos.undoMove();
-        cout << pos.pretty() << endl;
-        pos.undoMove();
-        cout << pos.pretty() << endl;
-        pos.undoMove();
-        cout << pos.pretty() << endl;
-        pos.undoMove();
-        cout << pos.pretty() << endl;
+        /*
+         *APPLY(m, SQ_E7, SQ_E6, NORMAL);
+         *cout << pos.pretty() << endl;
+         *APPLY(m, SQ_G1, SQ_F3, NORMAL);
+         *cout << pos.pretty() << endl;
+         *APPLY(m, SQ_G8, SQ_F6, NORMAL);
+         *cout << pos.pretty() << endl;
+         *APPLY(m, SQ_E1, SQ_G1, CASTLING);
+         *cout << pos.pretty() << endl;
+         *APPLY(m, SQ_D5, SQ_C4, NORMAL);
+         *cout << pos.pretty() << endl;
+         *pos.undoMove();
+         *cout << pos.pretty() << endl;
+         *pos.undoMove();
+         *cout << pos.pretty() << endl;
+         *pos.undoMove();
+         *cout << pos.pretty() << endl;
+         *pos.undoMove();
+         *cout << pos.pretty() << endl;
+         *pos.undoMove();
+         *cout << pos.pretty() << endl;
+         */
         pos.undoMove();
         cout << pos.pretty() << endl;
         pos.undoMove();

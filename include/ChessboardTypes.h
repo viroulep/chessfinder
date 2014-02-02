@@ -289,6 +289,28 @@ namespace Board {
         return retVal;
     }
 
+    inline const std::string movetype_to_string(MoveType t)
+    {
+        std::string retVal;
+        switch (t) {
+            case NORMAL:
+                retVal = "normal";
+                break;
+            case CASTLING:
+                retVal = "castle";
+                break;
+            case PROMOTION:
+                retVal = "promotion";
+                break;
+            case ENPASSANT:
+                retVal = "ep";
+                break;
+            default:
+                retVal = "unknown";
+        }
+        return retVal;
+    }
+
     //ALAMOS
     inline bool is_in_alamos(Square s) {
         return (!(rank_of(s) == RANK_8 ||

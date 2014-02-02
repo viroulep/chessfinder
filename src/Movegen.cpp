@@ -211,7 +211,7 @@ namespace Board {
     }
 
 
-    set<Square> gen_attacker(Color c, const Square target, const Position &pos)
+    set<Square> gen_attackers(Color c, const Square target, const Position &pos)
     {
         set<Square> sqList;
         for (Square s = SQ_A1; s <= SQ_H8; ++s) {
@@ -245,6 +245,27 @@ namespace Board {
                 sqList.insert(s);
         }
         return sqList;
+    }
+
+    template<>
+    vector<Move> gen_moves<QUEEN>(const Square from, Position &pos)
+    {
+        set<Square> dests = gen_reachable<QUEEN>(from, pos);
+        vector<Move> moves;
+        for (Square s : dests) {
+            Move m;
+            m.from = from;
+            m.to = s;
+            m.type = NORMAL;
+            try {
+                pos.applyMove(m);
+                pos.undoMove();
+                moves.push_back(m);
+            } catch (InvalidMoveException e) {
+                continue;
+            }
+        }
+        return moves;
     }
 
 

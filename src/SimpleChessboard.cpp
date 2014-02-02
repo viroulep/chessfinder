@@ -24,6 +24,7 @@
 #include <string>
 #include <cstring>
 #include <queue>
+#include <set>
 #include "SimpleChessboard.h"
 #include "Movegen.h"
 
@@ -181,7 +182,8 @@ namespace Board {
 
         /*Restore previous state*/
         st_ = prevSI;
-        delete mSI;
+        if (mSI && mSI != &startState_)
+            delete mSI;
     }
 
     const string Position::pretty() const
@@ -348,6 +350,15 @@ namespace Board {
      *                     /
      *--------------------*/
 
+    void Position::applyMove(Move m) throw (InvalidMoveException)
+    {
+        applyPseudoMove(m);
+        if (kingInCheck(Color(!active_))) {
+            undoMove();
+            throw InvalidMoveException("King is in check after move");
+        }
+    }
+
     void Position::applyPseudoMove(Move m) throw (InvalidMoveException)
     {
         if (!is_ok(m.from) || !is_ok(m.to))
@@ -440,6 +451,16 @@ namespace Board {
     }
 
 
+    bool Position::kingInCheck(Color c)
+    {
+        Square ksq;
+        Piece k = make_piece(c, KING);
+        for (ksq = SQ_A1; ksq <= SQ_H8; ++ksq)
+            if (board_[ksq] == k)
+                break;
+        std::set<Square> attackers = gen_attackers(Color(!c), ksq, *this);
+        return !attackers.empty();
+    }
 
     void Position::setPos(string fenPos) throw(InvalidFenException)
     {

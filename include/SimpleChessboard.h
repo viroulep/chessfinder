@@ -22,6 +22,7 @@
 #ifndef __SIMPLECHESSBOARD_H__
 #define __SIMPLECHESSBOARD_H__
 #include <exception>
+#include <vector>
 
 #include "ChessboardTypes.h"
 
@@ -37,17 +38,26 @@ namespace Board {
             std::string fenmsg;
     };
 
+    class InvalidMoveException : public std::exception {
+        public:
+            InvalidMoveException(std::string msg);
+            virtual const char* what() throw();
+        private:
+            std::string moveMsg;
+    };
+
     typedef struct StateInfo {
         Square enpassant = SQ_NONE;
         int castle = 0, halfmoveClock = 0, fullmoveClock = 0;
         PieceKind captured = NO_KIND;
-        StateInfo *prev = nullptr;
     } StateInfo;
 
     typedef struct Move {
-        Square from;
-        Square to;
-        MoveType type;
+        Square from = SQ_NONE;
+        Square to = SQ_NONE;
+        MoveType type = NO_TYPE;
+        PieceKind promotion = NO_KIND;
+        StateInfo *state = nullptr;
     } Move;
 
     class Position {
@@ -66,12 +76,13 @@ namespace Board {
             const std::string fen() const;
             //FIXME tmp debug
             Piece board_[64];
+            void applyPseudoMove(Move m) throw(InvalidMoveException);
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/
             Color active_;
             StateInfo startState_;
             StateInfo *st_ = nullptr;
-            /*std::stack<Move &> moves_;*/
+            std::vector<Move> moves_;
 
             void setPos(std::string fenPos) throw(InvalidFenException);
             void setSide(std::string fenSide) throw(InvalidFenException);

@@ -78,6 +78,11 @@ cout << "\n";\
 cout << pos.pretty() << endl;\
 pos.set(startFen);
 
+#define APPLY(mVar, fromSQ, toSQ, moveType) \
+    mVar.from = fromSQ;\
+mVar.to = toSQ;\
+mVar.type = moveType;\
+pos.applyPseudoMove(mVar);
 
 int main()
 {
@@ -85,53 +90,80 @@ int main()
     cout << "b2 ? :" << to_string(SQ_B4 & 7) << ":" << to_string(SQ_B4 >> 3) << "\n";
     string startFen = "8/8/7k/1Q2P3/7K/q7/8/1R4b1 w - f6 0 1";
     Position pos;
-    pos.set(startFen);
+    pos.init();
+    /*pos.set(startFen);*/
     cout << pos.pretty() << endl;
 
     set<Square> gen;
 
-    cout << "Knight :\n";
-    TEST_MOVE(RANK_6, FILE_B, W_KNIGHT, gen);
+    Move m;
+    try {
+        APPLY(m, SQ_E2, SQ_E4, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_F7, SQ_F5, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_E4, SQ_E5, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_D7, SQ_D5, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_F1, SQ_C4, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_E7, SQ_E6, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_G1, SQ_F3, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_G8, SQ_F6, NORMAL);
+        cout << pos.pretty() << endl;
+        APPLY(m, SQ_E1, SQ_G1, CASTLING);
+        cout << pos.pretty() << endl;
+    } catch (InvalidMoveException e) {
+        cerr << "Exception : " << e.what() << "\n";
+    }
 
-    cout << "Bishop :\n";
-    TEST_MOVE(RANK_1, FILE_A, W_BISHOP, gen);
-    TEST_MOVE(RANK_2, FILE_B, W_BISHOP, gen);
-    TEST_MOVE(RANK_5, FILE_C, W_BISHOP, gen);
-
-    cout << "Rook :\n";
-    TEST_MOVE(RANK_1, FILE_A, W_ROOK, gen);
-    TEST_MOVE(RANK_2, FILE_B, W_ROOK, gen);
-    TEST_MOVE(RANK_5, FILE_C, W_ROOK, gen);
-    TEST_MOVE(RANK_3, FILE_D, B_ROOK, gen);
-
-    cout << "Queen :\n";
-    TEST_MOVE(RANK_1, FILE_A, W_QUEEN, gen);
-    TEST_MOVE(RANK_2, FILE_B, W_QUEEN, gen);
-    TEST_MOVE(RANK_5, FILE_C, W_QUEEN, gen);
-    TEST_MOVE(RANK_3, FILE_A, B_QUEEN, gen);
-    TEST_MOVE(RANK_3, FILE_D, B_QUEEN, gen);
-
-    cout << "King :\n";
-    TEST_MOVE(RANK_1, FILE_A, W_KING, gen);
-    TEST_MOVE(RANK_2, FILE_B, W_KING, gen);
-    TEST_MOVE(RANK_5, FILE_C, W_KING, gen);
-
-    cout << "Pawn :\n";
-    TEST_MOVE(RANK_7, FILE_F, W_PAWN, gen);
-    TEST_MOVE(RANK_5, FILE_H, W_PAWN, gen);
-    TEST_MOVE(RANK_2, FILE_G, W_PAWN, gen);
-    TEST_MOVE(RANK_2, FILE_H, W_PAWN, gen);
-    TEST_MOVE(RANK_2, FILE_B, W_PAWN, gen);
-    TEST_MOVE(RANK_6, FILE_C, B_PAWN, gen);
-
-    cout << pos.pretty();
-    cout << "Test attack :\n";
-    TEST_ATTACK(make_square(RANK_1, FILE_G), WHITE, gen);
-    TEST_ATTACK(make_square(RANK_1, FILE_F), WHITE, gen);
-    TEST_ATTACK(make_square(RANK_4, FILE_D), WHITE, gen);
-    TEST_ATTACK(make_square(RANK_4, FILE_D), BLACK, gen);
-    TEST_ATTACK(make_square(RANK_5, FILE_C), WHITE, gen);
-    TEST_ATTACK(make_square(RANK_5, FILE_C), BLACK, gen);
+/*
+ *    cout << "Knight :\n";
+ *    TEST_MOVE(RANK_6, FILE_B, W_KNIGHT, gen);
+ *
+ *    cout << "Bishop :\n";
+ *    TEST_MOVE(RANK_1, FILE_A, W_BISHOP, gen);
+ *    TEST_MOVE(RANK_2, FILE_B, W_BISHOP, gen);
+ *    TEST_MOVE(RANK_5, FILE_C, W_BISHOP, gen);
+ *
+ *    cout << "Rook :\n";
+ *    TEST_MOVE(RANK_1, FILE_A, W_ROOK, gen);
+ *    TEST_MOVE(RANK_2, FILE_B, W_ROOK, gen);
+ *    TEST_MOVE(RANK_5, FILE_C, W_ROOK, gen);
+ *    TEST_MOVE(RANK_3, FILE_D, B_ROOK, gen);
+ *
+ *    cout << "Queen :\n";
+ *    TEST_MOVE(RANK_1, FILE_A, W_QUEEN, gen);
+ *    TEST_MOVE(RANK_2, FILE_B, W_QUEEN, gen);
+ *    TEST_MOVE(RANK_5, FILE_C, W_QUEEN, gen);
+ *    TEST_MOVE(RANK_3, FILE_A, B_QUEEN, gen);
+ *    TEST_MOVE(RANK_3, FILE_D, B_QUEEN, gen);
+ *
+ *    cout << "King :\n";
+ *    TEST_MOVE(RANK_1, FILE_A, W_KING, gen);
+ *    TEST_MOVE(RANK_2, FILE_B, W_KING, gen);
+ *    TEST_MOVE(RANK_5, FILE_C, W_KING, gen);
+ *
+ *    cout << "Pawn :\n";
+ *    TEST_MOVE(RANK_7, FILE_F, W_PAWN, gen);
+ *    TEST_MOVE(RANK_5, FILE_H, W_PAWN, gen);
+ *    TEST_MOVE(RANK_2, FILE_G, W_PAWN, gen);
+ *    TEST_MOVE(RANK_2, FILE_H, W_PAWN, gen);
+ *    TEST_MOVE(RANK_2, FILE_B, W_PAWN, gen);
+ *    TEST_MOVE(RANK_6, FILE_C, B_PAWN, gen);
+ *
+ *    cout << pos.pretty();
+ *    cout << "Test attack :\n";
+ *    TEST_ATTACK(make_square(RANK_1, FILE_G), WHITE, gen);
+ *    TEST_ATTACK(make_square(RANK_1, FILE_F), WHITE, gen);
+ *    TEST_ATTACK(make_square(RANK_4, FILE_D), WHITE, gen);
+ *    TEST_ATTACK(make_square(RANK_4, FILE_D), BLACK, gen);
+ *    TEST_ATTACK(make_square(RANK_5, FILE_C), WHITE, gen);
+ *    TEST_ATTACK(make_square(RANK_5, FILE_C), BLACK, gen);
+ */
 
 
 #if 0

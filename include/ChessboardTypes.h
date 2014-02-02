@@ -35,6 +35,7 @@ namespace Board {
     };
 
     enum MoveType {
+        NO_TYPE,
         NORMAL,
         PROMOTION,
         ENPASSANT,

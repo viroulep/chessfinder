@@ -53,6 +53,16 @@ namespace Board {
      */
     std::set<Square> gen_attacker(Color c, const Square target, const Position &pos);
 
+    /*
+     * Generates the list of all moves for the given piece
+     * Assumes there IS a piece on 'from' square !
+     * */
+    /*TODO actual move gen, with castling, and pawn promotion*/
+    template<PieceKind K>
+        std::set<Move> gen_moves(const Square from, const Position &pos);
+
+
+
 
 }
 

@@ -38,9 +38,19 @@ namespace Board {
         fenmsg = "Invalid fen string (" + msg + ")";
     }
 
+    InvalidMoveException::InvalidMoveException(string msg)
+    {
+        moveMsg = "Invalid move (" + msg + ")";
+    }
+
     const char* InvalidFenException::what() throw()
     {
         return fenmsg.c_str();
+    }
+
+    const char* InvalidMoveException::what() throw()
+    {
+        return moveMsg.c_str();
     }
 
     Position::Position()
@@ -103,20 +113,14 @@ namespace Board {
                 board_[s] = NO_PIECE;
         }
         st_ = &startState_;
+        st_->castle = (B_OO | B_OOO | W_OO | W_OOO);
     }
 
     void Position::clear()
     {
-        StateInfo *prev = st_;
-        StateInfo *tmp;
-        /*Do not delete the first state, it's been statically allocated*/
-        if (prev)
-            prev = st_->prev;
-        while (prev) {
-            tmp = prev;
-            prev = st_->prev;
-            delete tmp;
-        }
+        for (Move m : moves_)
+            delete m.state;
+        moves_.clear();
         /*Can't set 0 in whole position because of virtual functions*/
         std::memset(board_, 0, sizeof(board_));
         std::memset(&startState_, 0, sizeof(StateInfo));
@@ -289,6 +293,102 @@ namespace Board {
      *Protected methods    /
      *                     /
      *--------------------*/
+
+    void Position::applyPseudoMove(Move m) throw (InvalidMoveException)
+    {
+        if (!is_ok(m.from) || !is_ok(m.to))
+            throw InvalidMoveException("Square invalid");
+        if (m.type == NO_TYPE)
+            throw InvalidMoveException("No move type");
+        Piece pFrom = board_[m.from];
+        if (pFrom == NO_PIECE)
+            throw InvalidMoveException("No piece to move");
+
+        /* Build state infos after move */
+        StateInfo *next = new StateInfo;
+        std::memcpy(next, st_, sizeof(StateInfo));
+        next->enpassant = SQ_NONE;
+        next->halfmoveClock++;
+        if (active_ == BLACK)
+            next->fullmoveClock++;
+
+        if (m.type == ENPASSANT) {
+            /*Handle capture*/
+            next->captured = PAWN;
+            Square taken = (active_ == WHITE)?
+                make_square(Rank(rank_of(m.to) - 1), file_of(m.to)):
+                make_square(Rank(rank_of(m.to) + 1), file_of(m.to));
+            board_[taken] = NO_PIECE;
+        } else if (m.type == NORMAL) {
+            /*Handle capture*/
+            if (!empty(m.to))
+                next->captured = kind_of(board_[m.to]);
+            /*Handle double pawn push*/
+            if (kind_of(pFrom) == PAWN &&
+                    abs(rank_of(m.to) - rank_of(m.from)) == 2)
+                next->enpassant = make_square(
+                        (active_ == WHITE)?RANK_3:RANK_6,
+                        file_of(m.from));
+            /*Handle rook/king move and castling flag*/
+            if (kind_of(pFrom) == KING)
+                next->castle &= (active_ == WHITE)?(B_OO | B_OOO):(W_OO | W_OOO);
+            else if (kind_of(pFrom) == ROOK) {
+                if (active_ == WHITE) {
+                    if (file_of(m.from) == FILE_A)
+                        next->castle &= (W_OO | B_OOO | B_OO);
+                    else if (file_of(m.from) == FILE_H)
+                        next->castle &= (B_OO | W_OOO | B_OOO);
+                } else {
+                    if (file_of(m.from) == FILE_A)
+                        next->castle &= (W_OO | W_OOO | B_OO);
+                    else if (file_of(m.from) == FILE_H)
+                        next->castle &= (W_OO | W_OOO | B_OOO);
+                }
+            }
+        } else if (m.type == PROMOTION) {
+            if (m.promotion == NO_KIND)
+                throw InvalidMoveException("No promotion type for promotion");
+            if (m.promotion < KNIGHT || m.promotion > QUEEN)
+                throw InvalidMoveException("Invalid promotion type");
+            /*Convert the pawn to promoted piece*/
+            board_[m.from] = make_piece(active_, m.promotion);
+        } else if (m.type == CASTLING) {
+            if (kind_of(pFrom) != KING)
+                throw InvalidMoveException("Castling with no king");
+            CastlingFlag castleType = (m.to > m.from)?
+                ((active_ == WHITE)?W_OO:B_OO):
+                ((active_ == WHITE)?W_OOO:B_OOO);
+
+            /*Double-check previous castling flag*/
+            if (!(next->castle & castleType))
+                throw InvalidMoveException("Castling flag invalid");
+
+            /*Update castling flag*/
+            next->castle &= (active_ == WHITE)?(B_OO | B_OOO):(W_OO | W_OOO);
+
+            /*Move the rook (king's handled later)*/
+            File rookFile = (m.to > m.from)?FILE_H:FILE_A;
+            Rank rookRank = (active_ == WHITE)?RANK_1:RANK_8;
+            Square rookFrom = make_square(rookRank, rookFile);
+            Square rookTo = (m.to > m.from)?Square(m.to - 1):Square(m.to + 1);
+            board_[rookTo] = board_[rookFrom];
+            board_[rookFrom] = NO_PIECE;
+        }
+
+        /*Reset 50 moves rule*/
+        if (kind_of(pFrom) == PAWN || next->captured != NO_KIND)
+            next->halfmoveClock = 0;
+        board_[m.to] = board_[m.from];
+        board_[m.from] = NO_PIECE;
+
+        m.state = next;
+        st_ = next;
+        moves_.push_back(m);
+        active_ = Color(!active_);
+    }
+
+
+
     void Position::setPos(string fenPos) throw(InvalidFenException)
     {
         queue<string> ranks;

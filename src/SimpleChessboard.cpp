@@ -27,6 +27,13 @@
 #include "SimpleChessboard.h"
 #include "Movegen.h"
 
+#define COMPUTE_CASTLING_ROOK(move, sqFrom, sqTo) \
+    File rookFile = (move.to > move.from)?FILE_H:FILE_A;\
+Rank rookRank = (active_ == WHITE)?RANK_1:RANK_8;\
+sqFrom = make_square(rookRank, rookFile);\
+sqTo = (move.to > move.from)?\
+Square(move.to - 1):Square(move.to + 1);
+
 using namespace std;
 
 namespace Board {
@@ -43,12 +50,12 @@ namespace Board {
         moveMsg = "Invalid move (" + msg + ")";
     }
 
-    const char* InvalidFenException::what() throw()
+    const char* InvalidFenException::what() const throw()
     {
         return fenmsg.c_str();
     }
 
-    const char* InvalidMoveException::what() throw()
+    const char* InvalidMoveException::what() const throw()
     {
         return moveMsg.c_str();
     }
@@ -129,6 +136,54 @@ namespace Board {
         active_ = WHITE;
     }
 
+    void Position::undoMove()
+    {
+        if (moves_.empty())
+            return;
+        Move m = moves_.back();
+        moves_.pop_back();
+        StateInfo *mSI = m.state;
+        StateInfo *prevSI = (moves_.empty())?&startState_:moves_.back().state;
+        active_ = Color(!active_);
+
+        /*Undo the main part of move*/
+        board_[m.from] = board_[m.to];
+        board_[m.to] = NO_PIECE;
+
+        if (m.type == NORMAL) {
+            if (mSI->captured != NO_KIND)
+                board_[m.to] = make_piece(Color(!active_), mSI->captured);
+            /*
+             * Reverse double pawn push and reverse king/rook are handled by
+             * reseting the StateInfo object.
+             */
+        } else if (m.type == PROMOTION) {
+            /*Downgrade the promoted piece to pawn*/
+            board_[m.from] = make_piece(active_, PAWN);
+        } else if (m.type == ENPASSANT) {
+            /*Restore pawn taken*/
+            Square restore = (active_ == WHITE)?
+                make_square(Rank(rank_of(m.to) - 1), file_of(m.to)):
+                make_square(Rank(rank_of(m.to) + 1), file_of(m.to));
+            board_[restore] = make_piece(Color(!active_), PAWN);
+        } else if (m.type == CASTLING) {
+            /*Move the rook (king's already handled)*/
+            Square rookFrom, rookTo;
+            COMPUTE_CASTLING_ROOK(m, rookFrom, rookTo);
+            /*
+             * Here from is to and to is from.
+             * (eg: for OO, rookFrom is H1, rookTo is F1)
+             */
+            board_[rookFrom] = board_[rookTo];
+            board_[rookTo] = NO_PIECE;
+        }
+
+
+        /*Restore previous state*/
+        st_ = prevSI;
+        delete mSI;
+    }
+
     const string Position::pretty() const
     {
         StateInfo st = *st_;
@@ -142,26 +197,25 @@ namespace Board {
                 Piece p = board_[s];
                 if (f == FILE_A)
                     oss << rank_to_char(r) << " ";
-                /*TODO*/
                 oss << "|";
                 oss << piece_to_string(p, true);
                 if (f == FILE_H) {
                     oss << "| ";
                     if (r == RANK_8) {
-                        oss << "todo : Piece taken.";
-                        /*
-                         *if (takenPieces_.empty())
-                         *    oss << "No piece taken.";
-                         *else
-                         *    oss << "Pieces taken : ";
-                         *for (list<Piece *>::iterator it = takenPieces_.begin(),
-                         *        itEnd = takenPieces_.end();
-                         *        it != itEnd; ++it) {
-                         *    if (it != takenPieces_.begin())
-                         *        oss << ", ";
-                         *    (*it)->prettyPrint(oss);
-                         *}
-                         */
+                        oss << "Pieces taken : ";
+                        int count = 0;
+                        for (Move m : moves_) {
+                            if (m.state->captured != NO_KIND) {
+                                if (count != 0)
+                                    oss << ", ";
+                                /*FIXME generate correct color*/
+                                oss << piece_to_string(
+                                        make_piece(WHITE, m.state->captured));
+                                count++;
+                            }
+                        }
+                        if (count == 0)
+                            oss << "No piece taken.";
                     } else if (r == RANK_7) {
                         oss << "Fullmove clock : " << st.fullmoveClock;
                     } else if (r == RANK_6) {
@@ -367,10 +421,8 @@ namespace Board {
             next->castle &= (active_ == WHITE)?(B_OO | B_OOO):(W_OO | W_OOO);
 
             /*Move the rook (king's handled later)*/
-            File rookFile = (m.to > m.from)?FILE_H:FILE_A;
-            Rank rookRank = (active_ == WHITE)?RANK_1:RANK_8;
-            Square rookFrom = make_square(rookRank, rookFile);
-            Square rookTo = (m.to > m.from)?Square(m.to - 1):Square(m.to + 1);
+            Square rookFrom, rookTo;
+            COMPUTE_CASTLING_ROOK(m, rookFrom, rookTo);
             board_[rookTo] = board_[rookFrom];
             board_[rookFrom] = NO_PIECE;
         }

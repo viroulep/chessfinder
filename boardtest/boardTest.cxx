@@ -116,6 +116,28 @@ int main()
         cout << pos.pretty() << endl;
         APPLY(m, SQ_E1, SQ_G1, CASTLING);
         cout << pos.pretty() << endl;
+        APPLY(m, SQ_D5, SQ_C4, NORMAL);
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
+        pos.undoMove();
+        cout << pos.pretty() << endl;
     } catch (InvalidMoveException e) {
         cerr << "Exception : " << e.what() << "\n";
     }

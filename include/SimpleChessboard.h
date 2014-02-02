@@ -33,7 +33,7 @@ namespace Board {
     class InvalidFenException : public std::exception {
         public:
             InvalidFenException(std::string msg);
-            virtual const char* what() throw();
+            virtual const char* what() const throw();
         private:
             std::string fenmsg;
     };
@@ -41,7 +41,7 @@ namespace Board {
     class InvalidMoveException : public std::exception {
         public:
             InvalidMoveException(std::string msg);
-            virtual const char* what() throw();
+            virtual const char* what() const throw();
         private:
             std::string moveMsg;
     };
@@ -72,6 +72,7 @@ namespace Board {
             virtual void init();
             virtual void clear();
             void set(std::string fenString) throw(InvalidFenException);
+            void undoMove();
             const std::string pretty() const;
             const std::string fen() const;
             //FIXME tmp debug

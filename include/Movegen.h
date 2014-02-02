@@ -55,6 +55,13 @@ namespace Board {
     std::set<Square> gen_attackers(Color c, const Square target, const Position &pos);
 
     /*
+     * Generates the list of all normal moves for the given piece
+     * Assumes there IS a piece on 'from' square !
+     * */
+    template<PieceKind K>
+        std::vector<Move> gen_simple_moves(const Square from, Position &pos);
+
+    /*
      * Generates the list of all moves for the given piece
      * Assumes there IS a piece on 'from' square !
      * */

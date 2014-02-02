@@ -158,38 +158,20 @@ namespace Board {
         return sqList;
     }
 
-    template<>
-    set<Square> gen_attacked<KNIGHT>(const Square from, const Position &pos)
-    {
-        return gen_reachable<KNIGHT>(from, pos);
+#define GEN_ATTACKED(KIND) \
+    template<>\
+    set<Square> gen_attacked<KIND>(const Square from, const Position &pos)\
+    {\
+        return gen_reachable<KIND>(from, pos);\
     }
 
-    template<>
-    set<Square> gen_attacked<BISHOP>(const Square from, const Position &pos)
-    {
-        return gen_reachable<BISHOP>(from, pos);
-    }
+    GEN_ATTACKED(KNIGHT);
+    GEN_ATTACKED(BISHOP);
+    GEN_ATTACKED(ROOK);
+    GEN_ATTACKED(QUEEN);
+    GEN_ATTACKED(KING);
 
-    template<>
-    set<Square> gen_attacked<ROOK>(const Square from, const Position &pos)
-    {
-        return gen_reachable<ROOK>(from, pos);
-    }
-
-    template<>
-    set<Square> gen_attacked<QUEEN>(const Square from, const Position &pos)
-    {
-        return gen_reachable<QUEEN>(from, pos);
-    }
-
-    template<>
-    set<Square> gen_attacked<KING>(const Square from, const Position &pos)
-    {
-        /*TODO : think if it's needed to also add the squares with a 'friend'
-         * piece !
-         * */
-        return gen_reachable<KING>(from, pos);
-    }
+#undef GEN_ATTACKED
 
     template<>
     set<Square> gen_attacked<PAWN>(const Square from, const Position &pos)
@@ -246,26 +228,71 @@ namespace Board {
         }
         return sqList;
     }
+#define GEN_SIMPLE_MOVES(KIND) \
+    template<>\
+    vector<Move> gen_simple_moves<KIND>(const Square from, Position &pos)\
+    {\
+        set<Square> dests = gen_reachable<KIND>(from, pos);\
+        vector<Move> moves;\
+        for (Square s : dests) {\
+            Move m;\
+            m.from = from;\
+            m.to = s;\
+            m.type = NORMAL;\
+            try {\
+                pos.applyMove(m);\
+                pos.undoMove();\
+                moves.push_back(m);\
+            } catch (InvalidMoveException e) {\
+                continue;\
+            }\
+        }\
+        return moves;\
+    }
+
+#define GEN_MOVES(KIND) \
+    template<>\
+    vector<Move> gen_moves<KIND>(const Square from, Position &pos)\
+    {\
+        return gen_simple_moves<KIND>(from, pos);\
+    }
+
+    GEN_SIMPLE_MOVES(QUEEN);
+    GEN_SIMPLE_MOVES(KNIGHT);
+    GEN_SIMPLE_MOVES(ROOK);
+    GEN_SIMPLE_MOVES(BISHOP);
+    GEN_SIMPLE_MOVES(KING);
+    GEN_MOVES(QUEEN);
+    GEN_MOVES(KNIGHT);
+    GEN_MOVES(ROOK);
+    GEN_MOVES(BISHOP);
+
+#undef GEN_SIMPLE_MOVES
+#undef GEN_MOVES
 
     template<>
-    vector<Move> gen_moves<QUEEN>(const Square from, Position &pos)
+    vector<Move> gen_moves<KING>(const Square from, Position &pos)
     {
-        set<Square> dests = gen_reachable<QUEEN>(from, pos);
-        vector<Move> moves;
-        for (Square s : dests) {
-            Move m;
-            m.from = from;
-            m.to = s;
-            m.type = NORMAL;
-            try {
-                pos.applyMove(m);
-                pos.undoMove();
-                moves.push_back(m);
-            } catch (InvalidMoveException e) {
-                continue;
-            }
-        }
-        return moves;
+        vector<Move> all = gen_simple_moves<KING>(from, pos);
+        /*TODO add castling*/
+        return all;
+    }
+
+    template<>
+    vector<Move> gen_moves<PAWN>(const Square from, Position &pos)
+    {
+        /*
+         * generate reachable already handle promotion and enpassant
+         * for each move, check if last rank/first rank, or enpassant sq
+         * check#1 : if pos.enpassant == to => enpassant
+         * check#2 : if to == backrank or to == first rank => all promotions
+         * test and add move
+         */
+
+        vector<Move> all;
+        set<Square> dests = gen_reachable<PAWN>(from, pos);
+        /*TODO add promotion and enpassant*/
+        return all;
     }
 
 

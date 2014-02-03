@@ -107,6 +107,7 @@ namespace Board {
     ENABLE_OPERATORS_ON(File)
     ENABLE_OPERATORS_ON(Rank)
     ENABLE_OPERATORS_ON(Square)
+    ENABLE_OPERATORS_ON(PieceKind)
 
 #undef ENABLE_OPERATORS_ON
 #undef ENABLE_SAFE_OPERATORS_ON
@@ -147,6 +148,11 @@ namespace Board {
         return Rank(s >> 3);
     }
 
+    inline bool front_or_back_rank(Rank r)
+    {
+        return (r == RANK_1 || r == RANK_8);
+    }
+
     /*
      *    inline Square relative_square(Color c, Square s) {
      *        return Square(s ^ (c * 56));
@@ -174,28 +180,29 @@ namespace Board {
         return char(r - RANK_1 + '1');
     }
 
-    inline char kind_to_char(PieceKind k, bool printPawn = true)
+    inline char kind_to_char(PieceKind k, bool printPawn = true,
+            bool toLower = false)
     {
         assert(k != NO_KIND);
         char c = '#';
         switch (k) {
             case PAWN:
-                c = (printPawn)?'P':'\0';
+                c = (printPawn)?((toLower)?'p':'P'):'\0';
                 break;
             case KNIGHT:
-                c = 'N';
+                c = (toLower?'n':'N');
                 break;
             case BISHOP:
-                c = 'B';
+                c = (toLower?'b':'B');
                 break;
             case ROOK:
-                c = 'R';
+                c = (toLower?'r':'R');
                 break;
             case QUEEN:
-                c = 'Q';
+                c = (toLower?'q':'Q');
                 break;
             case KING:
-                c = 'K';
+                c = (toLower?'k':'K');
                 break;
             default:
                 assert(false);

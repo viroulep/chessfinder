@@ -23,6 +23,7 @@
 #define __SIMPLECHESSBOARD_H__
 #include <exception>
 #include <vector>
+#include <set>
 
 #include "ChessboardTypes.h"
 
@@ -66,12 +67,16 @@ namespace Board {
             ~Position();
             Color side_to_move() const;
             bool empty(Square s) const;
+            bool attacked(Square s, Color c) const;
             bool takes(Square attaker, Square target) const;
+            std::set<Square> pieces_squares(Color c) const;
             Piece piece_on(Square s) const;
             Square enpassant() const;
+            bool canCastle(CastlingFlag f) const;
             virtual void init();
             virtual void clear();
             void set(std::string fenString) throw(InvalidFenException);
+            bool tryMove(Move m);
             void undoMove();
             const std::string pretty() const;
             const std::string fen() const;
@@ -79,7 +84,7 @@ namespace Board {
             Piece board_[64];
             void applyMove(Move m) throw(InvalidMoveException);
             void applyPseudoMove(Move m) throw(InvalidMoveException);
-            bool kingInCheck(Color c);
+            bool kingInCheck(Color c) const;
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/
             Color active_;
@@ -106,6 +111,16 @@ namespace Board {
     {
         size_t idx = PieceToChar.find(p);
         return (idx != std::string::npos)?Piece(idx):NO_PIECE;
+    }
+
+    /*Return the uci formated move*/
+    inline const std::string move_to_string(Move m)
+    {
+        std::string retVal;
+        retVal += square_to_string(m.from) + square_to_string(m.to);
+        if (m.type == PROMOTION)
+            retVal += {kind_to_char(m.promotion, true, true), 0};
+        return retVal;
     }
 
 }

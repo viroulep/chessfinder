@@ -82,10 +82,25 @@ namespace Board {
         return board_[s] == NO_PIECE;
     }
 
+    bool Position::attacked(Square s, Color c) const
+    {
+        std::set<Square> attackers = gen_attackers(c, s, *this);
+        return !attackers.empty();
+    }
+
     bool Position::takes(Square attacker, Square target) const
     {
         return (board_[target] != NO_PIECE &&
                 color_of(board_[attacker]) != color_of(board_[target]));
+    }
+
+    std::set<Square> Position::pieces_squares(Color c) const
+    {
+        std::set<Square> squares;
+        for (Square s = SQ_A1; s <= SQ_H8; ++s)
+            if (board_[s] != NO_PIECE && color_of(board_[s]) == c)
+                squares.insert(s);
+        return squares;
     }
 
     Piece Position::piece_on(Square s) const
@@ -96,6 +111,11 @@ namespace Board {
     Square Position::enpassant() const
     {
         return st_->enpassant;
+    }
+
+    bool Position::canCastle(CastlingFlag f) const
+    {
+        return (st_->castle & f);
     }
 
     void Position::init()
@@ -135,6 +155,17 @@ namespace Board {
         startState_.enpassant = SQ_NONE;
         st_ = &startState_;
         active_ = WHITE;
+    }
+
+    bool Position::tryMove(Move m)
+    {
+        try {
+            applyMove(m);
+            undoMove();
+        } catch (InvalidMoveException e) {
+            return false;
+        }
+        return true;
     }
 
     void Position::undoMove()
@@ -368,6 +399,8 @@ namespace Board {
         Piece pFrom = board_[m.from];
         if (pFrom == NO_PIECE)
             throw InvalidMoveException("No piece to move");
+        if (color_of(pFrom) != active_)
+            throw InvalidMoveException("Moving opposite color piece");
 
         /* Build state infos after move */
         StateInfo *next = new StateInfo;
@@ -418,6 +451,7 @@ namespace Board {
             /*Convert the pawn to promoted piece*/
             board_[m.from] = make_piece(active_, m.promotion);
         } else if (m.type == CASTLING) {
+            /*TODO check for sq+-1, for king in check */
             if (kind_of(pFrom) != KING)
                 throw InvalidMoveException("Castling with no king");
             CastlingFlag castleType = (m.to > m.from)?
@@ -450,16 +484,14 @@ namespace Board {
         active_ = Color(!active_);
     }
 
-
-    bool Position::kingInCheck(Color c)
+    bool Position::kingInCheck(Color c) const
     {
         Square ksq;
         Piece k = make_piece(c, KING);
         for (ksq = SQ_A1; ksq <= SQ_H8; ++ksq)
             if (board_[ksq] == k)
                 break;
-        std::set<Square> attackers = gen_attackers(Color(!c), ksq, *this);
-        return !attackers.empty();
+        return attacked(ksq, Color(!c));
     }
 
     void Position::setPos(string fenPos) throw(InvalidFenException)

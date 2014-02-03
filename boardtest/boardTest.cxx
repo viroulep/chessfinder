@@ -92,8 +92,11 @@ mVar.to = toSQ;\
 mVar.type = moveType;\
 pos.applyMove(mVar);
 
-#define TEST_GENMOVE(type, from, vector) \
+#define TEST_GENMOVE_TYPE(type, from, vector) \
     vector = Board::gen_moves<type>(from, pos);
+
+#define TEST_GENMOVE(vector) \
+    vector = Board::gen_all(pos);
 
 
 int main()
@@ -121,7 +124,10 @@ int main()
         cout << pos.pretty() << endl;
         APPLY(m, SQ_F1, SQ_B5, NORMAL);
         cout << pos.pretty() << endl;
-        TEST_GENMOVE(QUEEN, SQ_D8, moves);
+        cout << pos.fen() << endl;
+        TEST_GENMOVE_TYPE(QUEEN, SQ_D8, moves);
+        DISPLAY_MOVES(moves);
+        TEST_GENMOVE(moves);
         DISPLAY_MOVES(moves);
         APPLY(m, SQ_D8, SQ_D7, NORMAL);
         cout << pos.pretty() << endl;

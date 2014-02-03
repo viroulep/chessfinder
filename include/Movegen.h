@@ -55,8 +55,11 @@ namespace Board {
     std::set<Square> gen_attackers(Color c, const Square target, const Position &pos);
 
     /*
-     * Generates the list of all normal moves for the given piece
+     * Generates the list of all 'normal' moves for the given piece (No castling
+     * or ep/promotion).
      * Assumes there IS a piece on 'from' square !
+     * This *does* alter the position, by trying a pseudo move to check if it's
+     * legal or not.
      * */
     template<PieceKind K>
         std::vector<Move> gen_simple_moves(const Square from, Position &pos);
@@ -64,14 +67,13 @@ namespace Board {
     /*
      * Generates the list of all moves for the given piece
      * Assumes there IS a piece on 'from' square !
+     * This *does* alter the position, by trying a pseudo move to check if it's
+     * legal or not.
      * */
-    /*TODO actual move gen, with castling, and pawn promotion*/
     template<PieceKind K>
         std::vector<Move> gen_moves(const Square from, Position &pos);
 
-
-
-
+    std::vector<Move> gen_all(Position &pos);
 }
 
 #endif

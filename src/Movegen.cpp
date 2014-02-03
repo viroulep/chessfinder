@@ -42,6 +42,30 @@ namespace Board {
     if (is_ok(s) && (s == pos.enpassant() || pos.takes(from, s)))\
     sqList.insert(s);
 
+#define DISPATCH(datastructure, kind, function, ...) \
+    switch (kind) {\
+        case KNIGHT:\
+            datastructure = function<KNIGHT>(__VA_ARGS__);\
+        break;\
+        case BISHOP:\
+            datastructure = function<BISHOP>(__VA_ARGS__);\
+        break;\
+        case ROOK:\
+            datastructure = function<ROOK>(__VA_ARGS__);\
+        break;\
+        case QUEEN:\
+            datastructure = function<QUEEN>(__VA_ARGS__);\
+        break;\
+        case KING:\
+            datastructure = function<KING>(__VA_ARGS__);\
+        break;\
+        case PAWN:\
+            datastructure = function<PAWN>(__VA_ARGS__);\
+        break;\
+        default:\
+            break;\
+    }
+
     template<>
     set<Square> gen_reachable<KNIGHT>(const Square from, const Position &pos)
     {
@@ -201,28 +225,7 @@ namespace Board {
             Piece p = pos.piece_on(s);
             if (p == NO_PIECE || color_of(p) != c)
                 continue;
-            switch (kind_of(p)) {
-                case KNIGHT:
-                    sqListTmp = gen_attacked<KNIGHT>(s, pos);
-                    break;
-                case BISHOP:
-                    sqListTmp = gen_attacked<BISHOP>(s, pos);
-                    break;
-                case ROOK:
-                    sqListTmp = gen_attacked<ROOK>(s, pos);
-                    break;
-                case QUEEN:
-                    sqListTmp = gen_attacked<QUEEN>(s, pos);
-                    break;
-                case KING:
-                    sqListTmp = gen_attacked<KING>(s, pos);
-                    break;
-                case PAWN:
-                    sqListTmp = gen_attacked<PAWN>(s, pos);
-                    break;
-                default:
-                    break;
-            }
+            DISPATCH(sqListTmp, kind_of(p), gen_attacked, s, pos);
             if (sqListTmp.find(target) != sqListTmp.end())
                 sqList.insert(s);
         }
@@ -239,13 +242,8 @@ namespace Board {
             m.from = from;\
             m.to = s;\
             m.type = NORMAL;\
-            try {\
-                pos.applyMove(m);\
-                pos.undoMove();\
+            if (pos.tryMove(m))\
                 moves.push_back(m);\
-            } catch (InvalidMoveException e) {\
-                continue;\
-            }\
         }\
         return moves;\
     }
@@ -274,28 +272,92 @@ namespace Board {
     vector<Move> gen_moves<KING>(const Square from, Position &pos)
     {
         vector<Move> all = gen_simple_moves<KING>(from, pos);
-        /*TODO add castling*/
+        set<Square> attackers_oo;
+        Piece king = pos.piece_on(from);
+        Move m;
+        m.from = from;
+        m.type = CASTLING;
+        /*FIXME simplify (delegate castle checking to pos ?)*/
+        if (color_of(king) == WHITE && from == SQ_E1) {
+            if (pos.canCastle(W_OO)) {
+                attackers_oo = gen_attackers(BLACK, SQ_F1, pos);
+                if (attackers_oo.empty() && !pos.kingInCheck(WHITE)) {
+                    m.to = SQ_G1;
+                    if (pos.tryMove(m))
+                        all.push_back(m);
+                }
+            }
+            if (pos.canCastle(W_OOO)) {
+                attackers_oo = gen_attackers(BLACK, SQ_D1, pos);
+                if (attackers_oo.empty() && !pos.kingInCheck(WHITE)) {
+                    m.to = SQ_C1;
+                    if (pos.tryMove(m))
+                        all.push_back(m);
+                }
+            }
+        } else if (color_of(king) == BLACK && from == SQ_E8) {
+            if (pos.canCastle(B_OO)) {
+                attackers_oo = gen_attackers(WHITE, SQ_F8, pos);
+                if (attackers_oo.empty() && !pos.kingInCheck(BLACK)) {
+                    m.to = SQ_G8;
+                    if (pos.tryMove(m))
+                        all.push_back(m);
+                }
+            }
+            if (pos.canCastle(B_OOO)) {
+                attackers_oo = gen_attackers(WHITE, SQ_D8, pos);
+                if (attackers_oo.empty() && !pos.kingInCheck(BLACK)) {
+                    m.to = SQ_C8;
+                    if (pos.tryMove(m))
+                        all.push_back(m);
+                }
+            }
+        }
         return all;
     }
 
     template<>
     vector<Move> gen_moves<PAWN>(const Square from, Position &pos)
     {
-        /*
-         * generate reachable already handle promotion and enpassant
-         * for each move, check if last rank/first rank, or enpassant sq
-         * check#1 : if pos.enpassant == to => enpassant
-         * check#2 : if to == backrank or to == first rank => all promotions
-         * test and add move
-         */
-
         vector<Move> all;
         set<Square> dests = gen_reachable<PAWN>(from, pos);
-        /*TODO add promotion and enpassant*/
+        Move m;
+        m.from = from;
+        for (Square s : dests) {
+            m.to = s;
+            m.type = NORMAL;
+            if (front_or_back_rank(rank_of(s))) {
+                /*Promotion*/
+                m.type = PROMOTION;
+                for (PieceKind k = KNIGHT; k <= QUEEN; ++k) {
+                    m.promotion = k;
+                    if (pos.tryMove(m))
+                        all.push_back(m);
+                }
+            } else {
+                if (pos.enpassant() == s)
+                    m.type = ENPASSANT;
+                if (pos.tryMove(m))
+                    all.push_back(m);
+            }
+        }
         return all;
     }
 
+    std::vector<Move> gen_all(Position &pos)
+    {
+        vector<Move> all, partial;
+        set<Square> squares = pos.pieces_squares(pos.side_to_move());
+        Piece p;
+        for (Square s : squares) {
+            p = pos.piece_on(s);
+            DISPATCH(partial, kind_of(p), gen_moves, s, pos);
+            all.insert(all.end(), partial.begin(), partial.end());
+        }
+        return all;
+    }
 
+#undef DISPATCH
 #undef MOVE_EP
 #undef MOVE_LOOP
 }

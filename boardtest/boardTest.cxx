@@ -24,6 +24,7 @@
 #include <cstdint>
 #include "SimpleChessboard.h"
 #include "Movegen.h"
+#include "UCICommunicator.h"
 /*#include "Hashing.h"*/
 /*#include "Utils.h"*/
 /*#include "Options.h"*/
@@ -101,8 +102,17 @@ pos.applyMove(mVar);
 
 int main()
 {
-    cout << "Sizeof struct : " << sizeof(Square) << "\n";
-    cout << "b2 ? :" << to_string(SQ_B4 & 7) << ":" << to_string(SQ_B4 >> 3) << "\n";
+    Comm::UCICommunicatorPool pool;
+    /*Comm::UCICommunicator *comm = pool.create<Comm::LocalUCICommunicator>();*/
+    int commId = pool.create<Comm::LocalUCICommunicator>("/usr/local/bin/stockfish", Comm::EngineOptions());
+
+    Comm::UCICommunicator &comm = pool.get(commId);
+    comm.run();
+
+    if (pool.destroy(commId))
+        cout << "destroy ok\n";
+
+
     string startFen = "8/8/7k/1Q2P3/7K/q7/8/1R4b1 w - f6 0 1";
     Position pos;
     pos.init();
@@ -114,6 +124,7 @@ int main()
 
     Move m;
     try {
+        throw InvalidMoveException("cancel");
         APPLY(m, SQ_E2, SQ_E4, NORMAL);
         cout << pos.pretty() << endl;
         APPLY(m, SQ_F7, SQ_F5, NORMAL);

@@ -23,9 +23,10 @@
 #include <iostream>
 #include <sstream>
 #include "Line.h"
-#include "Options.h"
 
-Line::Line() : eval_(0)
+using namespace std;
+
+Line::Line() : eval_(0), depth_(0)
 {
     moves_.clear();
 }
@@ -72,7 +73,9 @@ string Line::getPretty(bool invertEval)
     out << ", line : ";
     list<string> tmpList = moves_;
     int i = 0;
-    while (!tmpList.empty() && i < Options::movesDisplayed) {
+    /*TODO re-add dependency on options*/
+    /*while (!tmpList.empty() && i < Options::movesDisplayed) {*/
+    while (!tmpList.empty() && i < 5) {
         out << tmpList.front();
         out << " ";
         tmpList.pop_front();
@@ -116,7 +119,7 @@ bool Line::empty()
     return moves_.empty();
 }
 
-Board::UCIMove Line::firstMove()
+string Line::firstMove()
 {
     return moves_.front();
 }
@@ -133,4 +136,3 @@ bool Line::compareLineLength(Line *lhs, Line *rhs)
     return lhs->moves_.size() < rhs->moves_.size();
 }
 
-Line Line::emptyLine;

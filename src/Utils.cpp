@@ -25,7 +25,6 @@
 #include "Utils.h"
 #include "Options.h"
 #include "Line.h"
-#include "Board.h"
 
 using namespace std;
 

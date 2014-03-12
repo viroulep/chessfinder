@@ -50,7 +50,7 @@ int MatFinder::runFinderOnCurrentPosition()
     Utils::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
-    lines_.assign(Options::getMaxLines(), Line::emptyLine);
+    lines_.assign(Options::getMaxLines(), Line());
     sendToEngine("go movetime "
             + to_string(Options::getPlayforMovetime()));
     waitBestmove();
@@ -104,7 +104,7 @@ int MatFinder::runFinderOnCurrentPosition()
         moveTime += 10 * addedMoves_;
 
         //Initialize vector with empty lines
-        lines_.assign(Options::getMaxLines(), Line::emptyLine);
+        lines_.assign(Options::getMaxLines(), Line());
 
         //Increase movetime with depth
         sendToEngine("go movetime " + to_string(moveTime));
@@ -140,7 +140,7 @@ int MatFinder::runFinderOnCurrentPosition()
                 if (active == engine_play_for_) {
                     //Remove our previous move if we had one, since the
                     //mat is "recorded" by engine
-                    //(not the case if starting side is not the side 
+                    //(not the case if starting side is not the side
                     //the engine play for)
                     if (addedMoves_ > 0) {
                         addedMoves_--;
@@ -197,8 +197,8 @@ int MatFinder::updateMultiPV()
     Utils::output("Non empty : " + to_string(nonEmptyLines) + "\n", 3);
     for (int i = 0; i < (int) lines_.size(); ++i) {
         if (i > 0) {
-            if (lastEvalMat 
-                    || fabs(lines_[i].getEval() - lastEvalValue) > diffLimit) {
+            if (lastEvalMat
+                || fabs(lines_[i].getEval() - lastEvalValue) > diffLimit) {
                 Utils::output("Eval/lastEval : "
                         + to_string(lines_[i].getEval())
                         + "/" + to_string(lastEvalValue), 3);
@@ -245,12 +245,12 @@ Line &MatFinder::getBestLine()
                     return lines_[i];
             } else {
                 //If the line is a draw we don't want it
-                return Line::emptyLine;
+                return emptyLine_;
             }
         }
     }
     //if all are draw, return the same line
-    return Line::emptyLine;
+    return emptyLine_;
 
 }
 

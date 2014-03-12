@@ -44,6 +44,7 @@ private:
     int runFinderOnCurrentPosition();
     int updateMultiPV();
     Line &getBestLine();
+    Line emptyLine_;
 
 
 };

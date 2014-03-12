@@ -24,67 +24,129 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <pthread.h>
+
+#include "Stream.h"
+#include "Line.h"
 
 namespace Comm {
 
     typedef std::map<std::string, std::string> EngineOptions;
+    class UCICommunicatorPool;
 
     /**
      * This class is responsible for communicating with an engine.
      */
     class UCICommunicator {
-        public:
+        friend class UCICommunicatorPool;
+        protected:
             UCICommunicator(const EngineOptions &options);
             virtual ~UCICommunicator();
-            void sendOption(std::string name, std::string value);
-            void waitBestmove();
-            void waitReadyok();
-            void quit();
+
+            void sendOption(const std::string &name, const std::string &value) const;
+            void sendOptions() const;
+            const std::vector<Line> &getResultLines() const;
+
+            /*Communicator specific*/
             virtual void *run() = 0;
-            virtual void send(std::string cmd) = 0;
             virtual bool ok() = 0;
-        protected:
-            void sendOptions();
+            virtual bool send(const std::string &cmd) const = 0;
+            virtual void quit() const;
+
+            /*UCI response specific*/
+            int parseUCIMsg(const string &msg);
+            void bestmove(istringstream &is);
+            void readyok(istringstream &is);
+            void info(istringstream &is);
+            bool waitBestmove();
+            bool waitReadyok();
+            void signalBestmove();
+            void signalReadyok();
+
+            pthread_cond_t readyok_cond_ = PTHREAD_COND_INITIALIZER;
+            pthread_mutex_t readyok_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+            pthread_cond_t bestmove_cond_ = PTHREAD_COND_INITIALIZER;
+            pthread_mutex_t bestmove_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+
+            /*pthread static routine*/
+            static void *start_routine(void *arg);
+
             EngineOptions optionsMap_;
-            /*
-             *
-             *    void bestmove(istringstream &is);
-             *    void readyok(istringstream &is);
-             *    void info(istringstream &is);
-             *    void option(istringstream &is);
-             *    InputStream *input_;
-             *    Finder *finder_;
-             *    int parseMessage(std::string msg);
-             *    std::string strBuf_;
-             */
+            std::vector<Line> linesVector_;
     };
 
     class LocalUCICommunicator : public UCICommunicator {
-        public:
+        friend class UCICommunicatorPool;
+        private:
             LocalUCICommunicator(const std::string engineFullpath,
                     const EngineOptions &options);
             virtual ~LocalUCICommunicator();
+
+            /*Communicator implementation*/
             virtual void *run();
-            virtual void send(std::string cmd);
+            virtual bool send(const std::string &cmd) const;
             virtual bool ok();
-        private:
+            virtual void quit() const;
+
+            /*LocalEngine specific*/
+            int getEngineInRead();
+            int getEngineInWrite();
+            int getEngineOutRead();
+            int getEngineOutWrite();
+            int getEngineErrRead();
+            int getEngineErrWrite();
+            int in_fds_[2], out_fds_[2], err_fds_[2];
+            pid_t childPid_ = 0;
+            OutputStream *engine_input_;
+            InputStream *engine_output_;
+            OutputStream *receiver_input_;
+
+            /*NOTE: maybe common to other implementations (ie: mpi)*/
             const std::string engineFullpath_;
             const std::string engineName_;
-            pid_t childPid_ = 0;
     };
 
 
     class UCICommunicatorPool {
-        /*Must be threadsafe*/
+        /*Singleton, threadsafe*/
         public:
             template<class T>
                 int create(const std::string engineFullpath,
                         const EngineOptions &options);
+            /*TODO : only one thread at a time should be able to use the comm*/
+            bool send(int id, const std::string &cmd);
+            bool send(int id, const std::string &&c);
+            bool send(int id, const char *c);
+            bool isReady(int id);
+            bool sendAndWaitBestmove(int id, const std::string &cmd);
+            const std::vector<Line> &getResultLines(int id);
+            /*TODO sendAndWait*/
             bool destroy(int id);
-            UCICommunicator &get(int id);
+            bool destroyAll();
+            static UCICommunicatorPool &getInstance();
         private:
-            std::map<int, UCICommunicator *> pool_;
+            UCICommunicator *get(int id);
+            bool waitForBestmove(int id);
+            bool waitForReadyok(int id);
+            UCICommunicatorPool &operator=(const UCICommunicatorPool &);
+            UCICommunicatorPool(const UCICommunicatorPool &) {};
+            UCICommunicatorPool() {};
+            ~UCICommunicatorPool();
+
+            /*
+             * Map of all the UCICommunicator
+             * It maps an id to an UCICommunicator and its managing thread
+             */
+            std::map<int, std::pair<UCICommunicator *, pthread_t>> pool_;
+            /*
+             * This is the current communicator id, should be manipulated
+             * atomically
+             */
             int currentId_ = 0;
+
+            /*The instance*/
+            static UCICommunicatorPool instance_;
     };
 
 }

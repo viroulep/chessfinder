@@ -22,7 +22,6 @@
 #include <sstream>
 #include "Utils.h"
 #include "Options.h"
-#include "CompareMove.h"
 
 
 

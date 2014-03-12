@@ -31,8 +31,7 @@ Runnable::~Runnable()
 {}
 
 
-Thread::Thread(Runnable *r) : 
-        runnable_(r) {
+Thread::Thread(Runnable *r) : runnable_(r) {
     if(!runnable_){
         Utils::handleError("Thread::Thread(auto_ptr<Runnable> r,"\
                 " bool isDetached) failed at " + string(__FILE__)
@@ -59,7 +58,7 @@ void Thread::start() {
         __FILE__, __LINE__);
 
     status = pthread_create(&PthreadThreadID_, &threadAttribute_,
-        Thread::startRunnable, (void*)this);    
+        Thread::startRunnable, (void*)this);
     Utils::handleError("pthread_create failed at", status,
         __FILE__, __LINE__);
 
@@ -68,7 +67,7 @@ void Thread::start() {
         __FILE__, __LINE__);
 }
 
-void Thread::kill() 
+void Thread::kill()
 {
     int status = pthread_cancel(PthreadThreadID_);
     Utils::handleError("pthread_cancel failed at", status,

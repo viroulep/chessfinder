@@ -168,7 +168,7 @@ int OracleFinder::runFinderOnCurrentPosition()
 
         sendCurrentPositionToEngine();
         /*Initialize vector with empty lines*/
-        lines_.assign(maxMoves, Line::emptyLine);
+        lines_.assign(maxMoves, Line());
 
         if (engine_play_for_ != active) {
             current->st = Node::AGAINST;
@@ -347,7 +347,7 @@ Board::LegalMoves OracleFinder::getAllMoves()
     waitReadyok();
 
     sendCurrentPositionToEngine();
-    lines_.assign(maxMoves, Line::emptyLine);
+    lines_.assign(maxMoves, Line());
     sendToEngine("go depth 1");
     waitBestmove();
     Utils::output("Evaluation is :\n");
@@ -409,7 +409,7 @@ void OracleFinder::pushAllLines(Node *currentNode)
     Utils::output("\n", 2);
 }
 
-bool OracleFinder::cutNode(Node *currentNode)
+bool OracleFinder::cutNode(Node *)
 {
     /*TODO evaluate if we should process this node or not, according to
      * the chessboard state.*/

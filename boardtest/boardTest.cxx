@@ -22,8 +22,11 @@
 #include <iostream>
 #include <fstream>
 #include <cstdint>
+#include <pthread.h>
+#include <unistd.h>
 #include "SimpleChessboard.h"
 #include "Movegen.h"
+#include "Output.h"
 #include "UCICommunicator.h"
 /*#include "Hashing.h"*/
 /*#include "Utils.h"*/
@@ -99,17 +102,27 @@ pos.applyMove(mVar);
 #define TEST_GENMOVE(vector) \
     vector = Board::gen_all(pos);
 
-
 int main()
 {
-    Comm::UCICommunicatorPool pool;
+    /*atexit(Comm::UCICommunicatorPool::atexit);*/
+    Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
     /*Comm::UCICommunicator *comm = pool.create<Comm::LocalUCICommunicator>();*/
     int commId = pool.create<Comm::LocalUCICommunicator>("/usr/local/bin/stockfish", Comm::EngineOptions());
 
-    Comm::UCICommunicator &comm = pool.get(commId);
-    comm.run();
+    pool.send(commId, "uci");
+    if (!pool.isReady(commId))
+        exit(EXIT_FAILURE);
+    string cmd = "go movetime 1000";
+    pool.sendAndWaitBestmove(commId, cmd);
+    const vector<Line> &res = pool.getResultLines(commId);
+    Out::output("Lines :\n");
+    for (Line l : res) {
+        if (l.empty())
+            break;
+        Out::output(l.getPretty(false));
+    }
 
-    if (pool.destroy(commId))
+    if (pool.destroyAll())
         cout << "destroy ok\n";
 
 

@@ -25,11 +25,10 @@
 #include <string>
 #include <list>
 #include <utility>
-#include "Board.h"
+
 #include "CompareMove.h"
 
 #define DEFAULT_MAX_LINES 8
-#define DEFAULT_PLAY_FOR WHITE
 #define DEFAULT_VERBOSE_LEVEL 0
 #define DEFAULT_HASHMAP_SIZE 4096
 #define DEFAULT_PLAYFOR_MOVETIME_ 2500
@@ -46,22 +45,20 @@
 #define TIMEOUT_READY 5
 #define MOVES_DISPLAYED 5
 
-using namespace std;
-
-typedef list<pair<string, list<string>>> PositionList;
+typedef std::list<std::pair<std::string, std::list<std::string>>> PositionList;
 
 class Options {
 public:
 
-    static string getEngine();
-    static void setEngine(string engine);
+    static std::string getEngine();
+    static void setEngine(std::string engine);
 
-    static string getPath();
-    static void setPath(string path);
+    static std::string getPath();
+    static void setPath(std::string path);
 
     static const PositionList &getPositionList();
     static void setPositionList(PositionList &theList);
-    static void addPositionToList(string pos, list<string> &moves);
+    static void addPositionToList(std::string pos, std::list<std::string> &moves);
 
     static int getPlayagainstMovetime();
     static void setPlayagainstMovetime(int movetime);
@@ -87,11 +84,11 @@ public:
     static int getEngineThreads();
     static void setEngineThreads(int threads);
 
-    static string getOutputFile();
-    static void setOutputFile(string file);
+    static std::string getOutputFile();
+    static void setOutputFile(std::string file);
 
-    static string getInputFile();
-    static void setInputFile(string file);
+    static std::string getInputFile();
+    static void setInputFile(std::string file);
 
     static MoveComparator *getMoveComparator();
     static void setMoveComparator(MoveComparator *mc);
@@ -99,7 +96,7 @@ public:
 
 
     //Pretty-print the options
-    static string getPretty();
+    static std::string getPretty();
 
     //How long we wait for the engine to be ready (s)
     const static int isreadyTimeout = TIMEOUT_READY;
@@ -111,8 +108,8 @@ private:
     //Private (static class)
     Options();
 
-    static string ENGINE_;
-    static string PATH_;
+    static std::string ENGINE_;
+    static std::string PATH_;
 
 
     // in ms
@@ -129,8 +126,6 @@ private:
      * evaluation
      */
     static int MATE_EQUIV_;
-
-    static Board::Side PLAY_FOR_;
 
     // 0 = minimal output
     // 1 = not-that-huge output
@@ -151,8 +146,8 @@ private:
     static int ENGINE_THREADS_;
 
     //The file loaded or exported
-    static string INPUT_;
-    static string OUTPUT_;
+    static std::string INPUT_;
+    static std::string OUTPUT_;
 
     // The move comparator to be used
     static MoveComparator *MOVE_COMPARATOR_;

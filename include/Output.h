@@ -19,37 +19,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef __LINE_H__
-#define __LINE_H__
+#ifndef __OUTPUT_H__
+#define __OUTPUT_H__
 
 #include <string>
-#include <list>
+#include <iostream>
 
-//Class representing a particular line for a position
-class Line {
-public:
-    Line();
-    Line(float ev, int depth, std::list<std::string> mv, bool isMat = false);
-    //Return more readable format
-    std::string getPretty(bool invertEval);
-    std::string getPrettyEval(bool invertEval);
+namespace Err {
+    void signalHandler(int rc);
+    void handle(int rc);
+    void handle(const std::string &msg);
+    void handle(const std::string &caller, int rc);
+    void handle(const std::string &msg, int rc,
+                       const std::string &fileName, int lineNumber);
+    void output(const std::string &msg);
+}
 
-    void update(Line &line);
-    bool isMat();
-    float getEval();
-    bool empty();
-    std::string firstMove();
-    const std::list<std::string> &getMoves();
-    bool operator<(const Line &rhs);
-
-    static bool compareLineLength(Line *lhs, Line *rhs);
-private:
-    //Line Evaluation
-    //Might be a mat
-    int eval_ = 0;
-    bool isMat_ = false;
-    int depth_ = 0;
-    std::list<std::string> moves_;
-};
-
+namespace Out {
+    void output(const std::string &msg, int level = 0);
+    void output(std::ostream &out, const std::string &msg);
+}
 #endif

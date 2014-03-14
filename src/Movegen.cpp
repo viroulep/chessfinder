@@ -161,7 +161,7 @@ namespace Board {
         set<Square> sqList;
         Rank r = rank_of(from);
         File f = file_of(from);
-        Color us = Color(pos.piece_on(from));
+        Color us = Color(color_of(pos.piece_on(from)));
         Square dest;
         MOVE_EP(dest, us, r, File(f + 1));
         MOVE_EP(dest, us, r, File(f - 1));
@@ -278,8 +278,9 @@ namespace Board {
         m.from = from;
         m.type = CASTLING;
         /*FIXME simplify (delegate castle checking to pos ?)*/
+        /*NOTE target square legality is checked by tryMove*/
         if (color_of(king) == WHITE && from == SQ_E1) {
-            if (pos.canCastle(W_OO)) {
+            if (pos.canCastle(W_OO) && pos.empty(SQ_F1)) {
                 attackers_oo = gen_attackers(BLACK, SQ_F1, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(WHITE)) {
                     m.to = SQ_G1;
@@ -287,7 +288,7 @@ namespace Board {
                         all.push_back(m);
                 }
             }
-            if (pos.canCastle(W_OOO)) {
+            if (pos.canCastle(W_OOO) && pos.empty(SQ_D1)) {
                 attackers_oo = gen_attackers(BLACK, SQ_D1, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(WHITE)) {
                     m.to = SQ_C1;
@@ -296,7 +297,7 @@ namespace Board {
                 }
             }
         } else if (color_of(king) == BLACK && from == SQ_E8) {
-            if (pos.canCastle(B_OO)) {
+            if (pos.canCastle(B_OO) && pos.empty(SQ_F8)) {
                 attackers_oo = gen_attackers(WHITE, SQ_F8, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(BLACK)) {
                     m.to = SQ_G8;
@@ -304,7 +305,7 @@ namespace Board {
                         all.push_back(m);
                 }
             }
-            if (pos.canCastle(B_OOO)) {
+            if (pos.canCastle(B_OOO) && pos.empty(SQ_D8)) {
                 attackers_oo = gen_attackers(WHITE, SQ_D8, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(BLACK)) {
                     m.to = SQ_C8;

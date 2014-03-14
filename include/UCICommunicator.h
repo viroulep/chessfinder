@@ -63,6 +63,7 @@ namespace Comm {
             bool waitReadyok();
             void signalBestmove();
             void signalReadyok();
+            void clearLines();
 
             pthread_cond_t readyok_cond_ = PTHREAD_COND_INITIALIZER;
             pthread_mutex_t readyok_mutex_ = PTHREAD_MUTEX_INITIALIZER;
@@ -121,7 +122,6 @@ namespace Comm {
             bool isReady(int id);
             bool sendAndWaitBestmove(int id, const std::string &cmd);
             const std::vector<Line> &getResultLines(int id);
-            /*TODO sendAndWait*/
             bool destroy(int id);
             bool destroyAll();
             static UCICommunicatorPool &getInstance();
@@ -139,6 +139,7 @@ namespace Comm {
              * It maps an id to an UCICommunicator and its managing thread
              */
             std::map<int, std::pair<UCICommunicator *, pthread_t>> pool_;
+
             /*
              * This is the current communicator id, should be manipulated
              * atomically

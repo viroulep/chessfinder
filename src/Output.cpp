@@ -73,8 +73,8 @@ namespace Out {
     {
         /*TODO restore*/
         /*if (level <= Options::getVerboseLevel())*/
-        level++;
-        output(cout, msg);
+        if (level <= 2)
+            output(cout, msg);
     }
 
     void output(std::ostream &out, const std::string &msg)

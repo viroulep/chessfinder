@@ -41,6 +41,7 @@ CPPFLAGS += -Iinclude -fno-rtti -std=c++11 -Wall
 all: real-all
 
 include src/main.mk
+include tests/chessboard/testchessboard.mk
 include boardtest/boardTest.mk
 
 real-all: $(ALL_TARGETS)

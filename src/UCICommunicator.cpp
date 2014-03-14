@@ -31,14 +31,11 @@ namespace Comm {
     UCICommunicator::UCICommunicator(const EngineOptions &options) :
         optionsMap_(options)
     {
-        /*FIXME get max moves from option*/
-        linesVector_.assign(254, Line());
-        Err::output("construct comm");
+        clearLines();
     }
 
     UCICommunicator::~UCICommunicator()
     {
-        Err::output("destruct comm");
     }
 
     void UCICommunicator::sendOption(const string &name, const string &value) const
@@ -79,7 +76,7 @@ namespace Comm {
         else if (token == "info") info(is);
         else if (token == "option") ;
         else {
-            Err::output("Unrecognise command from engine :");
+            /*Err::output("Unrecognise command from engine :");*/
             Err::output("\"" + msg + "\"");
         }
         return 0;
@@ -118,8 +115,9 @@ namespace Comm {
                 //Drop
             } else if (token == "time") {
                 is >> curThinktime;
-                Out::output("Updated current thinktime to "
-                            + to_string(curThinktime) + "\n", 5);
+                /*FIXME restore*/
+                /*Out::output("Updated current thinktime to "*/
+                            /*+ to_string(curThinktime) + "\n", 5);*/
             } else if (token == "nodes") {
                 //Drop
             } else if (token == "pv") {
@@ -150,7 +148,8 @@ namespace Comm {
                 Err::output("********** Hashfull : " + token + " *******");
             } else if (token == "nps") {
                 is >> curNps;
-                Out::output("Updated NPS to " + to_string(curNps) + "\n", 5);
+                /*FIXME restore*/
+                /*Out::output("Updated NPS to " + to_string(curNps) + "\n", 5);*/
             } else if (token == "tbhits") {
                 //Drop
             } else if (token == "cpuload") {
@@ -214,6 +213,12 @@ namespace Comm {
         pthread_mutex_unlock(&readyok_mutex_);
     }
 
+    void UCICommunicator::clearLines()
+    {
+        /*FIXME get max moves from option*/
+        linesVector_.assign(254, Line());
+    }
+
     void *UCICommunicator::start_routine(void *arg)
     {
         UCICommunicator *comm = static_cast<UCICommunicator *>(arg);
@@ -230,7 +235,6 @@ namespace Comm {
         UCICommunicator(options), engineFullpath_(engineFullpath),
         engineName_(engineFullpath.substr(engineFullpath.find_last_of("/") + 1))
     {
-        Err::output("construct localcomm");
         int pipe_status;
 
         // Create the pipes
@@ -254,7 +258,6 @@ namespace Comm {
 
     LocalUCICommunicator::~LocalUCICommunicator()
     {
-        Err::output("destruct localcomm");
         if (ok())
             kill(childPid_, SIGUSR1);
         else
@@ -297,16 +300,15 @@ namespace Comm {
                 /*if (strBuf == "quit\n")*/
                     /*break;*/
             }
-            Err::output("coucou");
         } else {
-            Err::output("couldn't fork");
+            Err::handle("couldn't fork");
         }
         return 0;
     }
 
     bool LocalUCICommunicator::send(const string &cmd) const
     {
-        Out::output("Sending \"" + cmd + "\" to engine !\n");
+        Out::output("Sending \"" + cmd + "\" to engine !\n", 5);
         (*engine_input_) << cmd << "\n";
         return true;
     }
@@ -358,17 +360,23 @@ namespace Comm {
                 const EngineOptions &options)
         {
             int id = __atomic_fetch_add(&currentId_, 1, __ATOMIC_SEQ_CST);
-            pool_.insert(make_pair(id,
-                                   make_pair(new T(engineFullpath, options),
-                                   pthread_t())));
+            T *engineComm = new T(engineFullpath, options);
+
+            pool_.insert(make_pair(id, make_pair(engineComm, pthread_t())));
+
             pthread_t *tid = &pool_[id].second;
             int status = pthread_create(tid, 0, UCICommunicator::start_routine,
                            (void *)pool_[id].first);
             Err::handle("pthread_create", status);
+
             /*FIXME globalize*/
             unsigned int pollTime = 20000;
             while (!isReady(id))
                 usleep(pollTime);
+
+            engineComm->send("uci");
+            engineComm->sendOptions();
+
             return id;
         }
 
@@ -401,6 +409,9 @@ namespace Comm {
 
     bool UCICommunicatorPool::sendAndWaitBestmove(int id, const std::string &cmd)
     {
+        UCICommunicator *engine;
+        if ((engine = get(id)))
+            engine->clearLines();
         return (send(id, cmd)) ? waitForBestmove(id) : false;
     }
 
@@ -437,7 +448,7 @@ namespace Comm {
         for (auto entry : pool_)
             toDestroy.insert(entry.first);
         for (int id : toDestroy) {
-            Out::output("destroying " + to_string(id) + "\n");
+            Out::output("destroying " + to_string(id) + "\n", 5);
             done &= destroy(id);
         }
         return done;
@@ -455,7 +466,8 @@ namespace Comm {
         if (pool_.count(id) > 0 && pool_[id].first->ok())
             return pool_[id].first;
         else {
-            Err::output("Unknown UCICommunicator id : " + to_string(id));
+            /*FIXME display error ?*/
+            /*Err::output("Unknown UCICommunicator id : " + to_string(id));*/
             return nullptr;
         }
     }

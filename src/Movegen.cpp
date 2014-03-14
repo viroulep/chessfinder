@@ -19,8 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Movegen.h"
 #include <iostream>
+#include "Output.h"
+#include "Movegen.h"
 
 using namespace std;
 
@@ -30,9 +31,9 @@ namespace Board {
     for (cond) {                \
         Square s = make_square(rank, file);\
         if (pos.empty(s) || pos.takes(from, s))\
-        sqList.insert(s);\
+            sqList.insert(s);\
         if (!pos.empty(s))\
-        break;\
+            break;\
     }
 
 #define MOVE_EP(s, active, rank, file)\
@@ -40,7 +41,7 @@ namespace Board {
     make_square(Rank(rank + 1), file):\
     make_square(Rank(rank - 1), file);\
     if (is_ok(s) && (s == pos.enpassant() || pos.takes(from, s)))\
-    sqList.insert(s);
+        sqList.insert(s);
 
 #define DISPATCH(datastructure, kind, function, ...) \
     switch (kind) {\
@@ -203,7 +204,7 @@ namespace Board {
         set<Square> sqList;
         Rank r = rank_of(from);
         File f = file_of(from);
-        Color us = pos.side_to_move();
+        Color us = Color(color_of(pos.piece_on(from)));
         Rank ra = (us == WHITE)?Rank(r + 1):Rank(r - 1);
         Square dest;
         dest = make_square(ra, File(f + 1));
@@ -280,7 +281,8 @@ namespace Board {
         /*FIXME simplify (delegate castle checking to pos ?)*/
         /*NOTE target square legality is checked by tryMove*/
         if (color_of(king) == WHITE && from == SQ_E1) {
-            if (pos.canCastle(W_OO) && pos.empty(SQ_F1)) {
+            if (pos.canCastle(W_OO) && pos.empty(SQ_F1)
+                                    && pos.empty(SQ_G1)) {
                 attackers_oo = gen_attackers(BLACK, SQ_F1, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(WHITE)) {
                     m.to = SQ_G1;
@@ -288,7 +290,9 @@ namespace Board {
                         all.push_back(m);
                 }
             }
-            if (pos.canCastle(W_OOO) && pos.empty(SQ_D1)) {
+            if (pos.canCastle(W_OOO) && pos.empty(SQ_D1)
+                                     && pos.empty(SQ_C1)
+                                     && pos.empty(SQ_B1)) {
                 attackers_oo = gen_attackers(BLACK, SQ_D1, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(WHITE)) {
                     m.to = SQ_C1;
@@ -297,7 +301,8 @@ namespace Board {
                 }
             }
         } else if (color_of(king) == BLACK && from == SQ_E8) {
-            if (pos.canCastle(B_OO) && pos.empty(SQ_F8)) {
+            if (pos.canCastle(B_OO) && pos.empty(SQ_F8)
+                                    && pos.empty(SQ_G8)) {
                 attackers_oo = gen_attackers(WHITE, SQ_F8, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(BLACK)) {
                     m.to = SQ_G8;
@@ -305,7 +310,9 @@ namespace Board {
                         all.push_back(m);
                 }
             }
-            if (pos.canCastle(B_OOO) && pos.empty(SQ_D8)) {
+            if (pos.canCastle(B_OOO) && pos.empty(SQ_D8)
+                                     && pos.empty(SQ_C8)
+                                     && pos.empty(SQ_B8)) {
                 attackers_oo = gen_attackers(WHITE, SQ_D8, pos);
                 if (attackers_oo.empty() && !pos.kingInCheck(BLACK)) {
                     m.to = SQ_C8;

@@ -22,6 +22,7 @@
 ALL_TARGETS += testchessboard
 #INSTALL_TARGETS += install-boardTest
 CLEAN_TARGETS += clean-chessboardTest
+CHECK_TARGETS += check-chessboardTest
 
 .SILENT:
 
@@ -46,6 +47,12 @@ tests/chessboard/%.o: tests/chessboard/%.cxx $(chessboardTest_HEADERS_DEP)
 testchessboard: $(chessboardTest_OBJECTS)
 	echo "[Chessboard Tester] Link tester"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+check-chessboardTest: testchessboard tests/chessboard/input/testpositions.fen tests/chessboard/input/testpositions_2.fen
+	echo "[Chessboard Tester] Check 1"
+	./testchessboard tests/chessboard/input/testpositions.fen
+	echo "[Chessboard Tester] Check 2"
+	./testchessboard tests/chessboard/input/testpositions_2.fen
 
 clean-chessboardTest:
 	echo "[Chessboard Tester] Clean"

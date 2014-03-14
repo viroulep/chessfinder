@@ -182,12 +182,14 @@ namespace Board {
         board_[m.from] = board_[m.to];
         board_[m.to] = NO_PIECE;
 
+        /*Restore captured piece (En passant is handled separately)*/
+        if (mSI->captured != NO_KIND && m.type != ENPASSANT)
+            board_[m.to] = make_piece(Color(!active_), mSI->captured);
+
         if (m.type == NORMAL) {
-            if (mSI->captured != NO_KIND)
-                board_[m.to] = make_piece(Color(!active_), mSI->captured);
             /*
-             * Reverse double pawn push and reverse king/rook are handled by
-             * reseting the StateInfo object.
+             * Do nothing : reverse double pawn push and reverse king/rook are
+             * handled by reseting the StateInfo object.
              */
         } else if (m.type == PROMOTION) {
             /*Downgrade the promoted piece to pawn*/
@@ -410,6 +412,10 @@ namespace Board {
         if (active_ == BLACK)
             next->fullmoveClock++;
 
+        /* Handle capture (En passant is handle separately) */
+        if (!empty(m.to) && m.type != ENPASSANT)
+            next->captured = kind_of(board_[m.to]);
+
         if (m.type == ENPASSANT) {
             /*Handle capture*/
             next->captured = PAWN;
@@ -418,9 +424,6 @@ namespace Board {
                 make_square(Rank(rank_of(m.to) + 1), file_of(m.to));
             board_[taken] = NO_PIECE;
         } else if (m.type == NORMAL) {
-            /*Handle capture*/
-            if (!empty(m.to))
-                next->captured = kind_of(board_[m.to]);
             /*Handle double pawn push*/
             if (kind_of(pFrom) == PAWN &&
                     abs(rank_of(m.to) - rank_of(m.from)) == 2)

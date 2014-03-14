@@ -22,6 +22,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <cstdlib>
 
 #include "Movegen.h"
 #include "Output.h"
@@ -31,11 +32,20 @@
 using namespace std;
 using namespace Board;
 
+#define DEBUG 0
 
 int diff(vector<string> &lhs, vector<string> &rhs) {
     int diff = 0;
     sort(lhs.begin(), lhs.end());
     sort(rhs.begin(), rhs.end());
+    if (DEBUG) {
+        for (string s : lhs)
+            Out::output(s + ", ");
+        Out::output("\n---\n");
+        for (string s : rhs)
+            Out::output(s + ", ");
+        Out::output("\n---\n");
+    }
     auto lhsIt = lhs.begin();
     auto rhsIt = rhs.begin();
 
@@ -46,9 +56,12 @@ int diff(vector<string> &lhs, vector<string> &rhs) {
         ++rhsIt;
     }
 
-    if (lhsIt != lhs.end() || rhsIt != rhs.end())
-        diff += abs(rhs.size() - lhs.size());
-
+    if (lhsIt != lhs.end() || rhsIt != rhs.end()) {
+        if (rhs.size() >= lhs.size())
+            diff += rhs.size() - lhs.size();
+        else
+            diff += lhs.size() - rhs.size();
+    }
     return diff;
 }
 
@@ -65,6 +78,8 @@ int main(int argc, char **argv)
         Err::handle("Error : unable to open file.");
 
     vector<string> positions;
+    /*positions.push_back("1b1r2k1/2qr2pp/p3p3/Pp1bPpB1/1P4R1/2BB3P/2P3P1/5R1K w - f6 0 29");*/
+    /*positions.push_back("1b1r2k1/1p3ppp/8/1NpP4/r7/4P3/2pN1PPP/R3K2R w KQ - 0 19");*/
     string line;
     /*Get all the positions from file*/
     while (getline(inputfile, line)) {
@@ -101,13 +116,10 @@ int main(int argc, char **argv)
         chessboard.clear();
         boardMoves.clear();
         engineMoves.clear();
-        col++;
-        if (col == 80)
-            Out::output("\n");
-        col %= 80;
         try {
             chessboard.set(pos);
-            Out::output("+");
+            if (DEBUG)
+                Out::output(chessboard.pretty());
             /*
              * This has way too many loops, but it works and I'm too
              * lazy to optimize it.
@@ -134,8 +146,14 @@ int main(int argc, char **argv)
             if (movediff)
                 failed.insert(make_pair(pos, movediff));
         } catch (InvalidFenException e) {
-            Out::output("-");
             failed.insert(make_pair(pos, -1));
+        }
+        col++;
+        if (col % 10000 == 0) {
+            Out::output("\n10000 positions tested (" + to_string(failed.size())
+                        + " failed)\n");
+            if (failed.size() > 0)
+                break;
         }
     }
     Out::output("\n");
@@ -149,7 +167,7 @@ int main(int argc, char **argv)
             Out::output("  -\"" + test.first + "\" ");
             if (test.second > 0)
                 Out::output(" has " + to_string(test.second)
-                            + "differences with engine.");
+                            + " differences with engine.");
             else
                 Out::output("is not a valid position.");
             Out::output("\n");

@@ -119,7 +119,7 @@ namespace Board {
         std::string retVal;
         retVal += square_to_string(m.from) + square_to_string(m.to);
         if (m.type == PROMOTION)
-            retVal += {kind_to_char(m.promotion, true, true), 0};
+            retVal += {kind_to_char(m.promotion, true, true)};
         return retVal;
     }
 

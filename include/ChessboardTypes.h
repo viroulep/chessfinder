@@ -275,9 +275,8 @@ namespace Board {
         const std::string RESET = "\e[0m";
         std::string retVal;
         if (kind_of(p) != NO_KIND) {
-            char ch[] = {kind_to_char(kind_of(p)) , 0};
-            retVal = ch;
-            if (color_of(p) == BLACK)
+            retVal = {kind_to_char(kind_of(p))};
+            if (withColor && color_of(p) == BLACK)
                 retVal = RED + retVal + RESET;
         } else
             retVal = " ";

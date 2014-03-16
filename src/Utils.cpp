@@ -23,7 +23,7 @@
 #include <sstream>
 #include <fstream>
 #include "Utils.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 #include "Line.h"
 
 using namespace std;
@@ -64,7 +64,7 @@ void Utils::handleError(const string &msg, int rc,
 
 void Utils::output(const string &msg, int level/* = 0*/)
 {
-    if (level <= Options::getVerboseLevel())
+    if (level <= MatfinderOptions::getVerboseLevel())
         cout << msg << flush;
 }
 

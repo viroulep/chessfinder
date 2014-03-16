@@ -47,7 +47,7 @@
 
 typedef std::list<std::pair<std::string, std::list<std::string>>> PositionList;
 
-class Options {
+class MatfinderOptions {
 public:
 
     static std::string getEngine();
@@ -106,7 +106,7 @@ public:
 
 private:
     //Private (static class)
-    Options();
+    MatfinderOptions();
 
     static std::string ENGINE_;
     static std::string PATH_;

@@ -33,7 +33,7 @@
 #include "Utils.h"
 #include "Line.h"
 #include "MatFinder.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 #include "CommonMain.h"
 
 using namespace std;

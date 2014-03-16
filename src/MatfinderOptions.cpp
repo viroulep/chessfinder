@@ -21,128 +21,128 @@
  */
 #include <sstream>
 #include "Utils.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 
 
 
 //Init static members
-string Options::ENGINE_ = DEFAULT_ENGINE;
-string Options::PATH_ = DEFAULT_PATH;
-PositionList Options::START_POS_LIST_;
-int Options::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
-int Options::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
-int Options::MAX_LINES_ = DEFAULT_MAX_LINES;
-int Options::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
-int Options::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
-int Options::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
-int Options::MATE_EQUIV_ = DEFAULT_MATE_EQUIV;
+string MatfinderOptions::ENGINE_ = DEFAULT_ENGINE;
+string MatfinderOptions::PATH_ = DEFAULT_PATH;
+PositionList MatfinderOptions::START_POS_LIST_;
+int MatfinderOptions::PLAYFOR_MOVETIME_ = DEFAULT_PLAYFOR_MOVETIME_;
+int MatfinderOptions::PLAYAGAINST_MOVETIME_ = DEFAULT_PLAYAGAINST_MOVETIME_;
+int MatfinderOptions::MAX_LINES_ = DEFAULT_MAX_LINES;
+int MatfinderOptions::VERBOSE_LEVEL_ = DEFAULT_VERBOSE_LEVEL;
+int MatfinderOptions::HASHMAP_SIZE_ = DEFAULT_HASHMAP_SIZE;
+int MatfinderOptions::CP_TRESHOLD_ = DEFAULT_TRESHOLD;
+int MatfinderOptions::MATE_EQUIV_ = DEFAULT_MATE_EQUIV;
 
-int Options::ENGINE_THREADS_ = DEFAULT_THREADS;
-string Options::INPUT_ = DEFAULT_INPUT_FILE;
-string Options::OUTPUT_ = DEFAULT_OUTPUT_FILE;
+int MatfinderOptions::ENGINE_THREADS_ = DEFAULT_THREADS;
+string MatfinderOptions::INPUT_ = DEFAULT_INPUT_FILE;
+string MatfinderOptions::OUTPUT_ = DEFAULT_OUTPUT_FILE;
 
-MoveComparator *Options::MOVE_COMPARATOR_ = new MapMoveComparator;
+MoveComparator *MatfinderOptions::MOVE_COMPARATOR_ = new MapMoveComparator;
 
-string Options::getEngine() { return ENGINE_; }
-void Options::setEngine(string engine) { ENGINE_ = engine; }
+string MatfinderOptions::getEngine() { return ENGINE_; }
+void MatfinderOptions::setEngine(string engine) { ENGINE_ = engine; }
 
-string Options::getPath() { return PATH_; }
-void Options::setPath(string path) { PATH_ = path; }
+string MatfinderOptions::getPath() { return PATH_; }
+void MatfinderOptions::setPath(string path) { PATH_ = path; }
 
-const PositionList &Options::getPositionList()
+const PositionList &MatfinderOptions::getPositionList()
 {
     return START_POS_LIST_;
 }
-void Options::setPositionList(PositionList &theList)
+void MatfinderOptions::setPositionList(PositionList &theList)
 {
     START_POS_LIST_.clear();
     //Delete moves from theList and insert into class member
     START_POS_LIST_.splice(START_POS_LIST_.end(), theList);
 }
-void Options::addPositionToList(string pos, list<string> &moves)
+void MatfinderOptions::addPositionToList(string pos, list<string> &moves)
 {
     pair<string, list<string>> toAdd(pos, moves);
     START_POS_LIST_.push_front(toAdd);
 }
 
-int Options::getPlayagainstMovetime()
+int MatfinderOptions::getPlayagainstMovetime()
 {
     return PLAYAGAINST_MOVETIME_;
 }
-void Options::setPlayagainstMovetime(int movetime)
+void MatfinderOptions::setPlayagainstMovetime(int movetime)
 {
     PLAYAGAINST_MOVETIME_ = movetime;
 }
 
-int Options::getPlayforMovetime() { return PLAYFOR_MOVETIME_; }
-void Options::setPlayforMovetime(int movetime)
+int MatfinderOptions::getPlayforMovetime() { return PLAYFOR_MOVETIME_; }
+void MatfinderOptions::setPlayforMovetime(int movetime)
 {
     PLAYFOR_MOVETIME_ = movetime;
 }
 
-int Options::getVerboseLevel() { return VERBOSE_LEVEL_; }
-void Options::setVerboseLevel(int verboseLevel)
+int MatfinderOptions::getVerboseLevel() { return VERBOSE_LEVEL_; }
+void MatfinderOptions::setVerboseLevel(int verboseLevel)
 {
     VERBOSE_LEVEL_ = verboseLevel;
 }
 
-int Options::getMaxLines() { return MAX_LINES_; }
-void Options::setMaxLines(int maxLines) { MAX_LINES_ = maxLines; }
+int MatfinderOptions::getMaxLines() { return MAX_LINES_; }
+void MatfinderOptions::setMaxLines(int maxLines) { MAX_LINES_ = maxLines; }
 
-int Options::getHashmapSize() { return HASHMAP_SIZE_; }
-void Options::setHashmapSize(int size)
+int MatfinderOptions::getHashmapSize() { return HASHMAP_SIZE_; }
+void MatfinderOptions::setHashmapSize(int size)
 {
     HASHMAP_SIZE_ = size;
 }
 
-int Options::getCpTreshold() { return CP_TRESHOLD_; }
+int MatfinderOptions::getCpTreshold() { return CP_TRESHOLD_; }
 
-void Options::setCpTreshold(int treshold)
+void MatfinderOptions::setCpTreshold(int treshold)
 {
     CP_TRESHOLD_ = treshold;
 }
 
-int Options::getEngineThreads() { return ENGINE_THREADS_; }
-void Options::setEngineThreads(int threads) { ENGINE_THREADS_ = threads; }
+int MatfinderOptions::getEngineThreads() { return ENGINE_THREADS_; }
+void MatfinderOptions::setEngineThreads(int threads) { ENGINE_THREADS_ = threads; }
 
 
-int Options::getMateEquiv() { return MATE_EQUIV_; }
+int MatfinderOptions::getMateEquiv() { return MATE_EQUIV_; }
 
-void Options::setMateEquiv(int mate_equiv) { MATE_EQUIV_ = mate_equiv; }
+void MatfinderOptions::setMateEquiv(int mate_equiv) { MATE_EQUIV_ = mate_equiv; }
 
-string Options::getOutputFile()
+string MatfinderOptions::getOutputFile()
 {
     return OUTPUT_;
 }
-void Options::setOutputFile(string file)
+void MatfinderOptions::setOutputFile(string file)
 {
     OUTPUT_ = file;
 }
 
-string Options::getInputFile()
+string MatfinderOptions::getInputFile()
 {
     return INPUT_;
 }
-void Options::setInputFile(string file)
+void MatfinderOptions::setInputFile(string file)
 {
     INPUT_ = file;
 }
 
-MoveComparator *Options::getMoveComparator()
+MoveComparator *MatfinderOptions::getMoveComparator()
 {
     if (!MOVE_COMPARATOR_)
         Utils::handleError("MoveComparator used but not initialized");
     return MOVE_COMPARATOR_;
 }
 
-void Options::setMoveComparator(MoveComparator *mc)
+void MatfinderOptions::setMoveComparator(MoveComparator *mc)
 {
     if (MOVE_COMPARATOR_)
         delete MOVE_COMPARATOR_;
     MOVE_COMPARATOR_ = mc;
 }
 
-void Options::setMoveComparator(string smc)
+void MatfinderOptions::setMoveComparator(string smc)
 {
     MoveComparator *mc = nullptr;
     if (smc == "map") {
@@ -160,10 +160,10 @@ void Options::setMoveComparator(string smc)
 }
 
 
-string Options::getPretty()
+string MatfinderOptions::getPretty()
 {
     ostringstream oss;
-    oss << "Options :\n";
+    oss << "MatfinderOptions :\n";
     oss << "\t" << "Engine\t\t\t" << " = " << ENGINE_ << endl;
     oss << "\t" << "Path\t\t\t" << " = " << PATH_ << endl;
     oss << "\t" << "Playfor Movetime\t" << " = " << PLAYFOR_MOVETIME_ << endl;

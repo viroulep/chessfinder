@@ -26,7 +26,7 @@
 #include <list>
 #include <vector>
 #include <sys/time.h>
-#include "Options.h"
+#include "MatfinderOptions.h"
 
 using namespace std;
 

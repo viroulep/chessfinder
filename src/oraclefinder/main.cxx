@@ -34,7 +34,7 @@
 #include "Line.h"
 #include "Finder.h"
 #include "OracleFinder.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 #include "CommonMain.h"
 
 using namespace std;

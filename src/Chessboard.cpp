@@ -323,7 +323,7 @@ bool Chessboard::compareLines(Line *lhs, Line *rhs)
 }
 
 
-const Side Chessboard::getActiveSide()
+Side Chessboard::getActiveSide()
 {
     return active_;
 }
@@ -527,7 +527,7 @@ Chessboard *Chessboard::createFromFEN(string fenString)
     return cb;
 }
 
-Chessboard::Chessboard() : comparator_(Options::getMoveComparator()),
+Chessboard::Chessboard() : comparator_(MatfinderOptions::getMoveComparator()),
     takenPieces_(), board_()
 {
     //need to initialize all the datas

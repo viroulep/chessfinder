@@ -34,7 +34,7 @@
 #include "Line.h"
 #include "MatFinder.h"
 #include "CommonMain.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 
 using namespace std;
 
@@ -76,7 +76,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'v':
                 try {
-                    Options::setVerboseLevel(stoi(optarg));
+                    MatfinderOptions::setVerboseLevel(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing verbose level");
                 }
@@ -87,16 +87,16 @@ void CommonMain::parseArgs(int argc, char **argv)
                 break;
 
             case 'e':
-                Options::setEngine(optarg);
+                MatfinderOptions::setEngine(optarg);
                 break;
 
             case 'i':
                 posList = Utils::positionListFromFile(optarg);
-                Options::setPositionList(posList);
+                MatfinderOptions::setPositionList(posList);
                 break;
 
             case 'p':
-                Options::setPath(optarg);
+                MatfinderOptions::setPath(optarg);
                 break;
 
             case 'm':
@@ -104,12 +104,12 @@ void CommonMain::parseArgs(int argc, char **argv)
                 if (Utils::parseMovelist(moveList, optarg))
                     Utils::handleError("Error parsing movelist");
                 //Adding the move is done after this loop
-                //Options::setUserMoves(moveList);
+                //MatfinderOptions::setUserMoves(moveList);
                 break;
 
             case 'l':
                 try {
-                    Options::setMaxLines(stoi(optarg));
+                    MatfinderOptions::setMaxLines(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing lines option");
                 }
@@ -117,7 +117,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 't':
                 try {
-                    Options::setHashmapSize(stoi(optarg));
+                    MatfinderOptions::setHashmapSize(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing hasmap size");
                 }
@@ -125,7 +125,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'c':
                 try {
-                    Options::setCpTreshold(stoi(optarg));
+                    MatfinderOptions::setCpTreshold(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing centipawn treshold");
                 }
@@ -133,7 +133,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'f':
                 try {
-                    Options::setPlayforMovetime(stoi(optarg));
+                    MatfinderOptions::setPlayforMovetime(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing playfor movetime");
                 }
@@ -141,7 +141,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'a':
                 try {
-                    Options::setPlayagainstMovetime(stoi(optarg));
+                    MatfinderOptions::setPlayagainstMovetime(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing playagainst movetime");
                 }
@@ -153,20 +153,20 @@ void CommonMain::parseArgs(int argc, char **argv)
                 break;
 
             case 'o':
-                Options::setOutputFile(optarg);
+                MatfinderOptions::setOutputFile(optarg);
                 break;
 
             case 'u':
-                Options::setMoveComparator(optarg);
+                MatfinderOptions::setMoveComparator(optarg);
                 break;
 
             case 'n':
-                Options::setInputFile(optarg);
+                MatfinderOptions::setInputFile(optarg);
                 break;
 
             case 'w':
                 try {
-                    Options::setMateEquiv(stoi(optarg));
+                    MatfinderOptions::setMateEquiv(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing mateq value");
                 }
@@ -174,7 +174,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'x':
                 try {
-                    Options::setEngineThreads(stoi(optarg));
+                    MatfinderOptions::setEngineThreads(stoi(optarg));
                 } catch (...) {
                     Utils::handleError("Error parsing engine threads");
                 }
@@ -192,14 +192,14 @@ void CommonMain::parseArgs(int argc, char **argv)
         startingPos = "startpos";
 
     if (startingPos.size() > 0)
-        Options::addPositionToList(startingPos, moveList);
+        MatfinderOptions::addPositionToList(startingPos, moveList);
 
 }
 
 
 int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 {
-    Utils::output(Options::getPretty(), 1);
+    Utils::output(MatfinderOptions::getPretty(), 1);
 
     // Child error signal install
     struct sigaction action;
@@ -234,7 +234,7 @@ int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 
         //Kill the child to exit properly
         kill(pid, SIGTERM);
-        Options::setMoveComparator(nullptr);
+        MatfinderOptions::setMoveComparator(nullptr);
     } else {
         Utils::handleError("Error: fork failed");
     }

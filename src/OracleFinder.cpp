@@ -31,7 +31,7 @@
 #include <ctime>
 #include "Finder.h"
 #include "OracleFinder.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
@@ -43,8 +43,8 @@
 OracleFinder::OracleFinder() : Finder()
 {
     //engine_side_ = cb_->getActiveSide();
-    //engine_play_for_ = Options::getPlayFor();
-    string inputFilename = Options::getInputFile();
+    //engine_play_for_ = MatfinderOptions::getPlayFor();
+    string inputFilename = MatfinderOptions::getInputFile();
     if (inputFilename.size() > 0) {
         Utils::output("Loading table from " + inputFilename + ".\n", 2);
         ifstream inputFile(inputFilename, ios::binary);
@@ -60,7 +60,7 @@ OracleFinder::OracleFinder() : Finder()
 
 OracleFinder::~OracleFinder()
 {
-    string outputFilename = Options::getOutputFile();
+    string outputFilename = MatfinderOptions::getOutputFile();
     if (outputFilename.size() > 0) {
         Utils::output("Saving table to " + outputFilename + ".\n", 2);
         ofstream outputFile(outputFilename, ios::binary);
@@ -111,7 +111,7 @@ int OracleFinder::runFinderOnCurrentPosition()
  *    sendCurrentPositionToEngine();
  *    lines_.assign(maxMoves, Line::emptyLine);
  *    sendToEngine("go movetime "
- *            + to_string(Options::getPlayforMovetime()));
+ *            + to_string(MatfinderOptions::getPlayforMovetime()));
  *    waitBestmove();
  *    Utils::output("Evaluation is :\n");
  *    Utils::output(getPrettyLines());
@@ -183,7 +183,7 @@ int OracleFinder::runFinderOnCurrentPosition()
         /**********************************************/
 
         /*Thinking according to the side the engine play for*/
-        int moveTime = Options::getPlayforMovetime();
+        int moveTime = MatfinderOptions::getPlayforMovetime();
 
         sendToEngine("go movetime " + to_string(moveTime));
 
@@ -208,7 +208,7 @@ int OracleFinder::runFinderOnCurrentPosition()
             Utils::output("[" + Board::to_string(active)
                     + "] Bestline is mate (cut)\n", 2);
             continue;
-        } else if (fabs(bestLine.getEval()) > Options::getCpTreshold()) {
+        } else if (fabs(bestLine.getEval()) > MatfinderOptions::getCpTreshold()) {
             //TODO: register if winning or losing ?
             current->st = Node::TRESHOLD;
             Utils::output("[" + Board::to_string(active)
@@ -322,7 +322,7 @@ SortedLines OracleFinder::getLines()
         Line l = lines_[i];
         if (l.empty())
             continue;
-        int limit = Options::getCpTreshold();
+        int limit = MatfinderOptions::getCpTreshold();
         if (l.isMat())
             unbalanced.push_back(&(lines_[i]));
         else if (fabs(l.getEval()) <= limit)

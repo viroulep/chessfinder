@@ -25,7 +25,7 @@
 #include <cmath>
 #include <unistd.h>
 #include "Finder.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
@@ -33,7 +33,7 @@
 
 
 Finder::Finder() :
-    engine_(Options::getEngine(), Options::getPath())
+    engine_(MatfinderOptions::getEngine(), MatfinderOptions::getPath())
 {
     int pipe_status;
 
@@ -103,17 +103,17 @@ int Finder::runFinder()
 
     //Send some commands, init etc...
     sendToEngine("uci");
-    sendOptionToEngine("Hash", to_string(Options::getHashmapSize()));
+    sendOptionToEngine("Hash", to_string(MatfinderOptions::getHashmapSize()));
     sendOptionToEngine("UCI_AnalyseMode", "true");
-    sendOptionToEngine("MultiPV", to_string(Options::getMaxLines()));
-    sendOptionToEngine("Threads", to_string(Options::getEngineThreads()));
+    sendOptionToEngine("MultiPV", to_string(MatfinderOptions::getMaxLines()));
+    sendOptionToEngine("Threads", to_string(MatfinderOptions::getEngineThreads()));
     sendToEngine("ucinewgame");
 
     sendToEngine("isready");
 
     waitReadyok();
 
-    const PositionList &allPositions = Options::getPositionList();
+    const PositionList &allPositions = MatfinderOptions::getPositionList();
 
     for (PositionList::const_iterator it = allPositions.begin(),
             itEnd = allPositions.end(); it != itEnd; ++it) {
@@ -220,7 +220,7 @@ void Finder::signalReadyok()
     pthread_mutex_unlock(&readyok_mutex_);
 }
 
-void Finder::signalBestmove(string &bestmove)
+void Finder::signalBestmove(string &)
 {
     pthread_mutex_lock(&bestmove_mutex_);
     Utils::output("Signaling bestmove_cond", 5);
@@ -238,7 +238,7 @@ string Finder::getPrettyLines()
             oss << "\t[";
             oss << (i + 1);
             oss << "] ";
-            oss << getPrettyLine(curLine, Options::movesDisplayed);
+            oss << getPrettyLine(curLine, MatfinderOptions::movesDisplayed);
             oss << "\n";
         }
     }
@@ -270,7 +270,7 @@ void Finder::waitReadyok()
 {
     pthread_mutex_lock(&readyok_mutex_);
     struct timespec ts;
-    Utils::getTimeout(&ts, Options::isreadyTimeout);
+    Utils::getTimeout(&ts, MatfinderOptions::isreadyTimeout);
     pthread_cond_timedwait(&readyok_cond_,
             &readyok_mutex_,
             &ts);

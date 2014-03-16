@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include "Finder.h"
 #include "MatFinder.h"
-#include "Options.h"
+#include "MatfinderOptions.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
@@ -50,9 +50,9 @@ int MatFinder::runFinderOnCurrentPosition()
     Utils::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
-    lines_.assign(Options::getMaxLines(), Line());
+    lines_.assign(MatfinderOptions::getMaxLines(), Line());
     sendToEngine("go movetime "
-            + to_string(Options::getPlayforMovetime()));
+            + to_string(MatfinderOptions::getPlayforMovetime()));
     waitBestmove();
     Utils::output("Evaluation is :\n");
     Utils::output(getPrettyLines());
@@ -86,8 +86,8 @@ int MatFinder::runFinderOnCurrentPosition()
 
         //Thinking according to the side the engine play for
         int moveTime = (active == engine_play_for_ || !addedMoves_) ?
-            Options::getPlayforMovetime() :
-            Options::getPlayagainstMovetime();
+            MatfinderOptions::getPlayforMovetime() :
+            MatfinderOptions::getPlayagainstMovetime();
 
         //Compute optimal multipv
         int pv = updateMultiPV();
@@ -96,7 +96,7 @@ int MatFinder::runFinderOnCurrentPosition()
         //Scaling moveTime
         //According to number of lines
         moveTime = (int)(moveTime * ((float)
-                    ((float)pv/(float)Options::getMaxLines())
+                    ((float)pv/(float)MatfinderOptions::getMaxLines())
                     ));
         if (moveTime <= 600)
             moveTime = 600;
@@ -104,7 +104,7 @@ int MatFinder::runFinderOnCurrentPosition()
         moveTime += 10 * addedMoves_;
 
         //Initialize vector with empty lines
-        lines_.assign(Options::getMaxLines(), Line());
+        lines_.assign(MatfinderOptions::getMaxLines(), Line());
 
         //Increase movetime with depth
         sendToEngine("go movetime " + to_string(moveTime));
@@ -118,7 +118,7 @@ int MatFinder::runFinderOnCurrentPosition()
         Utils::output(getPrettyLines(), 2);
         bestLine = getBestLine();
         if (bestLine.empty() || bestLine.isMat() ||
-                fabs(bestLine.getEval()) > Options::getMateEquiv()) {
+                fabs(bestLine.getEval()) > MatfinderOptions::getMateEquiv()) {
             //Handle the case where we should backtrack
             if (addedMoves_ > 0) {
                 Utils::output("\tBacktracking " + cb_->getUciMoves().back()
@@ -158,7 +158,7 @@ int MatFinder::runFinderOnCurrentPosition()
         Utils::output("[" + Board::to_string(active)
                 + "] Chosen line : \n", 1);
         Utils::output("\t" + getPrettyLine(bestLine,
-                    Options::movesDisplayed) + "\n", 1);
+                    MatfinderOptions::movesDisplayed) + "\n", 1);
 
         string next = bestLine.firstMove();
         Utils::output("\tNext move is " + next + "\n", 3);
@@ -186,7 +186,7 @@ int MatFinder::runFinderOnCurrentPosition()
 int MatFinder::updateMultiPV()
 {
     int diffLimit = 800;
-    int multiPV = Options::getMaxLines();
+    int multiPV = MatfinderOptions::getMaxLines();
     int lastEvalValue = 0;
     bool lastEvalMat = false;
     bool allMat = true;
@@ -212,7 +212,7 @@ int MatFinder::updateMultiPV()
         lastEvalMat = lines_[i].isMat();
     }
     if (allMat)
-        multiPV = Options::getMaxLines();
+        multiPV = MatfinderOptions::getMaxLines();
 
     if (multiPV != nonEmptyLines) {
         Utils::output("Updating MultiPV to " + to_string(multiPV) + "\n", 2);
@@ -230,7 +230,7 @@ Line &MatFinder::getBestLine()
 {
     Side active = cb_->getActiveSide();
     for (int i = 0; i < (int) lines_.size(); ++i) {
-        int limit = Options::getCpTreshold();
+        int limit = MatfinderOptions::getCpTreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines_[i].isMat()) {

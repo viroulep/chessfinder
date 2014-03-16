@@ -51,7 +51,7 @@ public:
     /*Move comparators*/
     bool compareLines(Line *lhs, Line *rhs);
 
-    const Side getActiveSide();
+    Side getActiveSide();
 
     const list<string> getUciMoves();
 

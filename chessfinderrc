@@ -1,0 +1,11 @@
+[engine]
+    path = /usr/local/bin/stockfish
+    hashtable_size = 2048
+    threads = 2
+[finder]
+    cutoff_treshold = 100
+    playfor_movetime = 600
+    playagainst_movetime = 300
+[matfinder]
+    lines = 8
+    mate_threshold = 10000

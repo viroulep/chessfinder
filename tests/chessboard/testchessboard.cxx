@@ -26,6 +26,7 @@
 
 #include "Movegen.h"
 #include "Output.h"
+#include "Options.h"
 #include "SimpleChessboard.h"
 #include "UCICommunicator.h"
 
@@ -78,14 +79,16 @@ int main(int argc, char **argv)
         Err::handle("Error : unable to open file.");
 
     vector<string> positions;
-    /*positions.push_back("1b1r2k1/2qr2pp/p3p3/Pp1bPpB1/1P4R1/2BB3P/2P3P1/5R1K w - f6 0 29");*/
-    /*positions.push_back("1b1r2k1/1p3ppp/8/1NpP4/r7/4P3/2pN1PPP/R3K2R w KQ - 0 19");*/
     string line;
     /*Get all the positions from file*/
     while (getline(inputfile, line)) {
         positions.push_back(line);
     }
     inputfile.close();
+
+    Config defconf;
+    Options &options = Options::getInstance();
+    options.addConfig(defconf);
 
     /*Setup some engine options*/
     Comm::EngineOptions engine_options;
@@ -95,8 +98,7 @@ int main(int argc, char **argv)
     Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
 
     /*Create the engine and its communicator*/
-    /*FIXME get engine path from config*/
-    int commId = pool.create<Comm::LocalUCICommunicator>("/usr/local/bin/stockfish",
+    int commId = pool.create<Comm::LocalUCICommunicator>(options.getEngineFullpath(),
                                                          engine_options);
     Position chessboard;
     chessboard.init();

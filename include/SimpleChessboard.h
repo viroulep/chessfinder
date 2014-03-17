@@ -28,6 +28,7 @@
 #include "ChessboardTypes.h"
 
 namespace Board {
+    /*TODO get rid of exceptions with retval*/
 
     extern const std::string PieceToChar;
 
@@ -69,6 +70,7 @@ namespace Board {
             bool empty(Square s) const;
             bool attacked(Square s, Color c) const;
             bool takes(Square attaker, Square target) const;
+            bool kingInCheck(Color c) const;
             std::set<Square> pieces_squares(Color c) const;
             Piece piece_on(Square s) const;
             Square enpassant() const;
@@ -80,17 +82,16 @@ namespace Board {
             void undoMove();
             const std::string pretty() const;
             const std::string fen() const;
-            //FIXME tmp debug
-            Piece board_[64];
-            void applyMove(Move m) throw(InvalidMoveException);
-            void applyPseudoMove(Move m) throw(InvalidMoveException);
-            bool kingInCheck(Color c) const;
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/
+            Piece board_[64];
             Color active_;
             StateInfo startState_;
             StateInfo *st_ = nullptr;
             std::vector<Move> moves_;
+
+            void applyMove(Move m) throw(InvalidMoveException);
+            void applyPseudoMove(Move m) throw(InvalidMoveException);
 
             void setPos(std::string fenPos) throw(InvalidFenException);
             void setSide(std::string fenSide) throw(InvalidFenException);

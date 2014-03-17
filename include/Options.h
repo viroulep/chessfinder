@@ -26,19 +26,59 @@
 #include <list>
 #include <utility>
 
+#include "ConfigParser.h"
+
 
 
 typedef std::list<std::pair<std::string, std::list<std::string>>> PositionList;
 
 class Options {
-public:
+    public:
 
-    static Options &getInstance();
-private:
-    //Private (static class)
-    Options();
+        const std::string &getInputFile() const;
+        const std::string &getOutputFile() const;
 
-    static Options instance_;
+        void setInputFile(std::string in);
+        void setOutputFile(std::string out);
+
+        const std::string &getEngineFullpath() const;
+        int getEngineHashmapSize() const;
+        int getEngineThreads() const;
+
+        int getCutoffTreshold() const;
+        int getPlayforMovetime() const;
+        int getPlayagainstMovetime() const;
+        int getVerboseLevel() const;
+        int getMaxMoves() const;
+
+        int getMateTreshold() const;
+        int getMaxLines() const;
+
+
+        void addConfig(Config &conf);
+
+        static Options &getInstance();
+    private:
+        Options();
+        /*TODO comment*/
+
+        std::string inputFile_ = "";
+        std::string outputFile_ = "";
+
+        std::string engineFullpath_ = "/usr/bin/stockfish";
+        int engineHashmapSize_ = 1024;
+        int engineThreads_ = 2;
+
+        int finderCutoffTreshold_ = 100;
+        int playforMovetime_ = 1500;
+        int playagainstMovetime_ = 1000;
+        int verboseLevel_ = 0;
+        int maxMoves_ = 255;
+
+        int mateTreshold_ = 10000;
+        int maxLines_ = 8;
+
+        static Options instance_;
 };
 
 

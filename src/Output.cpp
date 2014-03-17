@@ -23,6 +23,7 @@
 #include <sstream>
 #include <fstream>
 #include "Output.h"
+#include "Options.h"
 
 using namespace std;
 
@@ -71,9 +72,7 @@ namespace Out {
 
     void output(const string &msg, int level/* = 0*/)
     {
-        /*TODO restore*/
-        /*if (level <= Options::getVerboseLevel())*/
-        if (level <= 2)
+        if (level <= Options::getInstance().getVerboseLevel())
             output(cout, msg);
     }
 

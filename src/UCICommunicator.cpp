@@ -8,6 +8,7 @@
 #include <set>
 #include "UCICommunicator.h"
 #include "Output.h"
+#include "Options.h"
 
 using namespace std;
 
@@ -62,9 +63,7 @@ namespace Comm {
 
     int UCICommunicator::parseUCIMsg(const string &msg)
     {
-        /*cerr << "Received UCI msg : \"" << msg << "\"\n";*/
         string token;
-        //cerr << "\tcmd: " << msg << "\n";
         istringstream is(msg);
         is >> skipws >> token;
         /*Some of the tokens are just drop, because we don't care about them*/
@@ -76,8 +75,8 @@ namespace Comm {
         else if (token == "info") info(is);
         else if (token == "option") ;
         else {
-            /*Err::output("Unrecognise command from engine :");*/
-            Err::output("\"" + msg + "\"");
+            Out::output("Warning : Unrecognise command from engine :", 3);
+            Out::output("\"" + msg + "\"", 3);
         }
         return 0;
     }
@@ -115,9 +114,8 @@ namespace Comm {
                 //Drop
             } else if (token == "time") {
                 is >> curThinktime;
-                /*FIXME restore*/
-                /*Out::output("Updated current thinktime to "*/
-                            /*+ to_string(curThinktime) + "\n", 5);*/
+                Out::output("Updated current thinktime to "
+                            + to_string(curThinktime) + "\n", 3);
             } else if (token == "nodes") {
                 //Drop
             } else if (token == "pv") {
@@ -148,8 +146,7 @@ namespace Comm {
                 Err::output("********** Hashfull : " + token + " *******");
             } else if (token == "nps") {
                 is >> curNps;
-                /*FIXME restore*/
-                /*Out::output("Updated NPS to " + to_string(curNps) + "\n", 5);*/
+                Out::output("Updated NPS to " + to_string(curNps) + "\n", 3);
             } else if (token == "tbhits") {
                 //Drop
             } else if (token == "cpuload") {
@@ -188,7 +185,7 @@ namespace Comm {
     {
         pthread_mutex_lock(&readyok_mutex_);
         struct timespec ts;
-        /*FIXME get timeout from options*/
+        /*Timeout for readyness is 5 sec*/
         Utils::getTimeout(&ts, 5);
         pthread_cond_timedwait(&readyok_cond_,
                 &readyok_mutex_,
@@ -215,8 +212,7 @@ namespace Comm {
 
     void UCICommunicator::clearLines()
     {
-        /*FIXME get max moves from option*/
-        linesVector_.assign(254, Line());
+        linesVector_.assign(Options::getInstance().getMaxMoves(), Line());
     }
 
     void *UCICommunicator::start_routine(void *arg)
@@ -275,7 +271,6 @@ namespace Comm {
 
     void *LocalUCICommunicator::run()
     {
-        /*TODO setup communications*/
         pid_t pid = fork();
         if (pid == 0) {
             dup2(getEngineInRead(), 0);
@@ -369,7 +364,7 @@ namespace Comm {
                            (void *)pool_[id].first);
             Err::handle("pthread_create", status);
 
-            /*FIXME globalize*/
+            /*Ping the engine until it's ready*/
             unsigned int pollTime = 20000;
             while (!isReady(id))
                 usleep(pollTime);
@@ -466,8 +461,7 @@ namespace Comm {
         if (pool_.count(id) > 0 && pool_[id].first->ok())
             return pool_[id].first;
         else {
-            /*FIXME display error ?*/
-            /*Err::output("Unknown UCICommunicator id : " + to_string(id));*/
+            Out::output("Warning : Unknown UCICommunicator id : " + to_string(id), 2);
             return nullptr;
         }
     }

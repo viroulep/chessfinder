@@ -77,7 +77,6 @@ const char *Config::defaultConfigFile = "chessfinderrc";
 
 Config::Config()
 {
-    /*FIXME get from option file*/
     init(defaultConfigFile, '=', 1);
 }
 

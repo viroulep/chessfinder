@@ -454,7 +454,6 @@ namespace Board {
             /*Convert the pawn to promoted piece*/
             board_[m.from] = make_piece(active_, m.promotion);
         } else if (m.type == CASTLING) {
-            /*TODO check for sq+-1, for king in check */
             if (kind_of(pFrom) != KING)
                 throw InvalidMoveException("Castling with no king");
             CastlingFlag castleType = (m.to > m.from)?

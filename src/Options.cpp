@@ -21,9 +21,135 @@
  */
 #include <sstream>
 #include "Options.h"
+#include "Output.h"
 
+using namespace std;
 
 Options Options::instance_ = Options();
+
+const string &Options::getInputFile() const
+{
+    return inputFile_;
+}
+
+const string &Options::getOutputFile() const
+{
+    return outputFile_;
+}
+
+void Options::setInputFile(string in)
+{
+    inputFile_ = in;
+}
+
+void Options::setOutputFile(string out)
+{
+    outputFile_ = out;
+}
+
+const string &Options::getEngineFullpath() const
+{
+    return engineFullpath_;
+}
+
+int Options::getEngineHashmapSize() const
+{
+    return engineHashmapSize_;
+}
+
+int Options::getEngineThreads() const
+{
+    return engineThreads_;
+}
+
+int Options::getCutoffTreshold() const
+{
+    return finderCutoffTreshold_;
+}
+
+int Options::getPlayforMovetime() const
+{
+    return playforMovetime_;
+}
+
+int Options::getPlayagainstMovetime() const
+{
+    return playagainstMovetime_;
+}
+
+int Options::getVerboseLevel() const
+{
+    return verboseLevel_;
+}
+
+int Options::getMaxMoves() const
+{
+    return maxMoves_;
+}
+
+int Options::getMateTreshold() const
+{
+    return mateTreshold_;
+}
+
+int Options::getMaxLines() const
+{
+    return maxLines_;
+}
+
+#define PARSE_INTVAL(option, optionName) \
+if (val) {\
+    try {\
+        intVal = stoi(val);\
+        option = intVal;\
+    } catch (...) {\
+        Err::handle("Error parsing " optionName " from configuration file");\
+    }\
+}
+
+void Options::addConfig(Config &conf)
+{
+    Out::output("Setting options from configuration file.\n", 1);
+    const char *val;
+    int intVal;
+    /*Getting engine configuration*/
+    val = conf("engine", "path");
+    if (val)
+        engineFullpath_ = val;
+
+    val = conf("engine", "hashmap_size");
+    PARSE_INTVAL(engineHashmapSize_, "hashmap_size");
+
+    val = conf("engine", "threads");
+    PARSE_INTVAL(engineThreads_, "threads number");
+
+    /*Getting Finder configuration*/
+    val = conf("finder", "cutoff_treshold");
+    PARSE_INTVAL(finderCutoffTreshold_, "cutoff_treshold");
+
+    val = conf("finder", "playfor_movetime");
+    PARSE_INTVAL(playforMovetime_, "playfor_movetime");
+
+    val = conf("finder", "playagainst_movetime");
+    PARSE_INTVAL(playagainstMovetime_, "playagainst_movetime");
+
+    val = conf("finder", "verbose_level");
+    PARSE_INTVAL(verboseLevel_, "verbose_level");
+
+    /*Getting MatFinder specific configuration*/
+    val = conf("matfinder", "lines");
+    PARSE_INTVAL(maxLines_, "lines");
+
+    val = conf("matfinder", "mate_treshold");
+    PARSE_INTVAL(mateTreshold_, "mate_treshold");
+
+}
+
+#undef PARSE_INTVAL
+
+Options::Options()
+{
+}
 
 Options &Options::getInstance()
 {

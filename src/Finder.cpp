@@ -24,11 +24,13 @@
 #include <sstream>
 #include <cmath>
 #include <unistd.h>
+
 #include "Finder.h"
 #include "MatfinderOptions.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
+#include "Output.h"
 
 
 
@@ -42,13 +44,13 @@ Finder::Finder() :
     // the same pipe and they can communicate.
 
     pipe_status = pipe(in_fds_);
-    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
+    Err::handle("pipe() : Error creating the pipe", pipe_status);
 
     pipe_status = pipe(out_fds_);
-    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
+    Err::handle("pipe() : Error creating the pipe", pipe_status);
 
     pipe_status = pipe(err_fds_);
-    Utils::handleError("pipe() : Error creating the pipe", pipe_status);
+    Err::handle("pipe() : Error creating the pipe", pipe_status);
 
     engine_input_ = new OutputStream(getEngineInWrite());
     receiver_input_ = new OutputStream(getEngineOutWrite());
@@ -122,7 +124,7 @@ int Finder::runFinder()
         string fenpos = (pos == "startpos")?engine_.getEngineStartpos():pos;
         list<string> userMoves = (*it).second;
 
-        Utils::output("Running finder on \"" + pos + "\", with moves : "
+        Out::output("Running finder on \"" + pos + "\", with moves : "
                 + Utils::listToString(userMoves) + "\n");
 
 
@@ -142,10 +144,10 @@ int Finder::runFinder()
         delete cb_;
     }
     if (allPositions.empty())
-        Utils::output("No position to run the finder on. Please adjust"\
+        Out::output("No position to run the finder on. Please adjust"\
                 " --startingpos and/or --position_file\n");
 
-    Utils::output("Exiting receiver and joining threads\n", 4);
+    Out::output("Exiting receiver and joining threads\n", 4);
     (*receiver_input_) << "quit\n";
 
     thread->join();
@@ -156,7 +158,7 @@ int Finder::runFinder()
 void Finder::updateLine(int index, Line &line)
 {
     if (index >= (int) lines_.size()) {
-        Utils::handleError("Index '" + to_string(index) + "' out of bound !");
+        Err::handle("Index '" + to_string(index) + "' out of bound !");
     }
     lines_[index].update(line);
 }
@@ -198,7 +200,7 @@ void Finder::sendToEngine(string cmd)
 {
     string toSend(cmd);
     toSend += "\n";
-    Utils::output(toSend, 3);
+    Out::output(toSend, 3);
     (*engine_input_) << toSend;
 }
 
@@ -215,7 +217,7 @@ void Finder::updateThinktime(int newThinktime)
 void Finder::signalReadyok()
 {
     pthread_mutex_lock(&readyok_mutex_);
-    Utils::output("Signaling readyok_cond", 5);
+    Out::output("Signaling readyok_cond", 5);
     pthread_cond_signal(&readyok_cond_);
     pthread_mutex_unlock(&readyok_mutex_);
 }
@@ -223,7 +225,7 @@ void Finder::signalReadyok()
 void Finder::signalBestmove(string &)
 {
     pthread_mutex_lock(&bestmove_mutex_);
-    Utils::output("Signaling bestmove_cond", 5);
+    Out::output("Signaling bestmove_cond", 5);
     pthread_cond_signal(&bestmove_cond_);
     pthread_mutex_unlock(&bestmove_mutex_);
 }

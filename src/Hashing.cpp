@@ -23,6 +23,7 @@
 #include <queue>
 #include "Hashing.h"
 #include "Utils.h"
+#include "Output.h"
 #include "Chessboard.h"
 using namespace std;
 
@@ -104,10 +105,10 @@ string HashTable::to_string()
  *    string simpleFen = infos.front();
  *    infos.pop();
  *    simpleFen += " " + infos.front();
- *    Utils::output("Looking for " + simpleFen + "\n", 3);
+ *    Out::output("Looking for " + simpleFen + "\n", 3);
  *    for (auto it = range.first, itEnd = range.second;
  *            it != itEnd && !found ; ++it) {
- *        Utils::output("against " + it->second->pos + "\n", 3);
+ *        Out::output("against " + it->second->pos + "\n", 3);
  *        if (simpleFen == it->second->pos.substr(0, simpleFen.size()))
  *            found = it->second;
  *    }
@@ -149,7 +150,7 @@ HashTable *HashTable::fromPolyglot(istream &is)
     uint16_t move = 0x0;
     uint16_t weight = 0x0;
     uint32_t learn = 0x0;
-    Utils::output("Import hashtable.\n", 1);
+    Out::output("Import hashtable.\n", 1);
     while (is) {
         is.read((char *)&hash, sizeof(uint64_t));
         is.read((char *)&move, sizeof(uint16_t));
@@ -164,9 +165,9 @@ HashTable *HashTable::fromPolyglot(istream &is)
         toAdd->legal_moves.push_back(mn);
         pair<uint64_t, Node *> p(hash, toAdd);
         retValue->insert(p);
-        Utils::output("Inserting pos in hashtable.\n", 3);
+        Out::output("Inserting pos in hashtable.\n", 3);
     }
-    Utils::output("Data successfully imported.\n", 1);
+    Out::output("Data successfully imported.\n", 1);
     return retValue;
 }
 
@@ -179,7 +180,7 @@ uint64_t HashTable::hashFEN(string fenString)
         infos.push(tmpInfo);
 
     if (infos.size() != 6)
-        Utils::handleError("Invalid input fen : must have 6 fields");
+        Err::handle("Invalid input fen : must have 6 fields");
 
     uint64_t fenHash = U64(0x0);
     while (!infos.empty()) {
@@ -258,9 +259,9 @@ uint64_t HashTable::hashBoard(Chessboard *cb)
 int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {
     /*
-     *Utils::output("pieceOffset(" + std::to_string(kind) + "," + to_char(r)
+     *Out::output("pieceOffset(" + std::to_string(kind) + "," + to_char(r)
      *        + "," + to_char(f) + ")\n");
-     *Utils::output("offset : " + std::to_string(64*kind+8*(r-1)+f) + "\n");
+     *Out::output("offset : " + std::to_string(64*kind+8*(r-1)+f) + "\n");
      */
     //r-1 to have rank in 0-7
     return 64 * kind + 8 * (r - 1) + f;
@@ -268,23 +269,23 @@ int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 
 uint64_t HashTable::turnFromFEN(string side)
 {
-    /*Utils::output("Turn : " + side + "\n");*/
+    /*Out::output("Turn : " + side + "\n");*/
     if (side == "w")
         return Random64_[780];//RandomTurn offset (last entry)
     else if (side == "b")
         return U64(0x0);
     else
-        Utils::handleError("Invalid input fen : can't determine active side");
+        Err::handle("Invalid input fen : can't determine active side");
     return U64(0x0);
 }
 
 uint64_t HashTable::enpassantFromFEN(string enpassant)
 {
-    /*Utils::output("Enpassant : " + enpassant + "\n");*/
+    /*Out::output("Enpassant : " + enpassant + "\n");*/
     if (enpassant == "-") {
         return U64(0x0);
     } else if (enpassant.length() != 2) {
-        Utils::handleError("Invalid input fen : can't determine enpassant");
+        Err::handle("Invalid input fen : can't determine enpassant");
         return U64(0x0);
     } else {
         Board::File f;
@@ -296,7 +297,7 @@ uint64_t HashTable::enpassantFromFEN(string enpassant)
 
 uint64_t HashTable::castleFromFEN(string castle)
 {
-    /*Utils::output("Castle : " + castle + "\n");*/
+    /*Out::output("Castle : " + castle + "\n");*/
     if (castle == "-")
         return U64(0x0);
     else {
@@ -318,7 +319,7 @@ uint64_t HashTable::castleFromFEN(string castle)
                     castleKey ^= Random64_[771];
                     break;
                 default:
-                    Utils::handleError("Invalid input fen : can't get castle");
+                    Err::handle("Invalid input fen : can't get castle");
             }
         }
         return castleKey;
@@ -334,13 +335,13 @@ uint64_t HashTable::piecesFromFEN(string pos)
         ranks.push(rank);
     //Board has 8 data fields
     if (ranks.size() != 8)
-        Utils::handleError("Invalid input position : must have 8 ranks");
+        Err::handle("Invalid input position : must have 8 ranks");
 
     Rank r = 8;
     File f = A;
     uint64_t piecesKey = 0;
     while (!ranks.empty()) {
-        Utils::output("Rank : " + std::to_string(r) + "\n", 4);
+        Out::output("Rank : " + std::to_string(r) + "\n", 4);
         const char *crank = ranks.front().c_str();
         char c;
         while ((c = *crank++)) {
@@ -406,7 +407,7 @@ uint64_t HashTable::piecesFromFEN(string pos)
                     break;
                 default:
                     f = (File)(f + 1);
-                    Utils::handleError("Unrecognize char in position");
+                    Err::handle("Unrecognize char in position");
                     break;
             }
             f = (File)(f%8);

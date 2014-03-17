@@ -1,5 +1,6 @@
 #include "CompareMove.h"
 #include "Utils.h"
+#include "Output.h"
 
 
 
@@ -37,7 +38,7 @@ bool CompareMove::compareTake(Move &lhs, Move &rhs)
     }
 }
 
-uint16_t DefaultMoveComparator::evaluateMove(Move &mv)
+uint16_t DefaultMoveComparator::evaluateMove(Move &)
 {
     return 1;
 }
@@ -64,13 +65,13 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
     Square *to = mv.to;
     Square *from = mv.from;
     if (!to || !from)
-        Utils::handleError("Comparing move on undefined squares");
+        Err::handle("Comparing move on undefined squares");
     ft = to->getFile();
     rt = to->getRank();
     Piece *pf = from->getPiece();
     Piece *pt = to->getPiece();
     if (!from)
-        Utils::handleError("No piece on from square");
+        Err::handle("No piece on from square");
 
     uint16_t encodedMove = 0x0;
     // promotion/Prise/ pion prioritaire

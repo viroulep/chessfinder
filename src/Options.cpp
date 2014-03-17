@@ -97,6 +97,23 @@ int Options::getMaxLines() const
     return maxLines_;
 }
 
+const PositionList &Options::getPositionList()
+{
+    return positions_;
+}
+
+void Options::setPositionList(PositionList &theList)
+{
+    positions_.clear();
+    //Delete moves from theList and insert into class member
+    positions_.splice(positions_.end(), theList);
+}
+
+void Options::addPositionToList(string pos, list<string> &moves)
+{
+    positions_.push_front(make_pair(pos, moves));
+}
+
 #define PARSE_INTVAL(option, optionName) \
 if (val) {\
     try {\

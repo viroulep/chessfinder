@@ -45,8 +45,8 @@ namespace Board {
     typedef unsigned int Rank;
 
     const string to_string(Board::Side theSide);
-    const char to_char(File theFile);
-    const char to_char(Rank theRank);
+    char to_char(File theFile);
+    char to_char(Rank theRank);
 
     class Piece;
     class Square {
@@ -56,8 +56,8 @@ namespace Board {
         ~Square();
         void changePiece(Piece *newPiece);
         Piece *getPiece();
-        const File getFile();
-        const Rank getRank();
+        File getFile();
+        Rank getRank();
         const string to_string();
 
     private:
@@ -77,19 +77,19 @@ namespace Board {
             QUEEN,
             KING
         };
-        static const char to_char(Kind k);
-        static const char to_uci(Kind k);
+        static char to_char(Kind k);
+        static char to_uci(Kind k);
         const string to_string();
         void prettyPrint(ostringstream &oss);
-        const char to_char();
+        char to_char();
         //Useful because we don't want to print pawns 'P' in pgn
-        const char to_pgn();
+        char to_pgn();
 
         Piece(Kind kind, Side color);
         Piece(Kind kind, Side color, Square *square);
         ~Piece();
-        const Side getColor();
-        const Kind getKind();
+        Side getColor();
+        Kind getKind();
         //Move the piece to square, even if illegal move
         void moveTo(Square *newSquare);
         void promoteTo(Kind kind);

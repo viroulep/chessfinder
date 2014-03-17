@@ -8,26 +8,12 @@
 #include <set>
 #include "UCICommunicator.h"
 #include "Output.h"
+#include "Utils.h"
 #include "Options.h"
 
 using namespace std;
 
 namespace Comm {
-
-    namespace Utils {
-        void getTimeout(struct timespec *ts, int seconds)
-        {
-            struct timeval tp;
-            int rc = gettimeofday(&tp, NULL);
-            Err::handle("gettimeofday()", rc);
-
-            /* Convert from timeval to timespec */
-            ts->tv_sec  = tp.tv_sec;
-            ts->tv_nsec = tp.tv_usec * 1000;
-            ts->tv_sec += seconds;
-        }
-
-    }
 
     UCICommunicator::UCICommunicator(const EngineOptions &options) :
         optionsMap_(options)

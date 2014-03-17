@@ -29,12 +29,14 @@
 #include <algorithm>
 #include <unistd.h>
 #include <ctime>
+
 #include "Finder.h"
 #include "OracleFinder.h"
 #include "MatfinderOptions.h"
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
+#include "Output.h"
 #include "Hashing.h"
 #include "CompareMove.h"
 
@@ -46,14 +48,14 @@ OracleFinder::OracleFinder() : Finder()
     //engine_play_for_ = MatfinderOptions::getPlayFor();
     string inputFilename = MatfinderOptions::getInputFile();
     if (inputFilename.size() > 0) {
-        Utils::output("Loading table from " + inputFilename + ".\n", 2);
+        Out::output("Loading table from " + inputFilename + ".\n", 2);
         ifstream inputFile(inputFilename, ios::binary);
         if (!inputFile.good())
-            Utils::handleError("Unable to load table from file "
+            Err::handle("Unable to load table from file "
                     + inputFilename);
         oracleTable_ = HashTable::fromPolyglot(inputFile);
     } else {
-        Utils::output("Creating new empty table.\n", 2);
+        Out::output("Creating new empty table.\n", 2);
         oracleTable_ = new HashTable();
     }
 }
@@ -62,10 +64,10 @@ OracleFinder::~OracleFinder()
 {
     string outputFilename = MatfinderOptions::getOutputFile();
     if (outputFilename.size() > 0) {
-        Utils::output("Saving table to " + outputFilename + ".\n", 2);
+        Out::output("Saving table to " + outputFilename + ".\n", 2);
         ofstream outputFile(outputFilename, ios::binary);
         if (!outputFile.good())
-            Utils::output("Unable to save table to file "
+            Out::output("Unable to save table to file "
                     + outputFilename + "\n");
         else
             oracleTable_->toPolyglot(outputFile);
@@ -99,22 +101,22 @@ int OracleFinder::runFinderOnCurrentPosition()
     int maxMoves = 254;
     engine_play_for_ = cb_->getActiveSide();
 
-    Utils::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
+    Out::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
     sendOptionToEngine("MultiPV", to_string(maxMoves));
     sendToEngine("isready");
     waitReadyok();
 
-    Utils::output("Starting board is :\n" + cb_->to_string() + "\n");
+    Out::output("Starting board is :\n" + cb_->to_string() + "\n");
 /*
- *    Utils::output("Doing some basic evaluation on submitted position...\n");
+ *    Out::output("Doing some basic evaluation on submitted position...\n");
  *
  *    sendCurrentPositionToEngine();
  *    lines_.assign(maxMoves, Line::emptyLine);
  *    sendToEngine("go movetime "
  *            + to_string(MatfinderOptions::getPlayforMovetime()));
  *    waitBestmove();
- *    Utils::output("Evaluation is :\n");
- *    Utils::output(getPrettyLines());
+ *    Out::output("Evaluation is :\n");
+ *    Out::output(getPrettyLines());
  *    lines_.clear();
  */
 
@@ -131,13 +133,13 @@ int OracleFinder::runFinderOnCurrentPosition()
         toProceed_.pop_front();
         /*Check we are not computing an already existing position*/
         if (oracleTable_->findPos(current->pos)) {
-            Utils::output("Position already in table.\n", 1);
+            Out::output("Position already in table.\n", 1);
             /*TODO think of this*/
             /*delete current;*/
             continue;
         }
         if (cutNode(current)) {
-            Utils::output("Node cut by user-defined function", 1);
+            Out::output("Node cut by user-defined function", 1);
             continue;
         }
 
@@ -146,7 +148,7 @@ int OracleFinder::runFinderOnCurrentPosition()
         cb_->reInitFromFEN(current->pos);
         Side active = cb_->getActiveSide();
 
-        Utils::output("[" + Board::to_string(active)
+        Out::output("[" + Board::to_string(active)
                 + "] Proceed size : " + to_string(toProceed_.size()) + "\n");
 
         /*Register current pos in the table*/
@@ -157,14 +159,14 @@ int OracleFinder::runFinderOnCurrentPosition()
         /*Clear cut*/
         if (!cb_->sufficientMaterial()) {
             current->st = Node::DRAW;
-            Utils::output("[" + Board::to_string(active)
+            Out::output("[" + Board::to_string(active)
                     + "] Insuficient material.\n", 2);
             //Proceed to next node...
             continue;
         }
 
 
-        Utils::output(cb_->to_string(), 2);
+        Out::output(cb_->to_string(), 2);
 
         sendCurrentPositionToEngine();
         /*Initialize vector with empty lines*/
@@ -187,31 +189,31 @@ int OracleFinder::runFinderOnCurrentPosition()
 
         sendToEngine("go movetime " + to_string(moveTime));
 
-        Utils::output("[" + Board::to_string(active)
+        Out::output("[" + Board::to_string(active)
                 + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
 
         //Wait for engine to finish thinking
         waitBestmove();
-        Utils::output(getPrettyLines(), 2);
+        Out::output(getPrettyLines(), 2);
 
         bestLine = lines_[0];
         if (bestLine.empty()) {
             //STALEMATE
             current->st = Node::STALEMATE;
-            Utils::output("[" + Board::to_string(active)
+            Out::output("[" + Board::to_string(active)
                     + "] Bestline is stalemate (cut)\n", 2);
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
             //TODO: register if winning or losing ?
             current->st = Node::MATE;
-            Utils::output("[" + Board::to_string(active)
+            Out::output("[" + Board::to_string(active)
                     + "] Bestline is mate (cut)\n", 2);
             continue;
         } else if (fabs(bestLine.getEval()) > MatfinderOptions::getCpTreshold()) {
             //TODO: register if winning or losing ?
             current->st = Node::TRESHOLD;
-            Utils::output("[" + Board::to_string(active)
+            Out::output("[" + Board::to_string(active)
                     + "] Bestline is above treshold (cut)\n", 2);
             continue;
         }
@@ -233,7 +235,7 @@ int OracleFinder::runFinderOnCurrentPosition()
         //Then proceed the balanced lines according to the side the engine
         //play for.
         if (engine_play_for_ != active)
-            Utils::handleError("Current side should be the engine plays for");
+            Err::handle("Current side should be the engine plays for");
 
         /*
          * General Idea : try to force repetition by trying to find a playable
@@ -275,14 +277,14 @@ int OracleFinder::runFinderOnCurrentPosition()
             //no next position in the table, push the node to stack
             next = new Node();
             next->pos = sp;
-            Utils::output("[" + Board::to_string(active)
+            Out::output("[" + Board::to_string(active)
                     + "] Pushed first line (" + mv + ") : " + sp + "\n", 2);
             toProceed_.push_front(next);
         }
         /*Whatever the move is, add it to our move list*/
         MoveNode move(mv, next);
         current->legal_moves.push_back(move);
-        Utils::output("-----------------------\n", 1);
+        Out::output("-----------------------\n", 1);
 
     }
 
@@ -295,15 +297,15 @@ int OracleFinder::runFinderOnCurrentPosition()
      */
 
     //Display info at the end of computation
-    Utils::output("[End] Finder is done. Starting board was : \n");
+    Out::output("[End] Finder is done. Starting board was : \n");
     cb_->reInitFromFEN(init->pos);
-    Utils::output(cb_->to_string() + "\n");
+    Out::output(cb_->to_string() + "\n");
 
 
-    Utils::output("Hashtable size = "
+    Out::output("Hashtable size = "
             + std::to_string(oracleTable_->size()) + ") : \n");
-    Utils::output(oracleTable_->to_string() + "\n", 2);
-    Utils::output("(size = " + std::to_string(oracleTable_->size()) + ") : \n", 2);
+    Out::output(oracleTable_->to_string() + "\n", 2);
+    Out::output("(size = " + std::to_string(oracleTable_->size()) + ") : \n", 2);
 
 
     return 0;
@@ -340,8 +342,8 @@ Board::LegalMoves OracleFinder::getAllMoves()
     LegalMoves list;
     int maxMoves = 254;
 
-    Utils::output("Getting legal moves\n");
-    Utils::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
+    Out::output("Getting legal moves\n");
+    Out::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
     sendOptionToEngine("MultiPV", to_string(maxMoves));
     sendToEngine("isready");
     waitReadyok();
@@ -350,8 +352,8 @@ Board::LegalMoves OracleFinder::getAllMoves()
     lines_.assign(maxMoves, Line());
     sendToEngine("go depth 1");
     waitBestmove();
-    Utils::output("Evaluation is :\n");
-    Utils::output(getPrettyLines());
+    Out::output("Evaluation is :\n");
+    Out::output(getPrettyLines());
     lines_.clear();
     return list;
 }
@@ -363,7 +365,7 @@ void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
     for (int i = 0; i < (int) unbalanced.size(); ++i) {
         Line *l = unbalanced[i];
         if (!l)
-            Utils::handleError("An unbalanced line is null ("
+            Err::handle("An unbalanced line is null ("
                     + to_string(i) + ")");
         Node::Status s = Node::TRESHOLD;
         if (l->isMat())
@@ -390,12 +392,12 @@ void OracleFinder::pushAllLines(Node *currentNode)
      * eg: if we are building an oracle for white, we need to push all
      * possible white positions when computing a black node.
      */
-    Utils::output("Push all lines : ", 2);
+    Out::output("Push all lines : ", 2);
     for (Line l : lines_) {
         /*Stop at the first empty line*/
         if (l.empty())
             break;
-        Utils::output("+", 2);
+        Out::output("+", 2);
         Board::UCIMove mv = l.firstMove();
         cb_->uciApplyMove(mv);
         SimplePos sp = cb_->exportToFEN();
@@ -406,7 +408,7 @@ void OracleFinder::pushAllLines(Node *currentNode)
         MoveNode move(mv, next);
         currentNode->legal_moves.push_back(move);
     }
-    Utils::output("\n", 2);
+    Out::output("\n", 2);
 }
 
 bool OracleFinder::cutNode(Node *)

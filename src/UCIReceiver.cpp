@@ -24,6 +24,7 @@
 #include "UCIReceiver.h"
 #include "Stream.h"
 #include "Utils.h"
+#include "Output.h"
 
 using namespace std;
 
@@ -49,9 +50,9 @@ void *UCIReceiver::run()
     return 0;
 }
 
-void UCIReceiver::readyok(istringstream &is)
+void UCIReceiver::readyok(istringstream &)
 {
-    Utils::output("Engine is ready.\n", 1);
+    Out::output("Engine is ready.\n", 1);
     finder_->signalReadyok();
 }
 
@@ -130,7 +131,7 @@ void UCIReceiver::info(istringstream &is)
     }
 }
 
-void UCIReceiver::option(istringstream &is)
+void UCIReceiver::option(istringstream &)
 {
     //Just drop these, since we dont need them
 }

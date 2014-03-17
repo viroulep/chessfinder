@@ -26,30 +26,19 @@
 #include <list>
 #include <vector>
 #include <sys/time.h>
-#include "MatfinderOptions.h"
 
-using namespace std;
+#include "Options.h"
 
-class Utils {
-public:
-    //implicitly inlined
-    static void signalHandler(int rc);
-    static void handleError(int rc);
-    static void handleError(const string &msg);
-    static void handleError(const string &caller, int rc);
-    static void handleError(const string &msg, int rc,
-            const string &fileName, int lineNumber);
 
-    static void output(const string &msg, int level = 0);
-
-    static string helpMessage();
-    static string listToString(const list<string> &theList);
-    static void getTimeout(struct timespec *ts, int seconds);
-    static const string RED;
-    static const string RESET;
+namespace Utils {
+    std::string helpMessage();
+    std::string listToString(const std::list<std::string> &theList);
+    void getTimeout(struct timespec *ts, int seconds);
+    extern const std::string RED;
+    extern const std::string RESET;
 
     //FIXME: should belong to board ?
-    static int parseMovelist(list<string> &theList, string moves);
-    static PositionList positionListFromFile(string fileName);
-};
+    int parseMovelist(std::list<std::string> &theList, std::string moves);
+    PositionList positionListFromFile(std::string fileName);
+}
 #endif

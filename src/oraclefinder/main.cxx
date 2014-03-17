@@ -31,6 +31,7 @@
 #include "Thread.h"
 #include "Engine.h"
 #include "Utils.h"
+#include "Output.h"
 #include "Line.h"
 #include "Finder.h"
 #include "OracleFinder.h"
@@ -49,7 +50,7 @@ int main(int argc, char **argv)
 
     int retVal = CommonMain::theMain(argc, argv, theFinder);
 
-    Utils::output("Deleting Finder", 5);
+    Out::output("Deleting Finder", 5);
     delete theFinder;
     return retVal;
 }

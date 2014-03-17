@@ -31,6 +31,7 @@
 #include "Thread.h"
 #include "Engine.h"
 #include "Utils.h"
+#include "Output.h"
 #include "Line.h"
 #include "MatFinder.h"
 #include "CommonMain.h"
@@ -78,7 +79,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setVerboseLevel(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing verbose level");
+                    Err::handle("Error parsing verbose level");
                 }
                 break;
 
@@ -102,7 +103,7 @@ void CommonMain::parseArgs(int argc, char **argv)
             case 'm':
                 moveList.clear();
                 if (Utils::parseMovelist(moveList, optarg))
-                    Utils::handleError("Error parsing movelist");
+                    Err::handle("Error parsing movelist");
                 //Adding the move is done after this loop
                 //MatfinderOptions::setUserMoves(moveList);
                 break;
@@ -111,7 +112,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setMaxLines(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing lines option");
+                    Err::handle("Error parsing lines option");
                 }
                 break;
 
@@ -119,7 +120,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setHashmapSize(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing hasmap size");
+                    Err::handle("Error parsing hasmap size");
                 }
                 break;
 
@@ -127,7 +128,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setCpTreshold(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing centipawn treshold");
+                    Err::handle("Error parsing centipawn treshold");
                 }
                 break;
 
@@ -135,7 +136,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setPlayforMovetime(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing playfor movetime");
+                    Err::handle("Error parsing playfor movetime");
                 }
                 break;
 
@@ -143,12 +144,12 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setPlayagainstMovetime(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing playagainst movetime");
+                    Err::handle("Error parsing playagainst movetime");
                 }
                 break;
 
             case 'h':
-                Utils::output(Utils::helpMessage());
+                Out::output(Utils::helpMessage());
                 exit(EXIT_SUCCESS);
                 break;
 
@@ -168,7 +169,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setMateEquiv(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing mateq value");
+                    Err::handle("Error parsing mateq value");
                 }
                 break;
 
@@ -176,7 +177,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 try {
                     MatfinderOptions::setEngineThreads(stoi(optarg));
                 } catch (...) {
-                    Utils::handleError("Error parsing engine threads");
+                    Err::handle("Error parsing engine threads");
                 }
                 break;
 
@@ -199,15 +200,15 @@ void CommonMain::parseArgs(int argc, char **argv)
 
 int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 {
-    Utils::output(MatfinderOptions::getPretty(), 1);
+    Out::output(MatfinderOptions::getPretty(), 1);
 
     // Child error signal install
     struct sigaction action;
-    action.sa_handler = Utils::signalHandler;
+    action.sa_handler = Err::signalHandler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     if (sigaction(SIGUSR1, &action, NULL) < 0) {
-        Utils::handleError("SIGUSR1 install error");
+        Err::handle("SIGUSR1 install error");
     }
 
 
@@ -222,7 +223,7 @@ int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
         // We should never reach this point
         // Tell the parent the exec failed
         kill(getppid(), SIGUSR1);
-        Utils::handleError("Engine execution failed");
+        Err::handle("Engine execution failed");
         exit(EXIT_FAILURE);
 
     } else if (pid > pid_t(0)) {
@@ -230,13 +231,13 @@ int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
         //Run the finder
         int rt = theFinder->runFinder();
 
-        Utils::handleError("runfinder()", rt);
+        Err::handle("runfinder()", rt);
 
         //Kill the child to exit properly
         kill(pid, SIGTERM);
         MatfinderOptions::setMoveComparator(nullptr);
     } else {
-        Utils::handleError("Error: fork failed");
+        Err::handle("Error: fork failed");
     }
 
     return 0;

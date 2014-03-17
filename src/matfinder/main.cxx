@@ -31,6 +31,7 @@
 #include "Thread.h"
 #include "Engine.h"
 #include "Utils.h"
+#include "Output.h"
 #include "Line.h"
 #include "MatFinder.h"
 #include "MatfinderOptions.h"
@@ -48,7 +49,7 @@ int main(int argc, char **argv)
 
     CommonMain::theMain(argc, argv, theFinder);
 
-    Utils::output("Deleting Finder", 5);
+    Out::output("Deleting Finder", 5);
     delete theFinder;
     return 0;
 }

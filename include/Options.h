@@ -24,7 +24,6 @@
 
 #include <string>
 #include <list>
-#include <utility>
 
 #include "ConfigParser.h"
 
@@ -54,6 +53,9 @@ class Options {
         int getMateTreshold() const;
         int getMaxLines() const;
 
+        const PositionList &getPositionList();
+        void setPositionList(PositionList &theList);
+        void addPositionToList(std::string pos, std::list<std::string> &moves);
 
         void addConfig(Config &conf);
 
@@ -77,6 +79,8 @@ class Options {
 
         int mateTreshold_ = 10000;
         int maxLines_ = 8;
+
+        PositionList positions_;
 
         static Options instance_;
 };

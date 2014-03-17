@@ -22,6 +22,7 @@
 #include <sstream>
 #include "Board.h"
 #include "Utils.h"
+#include "Output.h"
 
 namespace Board {
 
@@ -37,12 +38,12 @@ namespace Board {
         }
     }
 
-    const char to_char(File theFile)
+    char to_char(File theFile)
     {
         return 'a' + theFile;
     }
 
-    const char to_char(Rank theRank)
+    char to_char(Rank theRank)
     {
         return '0' + theRank;
     }
@@ -51,7 +52,7 @@ namespace Board {
         file_(file), rank_(rank)
     {
         if (rank_ < 1 || rank_ > 8)
-            Utils::handleError("Invalid rank when creating square");
+            Err::handle("Invalid rank when creating square");
     }
 
     Square::Square(File file, Rank rank, Piece *piece) :
@@ -64,7 +65,7 @@ namespace Board {
 
     Square::~Square()
     {
-        Utils::output("Deleting square " + to_string() + "\n", 5);
+        Out::output("Deleting square " + to_string() + "\n", 5);
         if (piece_)
             delete piece_;
     }
@@ -74,15 +75,15 @@ namespace Board {
     {
         if (newPiece == piece_)
             return;
-        Utils::output("Change to :\n", 4);
+        Out::output("Change to :\n", 4);
         if (newPiece)
-            Utils::output(newPiece->to_string(), 4);
+            Out::output(newPiece->to_string(), 4);
         else
-            Utils::output("null", 4);
-        Utils::output("\n", 4);
+            Out::output("null", 4);
+        Out::output("\n", 4);
 
         if (newPiece && piece_)
-            Utils::handleError("There is a already a piece on our square : "
+            Err::handle("There is a already a piece on our square : "
                     + to_string() + " when moving " + newPiece->to_string()
                     + " on " + piece_->to_string());
         //handle by the chessboard
@@ -97,12 +98,12 @@ namespace Board {
     {
         return piece_;
     }
-    const File Square::getFile()
+    File Square::getFile()
     {
         return file_;
     }
 
-    const Rank Square::getRank()
+    Rank Square::getRank()
     {
         return rank_;
     }
@@ -115,7 +116,7 @@ namespace Board {
         return str;
     }
 
-    const char Piece::to_char(Kind k)
+    char Piece::to_char(Kind k)
     {
         switch (k) {
             case KNIGHT:
@@ -136,7 +137,7 @@ namespace Board {
 
     }
 
-    const char Piece::to_uci(Kind k)
+    char Piece::to_uci(Kind k)
     {
         char c = to_char(k);
         c = c - 'A' + 'a';
@@ -184,12 +185,12 @@ namespace Board {
             oss << Utils::RESET;
     }
 
-    const char Piece::to_char()
+    char Piece::to_char()
     {
         return to_char(getKind());
     }
 
-    const char Piece::to_pgn()
+    char Piece::to_pgn()
     {
         if (getKind() == PAWN)
             return '\0';
@@ -211,15 +212,15 @@ namespace Board {
 
     Piece::~Piece()
     {
-        Utils::output("Deleting piece\n", 5);
+        Out::output("Deleting piece\n", 5);
     }
 
-    const Side Piece::getColor()
+    Side Piece::getColor()
     {
         return color_;
     }
 
-    const Piece::Kind Piece::getKind()
+    Piece::Kind Piece::getKind()
     {
         return (promoted_ == KING)?kind_:promoted_;
     }
@@ -235,7 +236,7 @@ namespace Board {
         if (square_)
             square_->changePiece(this);
         else
-            Utils::output(string("Dropped : ") + to_string() + "\n", 4);
+            Out::output(string("Dropped : ") + to_string() + "\n", 4);
             //deletedPieces.push_back(this);//drop
     }
 
@@ -244,7 +245,7 @@ namespace Board {
         if (promoted_ == KING)
             promoted_ = kind;
         else
-            Utils::handleError("Piece is already promoted");
+            Err::handle("Piece is already promoted");
     }
 
     void Piece::unpromote()
@@ -259,7 +260,7 @@ namespace Board {
         else if (sidestr == "b" || sidestr == "black")
             return BLACK;
         else
-            Utils::handleError("Error parsing playfor side");
+            Err::handle("Error parsing playfor side");
         return WHITE;
     }
 
@@ -296,7 +297,7 @@ namespace Board {
                 return Piece::Kind::ROOK;
                 break;
             default:
-                Utils::handleError("Invalid promotion");
+                Err::handle("Invalid promotion");
         }
         return Piece::Kind::QUEEN;
     }
@@ -304,16 +305,16 @@ namespace Board {
     void squareFromString(string str, File *f, Rank *r)
     {
         if (str.size() != 2)
-            Utils::handleError("Error parsing square string : " + str);
+            Err::handle("Error parsing square string : " + str);
         char file = str[0];
         char rank = str[1];
         if (file < 'a' || file > 'h')
-            Utils::handleError("Error parsing square string : " + str);
+            Err::handle("Error parsing square string : " + str);
         (*f) = (File)(file - 'a');
         if (rank < '1' || rank > '8')
-            Utils::handleError("Error parsing square string : " + str);
+            Err::handle("Error parsing square string : " + str);
         (*r) = (rank - '0');
-        Utils::output(string("Returning square ") + to_char(*f)
+        Out::output(string("Returning square ") + to_char(*f)
                 + to_char(*r) + "\n", 4);
     }
 
@@ -338,7 +339,7 @@ namespace Board {
         Rank r;
         uint16_t encodedMove = 0x0;
         if (mv.size() != 4 && mv.size() != 5)
-            Utils::handleError("Error parsing uci move");
+            Err::handle("Error parsing uci move");
         if (mv.size() == 5) {
             Piece::Kind promote = promotionFromChar(mv[4]);
             switch (promote) {
@@ -376,7 +377,7 @@ namespace Board {
         //File already on 0..7
         encodedMove |= (uint16_t)f;
         //encodedMove <<= 3;
-        Utils::output("Move " + mv + " is " + std::to_string(encodedMove)
+        Out::output("Move " + mv + " is " + std::to_string(encodedMove)
                 + ", decimal\n", 3);
         return encodedMove;
     }
@@ -421,7 +422,7 @@ namespace Board {
             default:
                 break;
         }
-        Utils::output(std::to_string(mv) + ", decimal is move "
+        Out::output(std::to_string(mv) + ", decimal is move "
                 + uci + "\n", 3);
         return uci;
     }

@@ -20,7 +20,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <sstream>
+
 #include "Utils.h"
+#include "Output.h"
 #include "MatfinderOptions.h"
 
 
@@ -131,7 +133,7 @@ void MatfinderOptions::setInputFile(string file)
 MoveComparator *MatfinderOptions::getMoveComparator()
 {
     if (!MOVE_COMPARATOR_)
-        Utils::handleError("MoveComparator used but not initialized");
+        Err::handle("MoveComparator used but not initialized");
     return MOVE_COMPARATOR_;
 }
 
@@ -154,7 +156,7 @@ void MatfinderOptions::setMoveComparator(string smc)
         mc = new SampleMoveComparator;
     */
     } else {
-        Utils::handleError("Unknown move comparator : " + smc);
+        Err::handle("Unknown move comparator : " + smc);
     }
     setMoveComparator(mc);
 }

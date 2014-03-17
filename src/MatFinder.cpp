@@ -30,6 +30,7 @@
 #include "Stream.h"
 #include "UCIReceiver.h"
 #include "Utils.h"
+#include "Output.h"
 
 
 
@@ -46,16 +47,16 @@ int MatFinder::runFinderOnCurrentPosition()
 {
     Board::Side sideToMove = cb_->getActiveSide();
 
-    Utils::output("Starting board is :\n" + cb_->to_string() + "\n");
-    Utils::output("Doing some basic evaluation on submitted position...\n");
+    Out::output("Starting board is :\n" + cb_->to_string() + "\n");
+    Out::output("Doing some basic evaluation on submitted position...\n");
 
     sendCurrentPositionToEngine();
     lines_.assign(MatfinderOptions::getMaxLines(), Line());
     sendToEngine("go movetime "
             + to_string(MatfinderOptions::getPlayforMovetime()));
     waitBestmove();
-    Utils::output("Evaluation is :\n");
-    Utils::output(getPrettyLines());
+    Out::output("Evaluation is :\n");
+    Out::output(getPrettyLines());
     //TODO: check
     if (!lines_[0].empty()) {
         Side winning;
@@ -68,7 +69,7 @@ int MatFinder::runFinderOnCurrentPosition()
             Side::BLACK:Side::WHITE;
 
     }
-    Utils::output("Engine will play for : "
+    Out::output("Engine will play for : "
             + Board::to_string(engine_play_for_) + "\n");
 
 
@@ -77,12 +78,12 @@ int MatFinder::runFinderOnCurrentPosition()
         Line bestLine;
         Side active = cb_->getActiveSide();
 
-        Utils::output("[" + Board::to_string(active)
+        Out::output("[" + Board::to_string(active)
                 + "] Depth " + to_string(addedMoves_) + "\n");
 
         sendCurrentPositionToEngine();
 
-        Utils::output(cb_->to_string(), 2);
+        Out::output(cb_->to_string(), 2);
 
         //Thinking according to the side the engine play for
         int moveTime = (active == engine_play_for_ || !addedMoves_) ?
@@ -109,19 +110,19 @@ int MatFinder::runFinderOnCurrentPosition()
         //Increase movetime with depth
         sendToEngine("go movetime " + to_string(moveTime));
 
-        Utils::output("[" + Board::to_string(active)
+        Out::output("[" + Board::to_string(active)
                 + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
 
         //Wait for engine to finish thinking
         waitBestmove();
 
-        Utils::output(getPrettyLines(), 2);
+        Out::output(getPrettyLines(), 2);
         bestLine = getBestLine();
         if (bestLine.empty() || bestLine.isMat() ||
                 fabs(bestLine.getEval()) > MatfinderOptions::getMateEquiv()) {
             //Handle the case where we should backtrack
             if (addedMoves_ > 0) {
-                Utils::output("\tBacktracking " + cb_->getUciMoves().back()
+                Out::output("\tBacktracking " + cb_->getUciMoves().back()
                     + " (addedMove#" + to_string(addedMoves_)
                     + ")\n");
 
@@ -131,7 +132,7 @@ int MatFinder::runFinderOnCurrentPosition()
                  * increasing attacking time
                  */
                 if (bestLine.empty())
-                    Utils::output("\n\n\n\n DEFENDER SURVIVED \n\n\n\n ", 1);
+                    Out::output("\n\n\n\n DEFENDER SURVIVED \n\n\n\n ", 1);
 
                 //Remove opposite side previous move
                 addedMoves_--;
@@ -155,29 +156,29 @@ int MatFinder::runFinderOnCurrentPosition()
         }
 
         //If we are here, we just need to handle the next move
-        Utils::output("[" + Board::to_string(active)
+        Out::output("[" + Board::to_string(active)
                 + "] Chosen line : \n", 1);
-        Utils::output("\t" + getPrettyLine(bestLine,
+        Out::output("\t" + getPrettyLine(bestLine,
                     MatfinderOptions::movesDisplayed) + "\n", 1);
 
         string next = bestLine.firstMove();
-        Utils::output("\tNext move is " + next + "\n", 3);
+        Out::output("\tNext move is " + next + "\n", 3);
         addedMoves_++;
         cb_->uciApplyMove(next);
     }
 
     //Display info at the end of computation
-    Utils::output("[End] Finder is done. Starting board was : \n");
-    Utils::output(cb_->to_string() + "\n");
+    Out::output("[End] Finder is done. Starting board was : \n");
+    Out::output(cb_->to_string() + "\n");
 
     if (engine_play_for_ == sideToMove)
-        Utils::output("All lines should now be draw or mat :\n");
+        Out::output("All lines should now be draw or mat :\n");
     else
-        Utils::output("Best line should be mat or draw.\n");
-    Utils::output(getPrettyLines());
-    Utils::output("[End] Full best line is : \n");
-    Utils::output("[End] " + getPrettyLine(lines_[0]) + "\n");
-    Utils::output("[End] " + Utils::listToString(lines_[0].getMoves()) + "\n");
+        Out::output("Best line should be mat or draw.\n");
+    Out::output(getPrettyLines());
+    Out::output("[End] Full best line is : \n");
+    Out::output("[End] " + getPrettyLine(lines_[0]) + "\n");
+    Out::output("[End] " + Utils::listToString(lines_[0].getMoves()) + "\n");
 
     return 0;
 }
@@ -194,12 +195,12 @@ int MatFinder::updateMultiPV()
     for (int i = 0; i < (int) lines_.size(); ++i)
         if (!lines_[i].empty())
             nonEmptyLines++;
-    Utils::output("Non empty : " + to_string(nonEmptyLines) + "\n", 3);
+    Out::output("Non empty : " + to_string(nonEmptyLines) + "\n", 3);
     for (int i = 0; i < (int) lines_.size(); ++i) {
         if (i > 0) {
             if (lastEvalMat
                 || fabs(lines_[i].getEval() - lastEvalValue) > diffLimit) {
-                Utils::output("Eval/lastEval : "
+                Out::output("Eval/lastEval : "
                         + to_string(lines_[i].getEval())
                         + "/" + to_string(lastEvalValue), 3);
                 multiPV = i;
@@ -215,7 +216,7 @@ int MatFinder::updateMultiPV()
         multiPV = MatfinderOptions::getMaxLines();
 
     if (multiPV != nonEmptyLines) {
-        Utils::output("Updating MultiPV to " + to_string(multiPV) + "\n", 2);
+        Out::output("Updating MultiPV to " + to_string(multiPV) + "\n", 2);
         sendOptionToEngine("MultiPV", to_string(multiPV));
         sendToEngine("isready");
         waitReadyok();

@@ -27,16 +27,18 @@
 #include "CompareMove.h"
 #include "Line.h"
 #include "Utils.h"
+#include "MatfinderOptions.h"
+#include "Output.h"
 
 using namespace Board;
 Chessboard::~Chessboard()
 {
-    Utils::output("Deleting chessboard\n", 5);
+    Out::output("Deleting chessboard\n", 5);
     //Free all the data
     for (int f = A; f <= H; f++)
         for (Rank r = 1; r <= 8; r++)
             delete board_[(File)f][r];
-    Utils::output("Deleting taken pieces\n", 5);
+    Out::output("Deleting taken pieces\n", 5);
     while (!takenPieces_.empty()) {
         Piece *p = takenPieces_.back();
         delete p;
@@ -52,8 +54,8 @@ const string Chessboard::to_string()
         for (int f = A; f <= H; f++) {
             Square *sq = board_[(File)f][r];
             if (!sq)
-                Utils::handleError("Chessboard not correctly initialized");
-            Utils::output("Square ok\n", 5);
+                Err::handle("Chessboard not correctly initialized");
+            Out::output("Square ok\n", 5);
             if (f == A)
                 oss << r << " ";
             Piece *p = sq->getPiece();
@@ -130,7 +132,7 @@ void Chessboard::reInitFromFEN(string fenString)
 
     //FEN has 6 data fields
     if (infos.size() != 6)
-        Utils::handleError("Invalid input fen : must have 6 field");
+        Err::handle("Invalid input fen : must have 6 field");
 
     clear();
     while (!infos.empty()) {
@@ -170,7 +172,7 @@ int Chessboard::uciApplyMove(string uciMove)
 Move Chessboard::getMoveFromUci(string uciMove)
 {
     if (uciMove.size() < 4 || uciMove.size() > 5)
-        Utils::handleError("Error parsing uci move");
+        Err::handle("Error parsing uci move");
     Square *from = squareFromString(uciMove.substr(0, 2));
     Square *to = squareFromString(uciMove.substr(2, 2));
     Move mv;
@@ -197,22 +199,22 @@ int Chessboard::uciApplyMoves(list<string> uciMoves)
 void Chessboard::undoMove()
 {
     if (moveHistory_.empty()) {
-        Utils::output("Move history is empty\n");
+        Out::output("Move history is empty\n");
         return;
     }
     Move lastMove = moveHistory_.back();
     moveHistory_.pop_back();
-    Utils::output("Backtrack : " + prettyMoveHistory_.back() + "\n", 3);
+    Out::output("Backtrack : " + prettyMoveHistory_.back() + "\n", 3);
     prettyMoveHistory_.pop_back();
     Square *from = lastMove.to;
     Square *to = lastMove.from;
 
     if (!from || !to)
-        Utils::handleError("Unexpected error : cannot undo move.");
+        Err::handle("Unexpected error : cannot undo move.");
 
     Piece *toMove = from->getPiece();
     if (!toMove)
-        Utils::handleError("Unexpected error : cannot undo move.");
+        Err::handle("Unexpected error : cannot undo move.");
 
     //Re-init enpassant
     enpassant_ = lastMove.enpassantSquare;
@@ -235,7 +237,7 @@ void Chessboard::undoMove()
             taken->moveTo(board_[from->getFile()][to->getRank()]);
         } else {
             if (enpassant_ == from)
-                Utils::output("[WARNING] Undoing weird case : restoring"\
+                Out::output("[WARNING] Undoing weird case : restoring"\
                         "non-pawn piece on 'enpassant' square. ("
                         + taken->to_string() + " taken by "
                         + toMove->to_string() + "\n");
@@ -311,7 +313,7 @@ bool Chessboard::compareLines(Line *lhs, Line *rhs)
      */
     float lhsEv = lhs->getEval();
     float rhsEv = rhs->getEval();
-    Utils::output("Comparing " + std::to_string(lhsEv) + " to "
+    Out::output("Comparing " + std::to_string(lhsEv) + " to "
             + std::to_string(rhsEv) + "\n", 3);
     /*Set the limit to .5 eval*/
     if (abs(lhsEv - rhsEv) > 20) {
@@ -468,7 +470,7 @@ bool Chessboard::sufficientMaterial()
             if ((*it)->getKind() != Piece::KING)
                 notKing = (*it);
         if (!notKing) {
-            Utils::output("Warning : 3 kings on the board ?!\n");
+            Out::output("Warning : 3 kings on the board ?!\n");
             return false;
         } else {
             return !(notKing->getKind() == Piece::BISHOP
@@ -493,7 +495,7 @@ Chessboard *Chessboard::createFromFEN(string fenString)
 
     //FEN has 6 data fields
     if (infos.size() != 6)
-        Utils::handleError("Invalid input fen : must have 6 field");
+        Err::handle("Invalid input fen : must have 6 field");
 
     Chessboard *cb = new Chessboard();
 
@@ -539,16 +541,16 @@ Chessboard::Chessboard() : comparator_(MatfinderOptions::getMoveComparator()),
 Square *Chessboard::squareFromString(string str)
 {
     if (str.size() != 2)
-        Utils::handleError("Error parsing square string : " + str);
+        Err::handle("Error parsing square string : " + str);
     char file = str[0];
     char rank = str[1];
     if (file < 'a' || file > 'h')
-        Utils::handleError("Error parsing square string : " + str);
+        Err::handle("Error parsing square string : " + str);
     File f = (File)(file - 'a');
     if (rank < '1' || rank > '8')
-        Utils::handleError("Error parsing square string : " + str);
+        Err::handle("Error parsing square string : " + str);
     Rank r = (rank - '0');
-    Utils::output(string("Returning square ") + to_char(f) + to_char(r) + "\n", 4);
+    Out::output(string("Returning square ") + to_char(f) + to_char(r) + "\n", 4);
     return board_[f][r];
 }
 
@@ -649,7 +651,7 @@ const string Chessboard::getPrettyMove(Move mv)
     prettyMove += to->to_string();
     if (mv.promoteTo != Piece::Kind::KING)
         prettyMove += string("=") + Piece::to_char(mv.promoteTo);
-    Utils::output("Returning pretty move : " + prettyMove + "\n", 4);
+    Out::output("Returning pretty move : " + prettyMove + "\n", 4);
     return prettyMove;
 }
 
@@ -706,13 +708,13 @@ bool Chessboard::isValidMove(Move theMove)
     Square *from = theMove.from;
     Square *to = theMove.to;
     if (!from || !to || from == to) {
-        Utils::output("/!\\Invalid move : invalid squares\n");
+        Out::output("/!\\Invalid move : invalid squares\n");
         return false;
     }
     Piece *toMove = from->getPiece();
     if (!toMove) {
-        Utils::output("/!\\Invalid move : no piece to move\n");
-        Utils::output("/!\\\tmove : " + from->to_string()
+        Out::output("/!\\Invalid move : no piece to move\n");
+        Out::output("/!\\\tmove : " + from->to_string()
                 + to->to_string() + "\n");
         return false;
     }
@@ -723,7 +725,7 @@ bool Chessboard::isValidMove(Move theMove)
 void Chessboard::clear()
 {
     //Free all the data
-    Utils::output("Deleting pieces\n", 5);
+    Out::output("Deleting pieces\n", 5);
     for (int f = A; f <= H; f++)
         for (Rank r = 1; r <= 8; r++) {
             Piece *p = board_[(File)f][r]->getPiece();
@@ -731,7 +733,7 @@ void Chessboard::clear()
             if (p)
                 delete p;
         }
-    Utils::output("Deleting taken pieces\n", 5);
+    Out::output("Deleting taken pieces\n", 5);
     while (!takenPieces_.empty()) {
         Piece *p = takenPieces_.back();
         delete p;
@@ -753,12 +755,12 @@ void Chessboard::posFromFEN(string pos)
         ranks.push(rank);
     //Board has 8 data fields
     if (ranks.size() != 8)
-        Utils::handleError("Invalid input pos : must have 8 ranks");
+        Err::handle("Invalid input pos : must have 8 ranks");
 
     Rank r = 8;
     File f = A;
     while (!ranks.empty()) {
-        Utils::output("Rank : " + std::to_string(r) + "\n", 4);
+        Out::output("Rank : " + std::to_string(r) + "\n", 4);
         const char *crank = ranks.front().c_str();
         char c;
         while ((c = *crank++)) {
@@ -825,7 +827,7 @@ void Chessboard::posFromFEN(string pos)
                     break;
                 default:
                     f = (File)(f + 1);
-                    Utils::handleError("Unrecognize char in position");
+                    Err::handle("Unrecognize char in position");
                     break;
             }
             f = (File)(f%8);
@@ -843,7 +845,7 @@ void Chessboard::sideFromFEN(string side)
     else if (side == "b")
         active_ = Side::BLACK;
     else
-        Utils::handleError("Invalid input fen : can't determine active side");
+        Err::handle("Invalid input fen : can't determine active side");
 }
 
 void Chessboard::castleFromFEN(string castle)
@@ -868,7 +870,7 @@ void Chessboard::castleFromFEN(string castle)
                     castle_ |= BQCASTLE;
                     break;
                 default:
-                    Utils::handleError("Invalid input fen : can't set castle");
+                    Err::handle("Invalid input fen : can't set castle");
             }
         }
     }
@@ -890,7 +892,7 @@ void Chessboard::halfmoveCkFromFEN(string clock)
         try {
             halfmoveClock_ = stoi(clock);
         } catch (...) {
-            Utils::handleError(
+            Err::handle(
                     "Invalid input fen : can't parse halfmove clock");
         }
     }
@@ -904,7 +906,7 @@ void Chessboard::fullmoveCkFromFEN(string clock)
         try {
             fullmoveClock_ = stoi(clock);
         } catch (...) {
-            Utils::handleError(
+            Err::handle(
                     "Invalid input fen : can't parse fullmove clock");
         }
     }

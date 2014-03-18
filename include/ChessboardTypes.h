@@ -211,7 +211,7 @@ namespace Board {
         return c;
     }
 
-    inline Square square_from_string(std::string sq)
+    inline Square square_from_string(std::string &sq)
     {
         Square s = SQ_NONE;
         if (sq.size() == 2) {

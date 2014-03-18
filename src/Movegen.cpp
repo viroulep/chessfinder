@@ -241,6 +241,7 @@ namespace Board {
         for (Square s : dests) {\
             Move m;\
             m.from = from;\
+            m.moving = pos.piece_on(from);\
             m.to = s;\
             m.type = NORMAL;\
             if (pos.tryMove(m))\
@@ -277,6 +278,7 @@ namespace Board {
         Piece king = pos.piece_on(from);
         Move m;
         m.from = from;
+        m.moving = king;
         m.type = CASTLING;
         /*FIXME simplify (delegate castle checking to pos ?)*/
         /*NOTE target square legality is checked by tryMove*/
@@ -331,6 +333,7 @@ namespace Board {
         set<Square> dests = gen_reachable<PAWN>(from, pos);
         Move m;
         m.from = from;
+        m.moving = pos.piece_on(from);
         for (Square s : dests) {
             m.to = s;
             m.type = NORMAL;

@@ -38,7 +38,6 @@
 #include "Utils.h"
 #include "Output.h"
 #include "Hashing.h"
-#include "CompareMove.h"
 
 
 
@@ -98,6 +97,7 @@ void timeval_print(struct timeval *tv)
 
 int OracleFinder::runFinderOnCurrentPosition()
 {
+#if 0
     int maxMoves = 254;
     engine_play_for_ = cb_->getActiveSide();
 
@@ -307,7 +307,7 @@ int OracleFinder::runFinderOnCurrentPosition()
     Out::output(oracleTable_->to_string() + "\n", 2);
     Out::output("(size = " + std::to_string(oracleTable_->size()) + ") : \n", 2);
 
-
+#endif
     return 0;
 }
 
@@ -336,7 +336,7 @@ SortedLines OracleFinder::getLines()
     retVal[1] = unbalanced;
     return retVal;
 }
-
+#if 0
 Board::LegalMoves OracleFinder::getAllMoves()
 {
     LegalMoves list;
@@ -357,10 +357,12 @@ Board::LegalMoves OracleFinder::getAllMoves()
     lines_.clear();
     return list;
 }
+#endif
 
 /*TODO refactor this to "addlines to hashtable"*/
 void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
 {
+#if 0
     //Do not check access, assume Line * is legal addr
     for (int i = 0; i < (int) unbalanced.size(); ++i) {
         Line *l = unbalanced[i];
@@ -372,7 +374,7 @@ void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
             s = Node::MATE;
         Node *toAdd = new Node();
         vector<MoveNode> moves;
-        UCIMove next = l->firstMove();
+        string next = l->firstMove();
         toAdd->legal_moves = moves;
         cb_->uciApplyMove(next);
         toAdd->pos = cb_->exportToFEN();
@@ -382,10 +384,12 @@ void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
         pair<uint64_t, Node *> p(hash, toAdd);
         oracleTable_->insert(p);
     }
+#endif
 }
 
 void OracleFinder::pushAllLines(Node *currentNode)
 {
+#if 0
     /*
      * This function is to be called on "opposite" node, since we need
      * to push all node for the side we "play for".
@@ -409,6 +413,7 @@ void OracleFinder::pushAllLines(Node *currentNode)
         currentNode->legal_moves.push_back(move);
     }
     Out::output("\n", 2);
+#endif
 }
 
 bool OracleFinder::cutNode(Node *)

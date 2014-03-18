@@ -34,8 +34,7 @@
 
 
 
-Finder::Finder() :
-    engine_(MatfinderOptions::getEngine(), MatfinderOptions::getPath())
+Finder::Finder()
 {
     int pipe_status;
 
@@ -59,7 +58,9 @@ Finder::Finder() :
     uciReceiver_ = new UCIReceiver(this);
 
     //Arbitrary choice
+#if 0
     engine_play_for_ = Side::WHITE;
+#endif
 }
 
 Finder::~Finder()
@@ -79,6 +80,7 @@ Finder::~Finder()
 
 int Finder::runEngine()
 {
+#if 0
     // Engine part of the process
     // Its only duty is to run the chessengine
 
@@ -93,11 +95,13 @@ int Finder::runEngine()
 
 
     engine_.execEngine();
+#endif
     return 0;
 }
 
 int Finder::runFinder()
 {
+#if 0
     //Start the receiver
     Thread *thread = startReceiver();
 
@@ -152,6 +156,7 @@ int Finder::runFinder()
 
     thread->join();
     delete thread;
+#endif
     return EXIT_SUCCESS;
 }
 
@@ -166,7 +171,7 @@ void Finder::updateLine(int index, Line &line)
 
 void Finder::sendCurrentPositionToEngine()
 {
-    //TODO test this
+#if 0
     string fenPos = "position fen ";
     fenPos += cb_->exportToFEN();
     /*
@@ -184,6 +189,7 @@ void Finder::sendCurrentPositionToEngine()
      *sendToEngine(position);
      */
     sendToEngine(fenPos);
+#endif
 }
 
 void Finder::sendOptionToEngine(string optionName, string optionValue)
@@ -249,17 +255,21 @@ string Finder::getPrettyLines()
 
 string Finder::getPrettyLine(Line &line, int limit)
 {
+#if 0
     ostringstream oss;
     oss << line.getPrettyEval(cb_->getActiveSide() == Side::BLACK);
     oss << " : ";
     oss << cb_->tryUciMoves(line.getMoves(), limit);
     return oss.str();
+#endif
+    return "";
 }
 
 /*
  * These are private
  */
 
+#if 0
 Thread *Finder::startReceiver()
 {
     //Starts in separate thread, so that it's handled background
@@ -267,6 +277,7 @@ Thread *Finder::startReceiver()
     thread->start();
     return thread;
 }
+#endif
 
 void Finder::waitReadyok()
 {

@@ -27,8 +27,6 @@
 #include <list>
 #include <vector>
 #include <unordered_map>
-#include "Engine.h"
-#include "Thread.h"
 #include "Stream.h"
 #include "Line.h"
 #include "Finder.h"
@@ -53,7 +51,9 @@ public:
 private:
     int runFinderOnCurrentPosition();
     SortedLines getLines();
+#if 0
     Board::LegalMoves getAllMoves();
+#endif
     void proceedUnbalancedLines(vector<Line *> unbalanced);
     void pushAllLines(Node *currentNode);
     bool cutNode(Node *currentNode);

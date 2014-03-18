@@ -58,6 +58,7 @@ namespace Board {
         Square from = SQ_NONE;
         Square to = SQ_NONE;
         MoveType type = NO_TYPE;
+        Piece moving = NO_PIECE;
         PieceKind promotion = NO_KIND;
         StateInfo *state = nullptr;
     } Move;
@@ -82,6 +83,7 @@ namespace Board {
             void undoMove();
             const std::string pretty() const;
             const std::string fen() const;
+            uint64_t hash() const;
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/
             Piece board_[64];
@@ -123,6 +125,10 @@ namespace Board {
             retVal += {kind_to_char(m.promotion, true, true)};
         return retVal;
     }
+
+    /*Polyglot helpers*/
+    uint16_t uciToPolyglot(const std::string &mv);
+    std::string polyglotToUci(uint16_t mv);
 
 }
 

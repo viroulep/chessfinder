@@ -26,7 +26,9 @@
 #include <queue>
 #include <set>
 #include "SimpleChessboard.h"
+#include "Hashing.h"
 #include "Movegen.h"
+#include "Output.h"
 
 #define COMPUTE_CASTLING_ROOK(move, sqFrom, sqTo) \
     File rookFile = (move.to > move.from)?FILE_H:FILE_A;\
@@ -376,6 +378,129 @@ namespace Board {
         return ss.str();
     }
 
+    uint64_t Position::hash() const
+    {
+        return HashTable::hashFEN(fen());
+    }
+
+    /*
+     *bits                meaning
+     *===================================
+     *0,1,2               to file
+     *3,4,5               to row
+     *6,7,8               from file
+     *9,10,11             from row
+     *12,13,14            promotion piece
+     *"promotion piece" is encoded as follows
+     *none       0
+     *knight     1
+     *bishop     2
+     *rook       3
+     *queen      4
+     */
+    uint16_t uciToPolyglot(const string &mv)
+    {
+        File f;
+        Rank r;
+        uint16_t encodedMove = 0x0;
+        if (mv.size() != 4 && mv.size() != 5)
+            Err::handle("Error parsing uci move");
+        if (mv.size() == 5) {
+            Piece promote = piece_from_char(mv[4]);
+            switch (kind_of(promote)) {
+                case KNIGHT:
+                    encodedMove |= 0x1;
+                    break;
+                case BISHOP:
+                    encodedMove |= 0x2;
+                    break;
+                case ROOK:
+                    encodedMove |= 0x3;
+                    break;
+                case QUEEN:
+                    encodedMove |= 0x4;
+                    break;
+                default:
+                    break;
+            }
+            encodedMove <<= 3;
+        }
+        string from = mv.substr(0, 2);
+        Square sqFrom = square_from_string(from);
+        if (sqFrom == SQ_NONE)
+            Err::handle("Error parsing uci move");
+        r = rank_of(sqFrom);
+        f = file_of(sqFrom);
+        /*Board::squareFromString(from, &f, &r);*/
+        //Rank in 1..8, go to 0..7
+        encodedMove |= (uint16_t)r;
+        encodedMove <<= 3;
+        //File already on 0..7
+        encodedMove |= (uint16_t)f;
+        encodedMove <<= 3;
+
+        string to = mv.substr(2, 2);
+        Square sqTo = square_from_string(to);
+        if (sqTo == SQ_NONE)
+            Err::handle("Error parsing uci move");
+        r = rank_of(sqTo);
+        f = file_of(sqTo);
+        /*Board::squareFromString(to, &f, &r);*/
+        //Rank in 1..8, go to 0..7
+        encodedMove |= (uint16_t)r;
+        encodedMove <<= 3;
+        //File already on 0..7
+        encodedMove |= (uint16_t)f;
+        //encodedMove <<= 3;
+        Out::output("Move " + mv + " is " + std::to_string(encodedMove)
+                + ", decimal\n", 3);
+        return encodedMove;
+    }
+
+    string polyglotToUci(uint16_t mv)
+    {
+        File f;
+        Rank r;
+        string uci = "";
+        f = (File)(mv & 0x7);
+        mv >>= 3;
+        r = (Rank)(mv & 0x7);
+        mv >>= 3;
+        //To
+        //uci += std::to_string(to_char(f)) + std::to_string(to_char(r+1));
+        uci += file_to_char(f);
+        uci += rank_to_char(r);
+
+        f = (File)(mv & 0x7);
+        mv >>= 3;
+        r = (Rank)(mv & 0x7);
+        mv >>= 3;
+        //From
+        string from;
+        from += file_to_char(f);
+        from += rank_to_char(r);
+        uci = from + uci;
+
+        switch (mv) {
+            case 1:
+                uci += "n";
+                break;
+            case 2:
+                uci += "b";
+                break;
+            case 3:
+                uci += "r";
+                break;
+            case 4:
+                uci += "q";
+                break;
+            default:
+                break;
+        }
+        Out::output(std::to_string(mv) + ", decimal is move "
+                + uci + "\n", 3);
+        return uci;
+    }
 
     /*---------------------/
      *                     /
@@ -599,3 +724,4 @@ namespace Board {
     }
 
 }
+#undef COMPUTE_CASTLING_ROOK

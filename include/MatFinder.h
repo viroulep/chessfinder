@@ -24,8 +24,6 @@
 
 #include <string>
 #include <vector>
-#include "Engine.h"
-#include "Thread.h"
 #include "Stream.h"
 #include "Line.h"
 #include "Finder.h"

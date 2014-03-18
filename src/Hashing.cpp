@@ -22,9 +22,9 @@
 #include <sstream>
 #include <queue>
 #include "Hashing.h"
+#include "SimpleChessboard.h"
 #include "Utils.h"
 #include "Output.h"
-#include "Chessboard.h"
 using namespace std;
 
 
@@ -80,7 +80,7 @@ string HashTable::to_string()
     return retVal;
 }
 
-  Node *HashTable::findPos(SimplePos sp)
+  Node *HashTable::findPos(std::string sp)
 {
     uint64_t hash = HashTable::hashFEN(sp);
     auto it = find(hash);
@@ -128,7 +128,7 @@ void HashTable::toPolyglot(ostream &os)
         uint16_t weight = 0x0;
         uint32_t learn = 0x0;
         if (n.legal_moves.size() == 1)
-            move = uciToPolyglot(n.legal_moves.front().first);
+            move = Board::uciToPolyglot(n.legal_moves.front().first);
         //else multiple move = other side of oracle
         //write move
         os.write((char *)&move, sizeof(uint16_t));
@@ -161,7 +161,7 @@ HashTable *HashTable::fromPolyglot(istream &is)
         Node *toAdd = new Node();
         toAdd->pos = "";//No position when loading table
         toAdd->st = (Node::Status)learn;
-        MoveNode mn(polyglotToUci(move), NULL);
+        MoveNode mn(Board::polyglotToUci(move), NULL);
         toAdd->legal_moves.push_back(mn);
         pair<uint64_t, Node *> p(hash, toAdd);
         retValue->insert(p);
@@ -209,52 +209,15 @@ uint64_t HashTable::hashFEN(string fenString)
 }
 
 
+#if 0
 uint64_t HashTable::hashBoard(Chessboard *cb)
 {
     if (!cb)
         return U64(0x0);
     else
         return hashFEN(cb->exportToFEN());
-#if 0
-    uint64_t boardHash = U64(0x0);
-    //Active side
-    boardHash ^= (cb->active_ == Board::WHITE)?Random64_[780]:U64(0x0);
-    //Board state
-    for (int f = A; f <= H; f++)
-        for (Rank r = 1; r <= 8; r++) {
-            Piece *p = cb->board_[(File)f][r]->getPiece();
-            if (p) {
-                int kind = 0;
-                int offset = 0;
-                if (p->getColor() == Board::WHITE)
-                    kind++;
-                switch (p->getKind()) {
-                    case Piece::Kind::PAWN:
-                        offset = pieceOffset(kind, r, (File)f);
-                        break;
-                    case Piece::Kind::KNIGHT:
-                        offset = pieceOffset(kind + 2, r, (File)f);
-                        break;
-                    case Piece::Kind::BISHOP:
-                        offset = pieceOffset(kind + 4, r, (File)f);
-                        break;
-                    case Piece::Kind::ROOK:
-                        offset = pieceOffset(kind + 6, r, (File)f);
-                        break;
-                    case Piece::Kind::QUEEN:
-                        offset = pieceOffset(kind + 8, r, (File)f);
-                        break;
-                    case Piece::Kind::KING:
-                        offset = pieceOffset(kind + 10, r, (File)f);
-                        break;
-                }
-                boardHash ^= Random64_[offset];
-            }
-        }
-    //TODO: castle
-    return boardHash;
-#endif
 }
+#endif
 
 int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {
@@ -288,9 +251,7 @@ uint64_t HashTable::enpassantFromFEN(string enpassant)
         Err::handle("Invalid input fen : can't determine enpassant");
         return U64(0x0);
     } else {
-        Board::File f;
-        Board::Rank r;
-        Board::squareFromString(enpassant, &f, &r);
+        Board::File f = file_of(Board::square_from_string(enpassant));
         return Random64_[772 + f];
     }
 }
@@ -337,8 +298,8 @@ uint64_t HashTable::piecesFromFEN(string pos)
     if (ranks.size() != 8)
         Err::handle("Invalid input position : must have 8 ranks");
 
-    Rank r = 8;
-    File f = A;
+    Board::Rank r = Board::RANK_8;
+    Board::File f = Board::FILE_A;
     uint64_t piecesKey = 0;
     while (!ranks.empty()) {
         Out::output("Rank : " + std::to_string(r) + "\n", 4);
@@ -355,64 +316,64 @@ uint64_t HashTable::piecesFromFEN(string pos)
                 case '7':
                 case '8':
                     //should rotate through files
-                    f = (File)(f + c - '0');
+                    f = (Board::File)(f + c - '0');
                     break;
                 case 'p':
                     piecesKey ^= Random64_[pieceOffset(0, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'P':
                     piecesKey ^= Random64_[pieceOffset(1, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'n':
                     piecesKey ^= Random64_[pieceOffset(2, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'N':
                     piecesKey ^= Random64_[pieceOffset(3, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'b':
                     piecesKey ^= Random64_[pieceOffset(4, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'B':
                     piecesKey ^= Random64_[pieceOffset(5, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'r':
                     piecesKey ^= Random64_[pieceOffset(6, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'R':
                     piecesKey ^= Random64_[pieceOffset(7, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'q':
                     piecesKey ^= Random64_[pieceOffset(8, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'Q':
                     piecesKey ^= Random64_[pieceOffset(9, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'k':
                     piecesKey ^= Random64_[pieceOffset(10, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 case 'K':
                     piecesKey ^= Random64_[pieceOffset(11, r, f)];
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     break;
                 default:
-                    f = (File)(f + 1);
+                    f = (Board::File)(f + 1);
                     Err::handle("Unrecognize char in position");
                     break;
             }
-            f = (File)(f%8);
+            f = (Board::File)(f%8);
         }
-        r--;
+        --r;
         ranks.pop();
     }
     return piecesKey;

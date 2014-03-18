@@ -28,8 +28,6 @@
 #include <string>
 #include <getopt.h>
 
-#include "Thread.h"
-#include "Engine.h"
 #include "Utils.h"
 #include "Output.h"
 #include "Line.h"
@@ -158,7 +156,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 break;
 
             case 'u':
-                MatfinderOptions::setMoveComparator(optarg);
+                /*MatfinderOptions::setMoveComparator(optarg);*/
                 break;
 
             case 'n':
@@ -235,7 +233,7 @@ int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
 
         //Kill the child to exit properly
         kill(pid, SIGTERM);
-        MatfinderOptions::setMoveComparator(nullptr);
+        /*MatfinderOptions::setMoveComparator(nullptr);*/
     } else {
         Err::handle("Error: fork failed");
     }

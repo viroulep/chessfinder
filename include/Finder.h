@@ -24,8 +24,6 @@
 
 #include <string>
 #include <vector>
-#include "Engine.h"
-#include "Thread.h"
 #include "Stream.h"
 #include "Line.h"
 
@@ -56,7 +54,7 @@ public:
 
 protected:
     virtual int runFinderOnCurrentPosition() = 0;
-    Thread *startReceiver();
+    /*Thread *startReceiver();*/
     void sendCurrentPositionToEngine();
     void sendOptionToEngine(string optionName, string optionValue);
     void sendToEngine(string cmd);
@@ -80,10 +78,10 @@ protected:
     pthread_mutex_t bestmove_mutex_ = PTHREAD_MUTEX_INITIALIZER;
 
     //Engine specific members
-    Engine engine_;
+    /*Engine engine_;*/
 
     //The chessboard we play on
-    Chessboard *cb_ = NULL;
+    /*Chessboard *cb_ = NULL;*/
 
     //The starting pos
     string startpos_ = "startpos";
@@ -91,7 +89,7 @@ protected:
     //NOTE: sorting is done by engine, according to the active side
     vector<Line> lines_;
 
-    Board::Side engine_play_for_;
+    /*Board::Side engine_play_for_;*/
 
     //Number of moves "played" by the finder
     int addedMoves_;

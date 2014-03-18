@@ -24,7 +24,6 @@
 #include <cstdlib>
 #include <cmath>
 #include "Chessboard.h"
-#include "CompareMove.h"
 #include "Line.h"
 #include "Utils.h"
 #include "MatfinderOptions.h"
@@ -304,8 +303,8 @@ const string Chessboard::tryUciMoves(const list<string> &moves, int limit)
 /*Return true if lhs < rhs*/
 bool Chessboard::compareLines(Line *lhs, Line *rhs)
 {
-    Move lhsM = getMoveFromUci(lhs->firstMove());
-    Move rhsM = getMoveFromUci(rhs->firstMove());
+    /*Move lhsM = getMoveFromUci(lhs->firstMove());*/
+    /*Move rhsM = getMoveFromUci(rhs->firstMove());*/
     /*
      * First check the eval if they are too different.
      * (For example if the cp_treshold is 300 cp, then lines at -2.2 and +1.2
@@ -321,7 +320,9 @@ bool Chessboard::compareLines(Line *lhs, Line *rhs)
     }
 
     /*Optionally add some restriction on the line*/
-    return comparator_->compare(lhsM, rhsM);
+    /*TODO restore*/
+    /*return comparator_->compare(lhsM, rhsM);*/
+    return true;
 }
 
 
@@ -529,8 +530,8 @@ Chessboard *Chessboard::createFromFEN(string fenString)
     return cb;
 }
 
-Chessboard::Chessboard() : comparator_(MatfinderOptions::getMoveComparator()),
-    takenPieces_(), board_()
+/*Chessboard::Chessboard() : comparator_(MatfinderOptions::getMoveComparator()),*/
+Chessboard::Chessboard() : takenPieces_(), board_()
 {
     //need to initialize all the datas
     for (int f = A; f <= H; f++)

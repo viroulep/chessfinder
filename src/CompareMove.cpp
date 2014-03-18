@@ -25,16 +25,16 @@ bool MoveComparator::compare(Board::Move &lhs, Board::Move &rhs)
 
 bool CompareMove::compareTake(Move &lhs, Move &rhs)
 {
-    if (!lhs.takePiece && !rhs.takePiece)
+    if (lhs.state->captured == NO_KIND && rhs.state->captured == NO_KIND)
         return false;
-    else if (lhs.takePiece)
+    else if (lhs.state->captured != NO_KIND && rhs.state->captured == NO_KIND)
         return true;
-    else if (rhs.takePiece)
+    else if (lhs.state->captured == NO_KIND && rhs.state->captured != NO_KIND)
         return false;
     else {
-        Piece *lhsP = lhs.to->getPiece();
-        Piece *rhsP = rhs.to->getPiece();
-        return lhsP->getKind() < rhsP->getKind();
+        PieceKind lhsP = lhs.state->captured;
+        PieceKind rhsP = rhs.state->captured;
+        return lhsP > rhsP;
     }
 }
 
@@ -62,24 +62,25 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
     Rank rt;
     uint16_t evaluation = 0x0;
 
-    Square *to = mv.to;
-    Square *from = mv.from;
+    Square to = mv.to;
+    Square from = mv.from;
     if (!to || !from)
         Err::handle("Comparing move on undefined squares");
-    ft = to->getFile();
-    rt = to->getRank();
-    Piece *pf = from->getPiece();
-    Piece *pt = to->getPiece();
+    ft = file_of(to);
+    rt = rank_of(to);
+    /*Piece *pf = from->getPiece();*/
+    /*Piece *pt = to->getPiece();*/
+    Piece pf = mv.moving;
     if (!from)
         Err::handle("No piece on from square");
 
     uint16_t encodedMove = 0x0;
     // promotion/Prise/ pion prioritaire
-    if (mv.promoteTo != Piece::KING) {
+    if (mv.type == PROMOTION) {
         encodedMove = 0x3;
-    } else if (pt) {
+    } else if (mv.state->captured != NO_KIND) {
         encodedMove = 0x2;
-    } else if (pf->getKind() == Piece::PAWN) {
+    } else if (kind_of(pf) == PAWN) {
         encodedMove = 0x1;
     }
 
@@ -88,44 +89,47 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
     /*fffrrr*/
     uint16_t encodedSquare = 0x0;
 
-    switch (pf->getKind()) {
-        case Piece::PAWN:
+    switch (kind_of(pf)) {
+        case PAWN:
             encodedPiece = 0x1;
             break;
-        case Piece::KNIGHT:
+        case KNIGHT:
             /*Knight goes to C2*/
             encodedPiece = 0x2;
-            encodedSquare = 7 - abs(ft - File::C);
+            encodedSquare = 7 - abs(ft - FILE_C);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs((int)(rt - 2));
+            encodedSquare |= 7 - abs(rt - RANK_2);
             break;
-        case Piece::BISHOP:
+        case BISHOP:
             /*Bishop goes to D2*/
             encodedPiece = 0x3;
-            encodedSquare = 7 - abs(ft - File::D);
+            encodedSquare = 7 - abs(ft - FILE_D);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs((int)(rt - 2));
+            encodedSquare |= 7 - abs(rt - RANK_2);
             break;
-        case Piece::ROOK:
+        case ROOK:
             /*Rook goes to B3*/
             encodedPiece = 0x4;
-            encodedSquare = 7 - abs(ft - File::B);
+            encodedSquare = 7 - abs(ft - FILE_B);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs((int)(rt - 3));
+            encodedSquare |= 7 - abs(rt - RANK_3);
             break;
-        case Piece::QUEEN:
+        case QUEEN:
             /*Queen goes to C3*/
             encodedPiece = 0x5;
-            encodedSquare = 7 - abs(ft - File::C);
+            encodedSquare = 7 - abs(ft - FILE_C);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs((int)(rt - 3));
+            encodedSquare |= 7 - abs(rt - RANK_3);
             break;
-        case Piece::KING:
+        case KING:
             /*King goes to B2*/
             encodedPiece = 0x6;
-            encodedSquare = 7 - abs(ft - File::B);
+            encodedSquare = 7 - abs(ft - FILE_B);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs((int)(rt - 2));
+            encodedSquare |= 7 - abs(rt - RANK_2);
+            break;
+        default:
+            Err::handle("No kind to compare move !");
             break;
     }
     /*mmssssssppp*/

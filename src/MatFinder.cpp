@@ -45,6 +45,7 @@ MatFinder::~MatFinder()
 
 int MatFinder::runFinderOnCurrentPosition()
 {
+#if 0
     Board::Side sideToMove = cb_->getActiveSide();
 
     Out::output("Starting board is :\n" + cb_->to_string() + "\n");
@@ -179,7 +180,7 @@ int MatFinder::runFinderOnCurrentPosition()
     Out::output("[End] Full best line is : \n");
     Out::output("[End] " + getPrettyLine(lines_[0]) + "\n");
     Out::output("[End] " + Utils::listToString(lines_[0].getMoves()) + "\n");
-
+#endif
     return 0;
 }
 
@@ -229,6 +230,7 @@ int MatFinder::updateMultiPV()
  */
 Line &MatFinder::getBestLine()
 {
+#if 0
     Side active = cb_->getActiveSide();
     for (int i = 0; i < (int) lines_.size(); ++i) {
         int limit = MatfinderOptions::getCpTreshold();
@@ -250,6 +252,7 @@ Line &MatFinder::getBestLine()
             }
         }
     }
+#endif
     //if all are draw, return the same line
     return emptyLine_;
 

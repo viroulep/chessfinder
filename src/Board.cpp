@@ -333,7 +333,7 @@ namespace Board {
      *rook       3
      *queen      4
      */
-    uint16_t uciToPolyglot(UCIMove &mv)
+    uint16_t uciToPolyglotb(UCIMove &mv)
     {
         File f;
         Rank r;
@@ -382,7 +382,7 @@ namespace Board {
         return encodedMove;
     }
 
-    UCIMove polyglotToUci(uint16_t mv)
+    UCIMove polyglotToUcib(uint16_t mv)
     {
         File f;
         Rank r;

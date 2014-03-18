@@ -26,7 +26,6 @@
 #include <list>
 #include <utility>
 
-#include "CompareMove.h"
 
 #define DEFAULT_MAX_LINES 8
 #define DEFAULT_VERBOSE_LEVEL 0
@@ -90,9 +89,11 @@ public:
     static std::string getInputFile();
     static void setInputFile(std::string file);
 
-    static MoveComparator *getMoveComparator();
-    static void setMoveComparator(MoveComparator *mc);
-    static void setMoveComparator(std::string smc);
+    /*
+     *static MoveComparator *getMoveComparator();
+     *static void setMoveComparator(MoveComparator *mc);
+     *static void setMoveComparator(std::string smc);
+     */
 
 
     //Pretty-print the options
@@ -150,7 +151,7 @@ private:
     static std::string OUTPUT_;
 
     // The move comparator to be used
-    static MoveComparator *MOVE_COMPARATOR_;
+    /*static MoveComparator *MOVE_COMPARATOR_;*/
 };
 
 

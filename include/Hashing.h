@@ -26,8 +26,8 @@
 #include <ostream>
 #include <map>
 #include <vector>
-#include "Chessboard.h"
-#include "Board.h"
+
+#include "SimpleChessboard.h"
 
 #ifdef _MSC_VER
 #define U64(u) (u##ui64)
@@ -35,12 +35,11 @@
 #define U64(u) (u##ULL)
 #endif
 
-using namespace std;
 
 class Node;
 
-typedef pair<Board::UCIMove, Node *> MoveNode;
-typedef vector<MoveNode> LegalNodes;
+typedef std::pair<std::string, Node *> MoveNode;
+typedef std::vector<MoveNode> LegalNodes;
 
 class Node {
 public:
@@ -54,7 +53,7 @@ public:
     };
     /*Fen string without clock informations*/
     /*Actually its the full fen*/
-    SimplePos pos;
+    std::string pos;
     /*
      * FIXME: only store the move !
      * And sort according to the natural ordering
@@ -63,29 +62,29 @@ public:
     LegalNodes legal_moves;
     //Polyglot "learn" field, uint32_t
     Status st;
-    string to_string();
-    static string to_string(Status s);
+    std::string to_string();
+    static std::string to_string(Status s);
 };
 
 //map is internally ordered by key, ascending
-class HashTable : public multimap<uint64_t, Node *>
+class HashTable : public std::multimap<uint64_t, Node *>
 {
 public:
 
-    static uint64_t hashFEN(string fenString);
-    static uint64_t hashBoard(Chessboard *cb);
+    static uint64_t hashFEN(std::string fenString);
+    /*static uint64_t hashBoard(Chessboard *cb);*/
     ~HashTable();
-    string to_string();
+    std::string to_string();
     //TODO: rename simplepos to FEN
-    Node *findPos(SimplePos sp);
-    void toPolyglot(ostream &os);
-    static HashTable *fromPolyglot(istream &is);
+    Node *findPos(std::string sp);
+    void toPolyglot(std::ostream &os);
+    static HashTable *fromPolyglot(std::istream &is);
 private:
     static int pieceOffset(int kind, Board::Rank r, Board::File f);
-    static uint64_t turnFromFEN(string side);
-    static uint64_t piecesFromFEN(string pos);
-    static uint64_t enpassantFromFEN(string enpassant);
-    static uint64_t castleFromFEN(string castle);
+    static uint64_t turnFromFEN(std::string side);
+    static uint64_t piecesFromFEN(std::string pos);
+    static uint64_t enpassantFromFEN(std::string enpassant);
+    static uint64_t castleFromFEN(std::string castle);
 
     static const uint64_t Random64_[781];
 };

@@ -25,7 +25,7 @@
 #include "Output.h"
 #include "MatfinderOptions.h"
 
-
+using namespace std;
 
 //Init static members
 string MatfinderOptions::ENGINE_ = DEFAULT_ENGINE;
@@ -43,7 +43,7 @@ int MatfinderOptions::ENGINE_THREADS_ = DEFAULT_THREADS;
 string MatfinderOptions::INPUT_ = DEFAULT_INPUT_FILE;
 string MatfinderOptions::OUTPUT_ = DEFAULT_OUTPUT_FILE;
 
-MoveComparator *MatfinderOptions::MOVE_COMPARATOR_ = new MapMoveComparator;
+/*MoveComparator *MatfinderOptions::MOVE_COMPARATOR_ = new MapMoveComparator;*/
 
 string MatfinderOptions::getEngine() { return ENGINE_; }
 void MatfinderOptions::setEngine(string engine) { ENGINE_ = engine; }
@@ -130,38 +130,39 @@ void MatfinderOptions::setInputFile(string file)
     INPUT_ = file;
 }
 
-MoveComparator *MatfinderOptions::getMoveComparator()
-{
-    if (!MOVE_COMPARATOR_)
-        Err::handle("MoveComparator used but not initialized");
-    return MOVE_COMPARATOR_;
-}
-
-void MatfinderOptions::setMoveComparator(MoveComparator *mc)
-{
-    if (MOVE_COMPARATOR_)
-        delete MOVE_COMPARATOR_;
-    MOVE_COMPARATOR_ = mc;
-}
-
-void MatfinderOptions::setMoveComparator(string smc)
-{
-    MoveComparator *mc = nullptr;
-    if (smc == "map") {
-        mc = new MapMoveComparator;
-    } else if (smc == "default") {
-        mc = new DefaultMoveComparator;
-    /* Sample adding of a comparator :
-    } else if (smc == "sample") {
-        mc = new SampleMoveComparator;
-    */
-    } else {
-        Err::handle("Unknown move comparator : " + smc);
-    }
-    setMoveComparator(mc);
-}
-
-
+/*
+ *MoveComparator *MatfinderOptions::getMoveComparator()
+ *{
+ *    if (!MOVE_COMPARATOR_)
+ *        Err::handle("MoveComparator used but not initialized");
+ *    return MOVE_COMPARATOR_;
+ *}
+ *
+ *void MatfinderOptions::setMoveComparator(MoveComparator *mc)
+ *{
+ *    if (MOVE_COMPARATOR_)
+ *        delete MOVE_COMPARATOR_;
+ *    MOVE_COMPARATOR_ = mc;
+ *}
+ *
+ *void MatfinderOptions::setMoveComparator(string smc)
+ *{
+ *    MoveComparator *mc = nullptr;
+ *    if (smc == "map") {
+ *        mc = new MapMoveComparator;
+ *    } else if (smc == "default") {
+ *        mc = new DefaultMoveComparator;
+ *     [>Sample adding of a comparator :<]
+ *    [>} else if (smc == "sample") {<]
+ *        [>mc = new SampleMoveComparator;<]
+ *    } else {
+ *        Err::handle("Unknown move comparator : " + smc);
+ *    }
+ *    setMoveComparator(mc);
+ *}
+ *
+ *
+ */
 string MatfinderOptions::getPretty()
 {
     ostringstream oss;

@@ -121,8 +121,8 @@ namespace Board {
     void squareFromString(string str, File *f, Rank *r);
     Piece::Kind promotionFromChar(char p);
 
-    uint16_t uciToPolyglot(UCIMove &mv);
-    UCIMove polyglotToUci(uint16_t mv);
+    uint16_t uciToPolyglotb(UCIMove &mv);
+    UCIMove polyglotToUcib(uint16_t mv);
 
     Side getSideFromString(string sidestr);
     bool checkMove(string move);

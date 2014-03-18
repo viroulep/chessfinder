@@ -22,7 +22,7 @@
 #ifndef __COMPAREMOVE_H__
 #define __COMPAREMOVE_H__
 
-#include "Board.h"
+#include "SimpleChessboard.h"
 
 class MoveComparator {
     public:

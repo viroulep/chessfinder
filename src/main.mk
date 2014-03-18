@@ -29,35 +29,43 @@ CLEAN_TARGETS += clean-matfinder
 
 
 common_SOURCES           := $(wildcard src/*.cpp)
-matfinder_SOURCES       := $(wildcard src/matfinder/*.cxx)
-oraclefinder_SOURCES       := $(wildcard src/oraclefinder/*.cxx)
-matfinder_HEADERS           := $(wildcard include/*.h)
-matfinder_HEADERS_DEP       := $(wildcard include/*.h)
+#matfinder_SOURCES       := $(wildcard src/matfinder/*.cxx)
+#oraclefinder_SOURCES       := $(wildcard src/oraclefinder/*.cxx)
+finder_HEADERS_DEP       := $(wildcard include/*.h)
 
-matfinder_OBJECTS := $(common_SOURCES:.cpp=.o)
-matfinder_OBJECTS += $(matfinder_SOURCES:.cxx=.o)
+finder_OBJECTS := $(common_SOURCES:.cpp=.o)
+#matfinder_OBJECTS += $(matfinder_SOURCES:.cxx=.o)
 
-oraclefinder_OBJECTS := $(common_SOURCES:.cpp=.o)
-oraclefinder_OBJECTS += $(oraclefinder_SOURCES:.cxx=.o)
+#oraclefinder_OBJECTS := $(common_SOURCES:.cpp=.o)
+#oraclefinder_OBJECTS += $(oraclefinder_SOURCES:.cxx=.o)
 
 canonical_path := ../$(shell basename $(shell pwd -P))
 
 outCxx:
 	echo "Using Cxx="$(CXX)
 
-src/%.o: src/%.cpp $(matfinder_HEADERS_DEP)
+#TODO
+src/%.o: src/%.cpp $(finder_HEADERS_DEP)
 	echo "[matfinder] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
-src/%.o: src/%.cxx $(matfinder_HEADERS_DEP)
+src/%.o: src/%.cxx $(finder_HEADERS_DEP)
 	echo "[matfinder] CXX $<"
 	$(CXX) $(CPPFLAGS) $(CFLAGS) -c -o $@ ${canonical_path}/$<
 
-oraclefinder: $(oraclefinder_OBJECTS)
+src/main_oracle.o: src/main.cxx $(finder_HEADERS_DEP)
+	echo "[oraclefinder] CXX $<"
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -DORACLEFINDER -c -o $@ ${canonical_path}/$<
+
+src/main_finder.o: src/main.cxx $(finder_HEADERS_DEP)
+	echo "[matfinder] CXX $<"
+	$(CXX) $(CPPFLAGS) $(CFLAGS) -DMATFINDER -c -o $@ ${canonical_path}/$<
+
+oraclefinder: $(finder_OBJECTS) src/main_oracle.o
 	echo "[oraclefinder] Link oraclefinder"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-matfinder: $(matfinder_OBJECTS)
+matfinder: $(finder_OBJECTS) src/main_finder.o
 	echo "[matfinder] Link matfinder"
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 

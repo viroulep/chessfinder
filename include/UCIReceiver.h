@@ -23,7 +23,6 @@
 #define __UCIRECEIVER_H__
 
 #include <string>
-#include "Thread.h"
 #include "Stream.h"
 #include "Finder.h"
 
@@ -31,7 +30,7 @@
  * This class is responsible for parsing commands from engine
  * and updating the finder's state
  */
-class UCIReceiver : public Runnable {
+class UCIReceiver {
 public:
     UCIReceiver(Finder *finder);
     ~UCIReceiver();

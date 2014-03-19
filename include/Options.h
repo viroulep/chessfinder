@@ -31,9 +31,16 @@
 
 typedef std::list<std::pair<std::string, std::list<std::string>>> PositionList;
 
+enum Variant {
+    STANDARD,
+    LOS_ALAMOS,
+    GARDNER
+};
+
 class Options {
     public:
 
+        Variant getVariant() const;
         const std::string &getInputFile() const;
         const std::string &getOutputFile() const;
 
@@ -64,6 +71,7 @@ class Options {
         Options();
         /*TODO comment*/
 
+        Variant variant_ = STANDARD;
         std::string inputFile_ = "";
         std::string outputFile_ = "";
 

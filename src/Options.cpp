@@ -27,6 +27,11 @@ using namespace std;
 
 Options Options::instance_ = Options();
 
+Variant Options::getVariant() const
+{
+    return variant_;
+}
+
 const string &Options::getInputFile() const
 {
     return inputFile_;

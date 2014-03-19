@@ -26,6 +26,8 @@
 #include <string>
 #include <assert.h>
 
+#include "Options.h"
+
 namespace Board {
 
     enum Color {
@@ -136,16 +138,30 @@ namespace Board {
         return Color(p >> 3);
     }
 
-    inline bool is_ok(Square s) {
-        return s >= SQ_A1 && s <= SQ_H8;
-    }
-
     inline File file_of(Square s) {
         return File(s & 7);
     }
 
     inline Rank rank_of(Square s) {
         return Rank(s >> 3);
+    }
+
+    inline bool is_ok(Square s) {
+        bool ok = false;
+        switch (Options::getInstance().getVariant()) {
+            case GARDNER:
+                ok = (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_6
+                      && file_of(s) >= FILE_B && file_of(s) <= FILE_F);
+            case LOS_ALAMOS:
+                ok = (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_7
+                      && file_of(s) >= FILE_B && file_of(s) <= FILE_G);
+                break;
+            case STANDARD:
+            default:
+                ok = s >= SQ_A1 && s <= SQ_H8;
+                break;
+        }
+        return ok;
     }
 
     inline bool front_or_back_rank(Rank r)

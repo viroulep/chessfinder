@@ -74,6 +74,31 @@ namespace Board {
         std::vector<Move> gen_moves(const Square from, Position &pos);
 
     std::vector<Move> gen_all(Position &pos);
+
+#define DISPATCH(datastructure, kind, function, ...) \
+    switch (kind) {\
+        case KNIGHT:\
+            datastructure = function<KNIGHT>(__VA_ARGS__);\
+        break;\
+        case BISHOP:\
+            datastructure = function<BISHOP>(__VA_ARGS__);\
+        break;\
+        case ROOK:\
+            datastructure = function<ROOK>(__VA_ARGS__);\
+        break;\
+        case QUEEN:\
+            datastructure = function<QUEEN>(__VA_ARGS__);\
+        break;\
+        case KING:\
+            datastructure = function<KING>(__VA_ARGS__);\
+        break;\
+        case PAWN:\
+            datastructure = function<PAWN>(__VA_ARGS__);\
+        break;\
+        default:\
+            break;\
+    }
+
 }
 
 #endif

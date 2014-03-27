@@ -29,19 +29,18 @@
 #define BUFFER_SIZE (2048)
 
 
-using namespace std;
 
 class Stream {
 protected:
     Stream();
-    Stream(int file_descriptor, ios_base::openmode openmode);
+    Stream(int file_descriptor, std::ios_base::openmode openmode);
     ~Stream();
-    ios_base::openmode openmode() const;
-    void open(int file_descriptor, ios_base::openmode openmode);
+    std::ios_base::openmode openmode() const;
+    void open(int file_descriptor, std::ios_base::openmode openmode);
 
     int file_descriptor_;
     __gnu_cxx::stdio_filebuf<char>* filebuf_;
-    ios_base::openmode openmode_;
+    std::ios_base::openmode openmode_;
 };
 
 class InputStream : public Stream {
@@ -50,12 +49,12 @@ public:
     InputStream(int file_descriptor);
     ~InputStream();
     void open(int file_descriptor);
-    InputStream& operator>> (string& str);
-    size_t getline (char* s, streamsize n);
-    size_t getline (char* s, streamsize n, char delim);
+    InputStream& operator>> (std::string& str);
+    size_t getline (char* s, std::streamsize n);
+    size_t getline (char* s, std::streamsize n, char delim);
 
 private:
-    istream* stdistream_;
+    std::istream* stdistream_;
 };
 
 class OutputStream : public Stream {
@@ -64,12 +63,12 @@ public:
     OutputStream(int file_descriptor);
     ~OutputStream();
     void open(int file_descriptor);
-    OutputStream& operator<< (const string& str);
+    OutputStream& operator<< (const std::string& str);
 
 private:
-    ostream* stdostream_;
+    std::ostream* stdostream_;
 };
 
-size_t getline(InputStream &is, string &str);
+size_t getline(InputStream &is, std::string &str);
 
 #endif

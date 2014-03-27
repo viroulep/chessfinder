@@ -55,10 +55,10 @@ namespace Comm {
             virtual void quit() const;
 
             /*UCI response specific*/
-            int parseUCIMsg(const string &msg);
-            void bestmove(istringstream &is);
-            void readyok(istringstream &is);
-            void info(istringstream &is);
+            int parseUCIMsg(const std::string &msg);
+            void bestmove(std::istringstream &is);
+            void readyok(std::istringstream &is);
+            void info(std::istringstream &is);
             bool waitBestmove();
             bool waitReadyok();
             void signalBestmove();
@@ -121,6 +121,8 @@ namespace Comm {
             bool send(int id, const char *c);
             bool isReady(int id);
             bool sendAndWaitBestmove(int id, const std::string &cmd);
+            bool sendOption(int id, const std::string &name,
+                            const std::string &value);
             const std::vector<Line> &getResultLines(int id);
             bool destroy(int id);
             bool destroyAll();

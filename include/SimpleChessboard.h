@@ -79,10 +79,13 @@ namespace Board {
             virtual void init();
             virtual void clear();
             void set(std::string fenString) throw(InvalidFenException);
+            bool tryAndApplyMove(std::string &uciMove);
             bool tryMove(Move m);
             void undoMove();
-            const std::string pretty() const;
-            const std::string fen() const;
+            const std::vector<Move> &getMoves() const;
+            std::string getLastMove() const;
+            std::string pretty() const;
+            std::string fen() const;
             uint64_t hash() const;
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/

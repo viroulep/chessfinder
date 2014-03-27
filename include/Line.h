@@ -31,15 +31,15 @@ public:
     Line();
     Line(float ev, int depth, std::list<std::string> mv, bool isMat = false);
     //Return more readable format
-    std::string getPretty(bool invertEval);
-    std::string getPrettyEval(bool invertEval);
+    std::string getPretty(bool invertEval) const;
+    std::string getPrettyEval(bool invertEval) const;
 
     void update(Line &line);
-    bool isMat();
-    float getEval();
-    bool empty();
-    std::string firstMove();
-    const std::list<std::string> &getMoves();
+    bool isMat() const;
+    float getEval() const;
+    bool empty() const;
+    std::string firstMove() const;
+    const std::list<std::string> &getMoves() const;
     bool operator<(const Line &rhs);
 
     static bool compareLineLength(Line *lhs, Line *rhs);

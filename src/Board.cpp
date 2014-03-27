@@ -24,6 +24,8 @@
 #include "Utils.h"
 #include "Output.h"
 
+using namespace std;
+
 namespace Board {
 
     const string to_string(Board::Side theSide)

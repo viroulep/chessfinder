@@ -25,7 +25,6 @@
 #include <vector>
 #include <sstream>
 
-using namespace std;
 
 
 namespace Board {
@@ -44,7 +43,7 @@ namespace Board {
     };
     typedef unsigned int Rank;
 
-    const string to_string(Board::Side theSide);
+    const std::string to_string(Board::Side theSide);
     char to_char(File theFile);
     char to_char(Rank theRank);
 
@@ -58,7 +57,7 @@ namespace Board {
         Piece *getPiece();
         File getFile();
         Rank getRank();
-        const string to_string();
+        const std::string to_string();
 
     private:
         const File file_;
@@ -79,8 +78,8 @@ namespace Board {
         };
         static char to_char(Kind k);
         static char to_uci(Kind k);
-        const string to_string();
-        void prettyPrint(ostringstream &oss);
+        const std::string to_string();
+        void prettyPrint(std::ostringstream &oss);
         char to_char();
         //Useful because we don't want to print pawns 'P' in pgn
         char to_pgn();
@@ -113,19 +112,19 @@ namespace Board {
         Piece::Kind promoteTo = Piece::Kind::KING;
     } Move;
 
-    typedef string UCIMove;
-    typedef vector<UCIMove> LegalMoves;
+    typedef std::string UCIMove;
+    typedef std::vector<UCIMove> LegalMoves;
     //4 first element of fen
-    typedef string SimplePos;
+    typedef std::string SimplePos;
 
-    void squareFromString(string str, File *f, Rank *r);
+    void squareFromString(std::string str, File *f, Rank *r);
     Piece::Kind promotionFromChar(char p);
 
     uint16_t uciToPolyglotb(UCIMove &mv);
     UCIMove polyglotToUcib(uint16_t mv);
 
-    Side getSideFromString(string sidestr);
-    bool checkMove(string move);
+    Side getSideFromString(std::string sidestr);
+    bool checkMove(std::string move);
 }
 
 

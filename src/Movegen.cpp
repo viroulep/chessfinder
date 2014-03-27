@@ -43,30 +43,6 @@ namespace Board {
     if (is_ok(s) && (s == pos.enpassant() || pos.takes(from, s)))\
         sqList.insert(s);
 
-#define DISPATCH(datastructure, kind, function, ...) \
-    switch (kind) {\
-        case KNIGHT:\
-            datastructure = function<KNIGHT>(__VA_ARGS__);\
-        break;\
-        case BISHOP:\
-            datastructure = function<BISHOP>(__VA_ARGS__);\
-        break;\
-        case ROOK:\
-            datastructure = function<ROOK>(__VA_ARGS__);\
-        break;\
-        case QUEEN:\
-            datastructure = function<QUEEN>(__VA_ARGS__);\
-        break;\
-        case KING:\
-            datastructure = function<KING>(__VA_ARGS__);\
-        break;\
-        case PAWN:\
-            datastructure = function<PAWN>(__VA_ARGS__);\
-        break;\
-        default:\
-            break;\
-    }
-
     template<>
     set<Square> gen_reachable<KNIGHT>(const Square from, const Position &pos)
     {
@@ -368,7 +344,7 @@ namespace Board {
         return all;
     }
 
-#undef DISPATCH
+/*#undef DISPATCH*/
 #undef MOVE_EP
 #undef MOVE_LOOP
 }

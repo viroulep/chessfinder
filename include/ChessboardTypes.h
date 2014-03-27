@@ -27,6 +27,7 @@
 #include <assert.h>
 
 #include "Options.h"
+#include "Output.h"
 
 namespace Board {
 
@@ -147,26 +148,32 @@ namespace Board {
     }
 
     inline bool is_ok(Square s) {
-        bool ok = false;
         switch (Options::getInstance().getVariant()) {
             case GARDNER:
-                ok = (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_6
-                      && file_of(s) >= FILE_B && file_of(s) <= FILE_F);
+                return (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_6
+                        && file_of(s) >= FILE_B && file_of(s) <= FILE_F);
             case LOS_ALAMOS:
-                ok = (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_7
-                      && file_of(s) >= FILE_B && file_of(s) <= FILE_G);
-                break;
+                return (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_7
+                        && file_of(s) >= FILE_B && file_of(s) <= FILE_G);
             case STANDARD:
             default:
-                ok = s >= SQ_A1 && s <= SQ_H8;
+                return s >= SQ_A1 && s <= SQ_H8;
                 break;
         }
-        return ok;
     }
 
     inline bool front_or_back_rank(Rank r)
     {
-        return (r == RANK_1 || r == RANK_8);
+        switch (Options::getInstance().getVariant()) {
+            case GARDNER:
+                return (r == RANK_2 || r == RANK_6);
+            case LOS_ALAMOS:
+                return (r == RANK_2 || r == RANK_7);
+            case STANDARD:
+            default:
+                return (r == RANK_1 || r == RANK_8);
+                break;
+        }
     }
 
     /*
@@ -227,6 +234,23 @@ namespace Board {
         return c;
     }
 
+    inline PieceKind promotion_from_char(char c)
+    {
+        switch (c) {
+            case 'q':
+                return QUEEN;
+            case 'r':
+                return ROOK;
+            case 'b':
+                return BISHOP;
+            case 'n':
+                return KNIGHT;
+            default:
+                Err::handle("Invalid promotion from char !");
+                return NO_KIND;
+        }
+    }
+
     inline Square square_from_string(std::string &sq)
     {
         Square s = SQ_NONE;
@@ -238,6 +262,45 @@ namespace Board {
                 s = make_square(Rank(r - '1'), File(f - 'a'));
         }
         return s;
+    }
+
+    inline bool checkMove(const std::string &mv)
+    {
+        if (mv.size() < 4 || mv.size() > 5
+                || mv[0] > 'h' || mv[0] < 'a'
+                || mv[1] > '8' || mv[1] < '1'
+                || mv[2] > 'h' || mv[2] < 'a'
+                || mv[3] > '8' || mv[3] < '1')
+            return false;
+        else if (mv.size() == 5 && (
+                    mv[4] != 'q' || mv[4] != 'n'
+                    || mv[4] != 'b' || mv[4] != 'r'
+                    ))
+            return false;
+        else
+            return true;
+    }
+
+    inline Square sqFrom_from_uci(const std::string &mv)
+    {
+        if (!checkMove(mv))
+            return SQ_NONE;
+        std::string sqFrom = mv.substr(0,2);
+        return square_from_string(sqFrom);
+    }
+
+    inline bool move_from_uci(const std::string &mv, Square *from, Square *to,
+                              PieceKind *p)
+    {
+        if (!checkMove(mv))
+            return false;
+        if (mv.size() == 5)
+            *p = promotion_from_char(mv[4]);
+        std::string sqFrom = mv.substr(0,2);
+        std::string sqTo = mv.substr(2,2);
+        *from = square_from_string(sqFrom);
+        *to = square_from_string(sqTo);
+        return true;
     }
 
     /*
@@ -331,14 +394,6 @@ namespace Board {
                 retVal = "unknown";
         }
         return retVal;
-    }
-
-    //ALAMOS
-    inline bool is_in_alamos(Square s) {
-        return (!(rank_of(s) == RANK_8 ||
-                    rank_of(s) == RANK_1 ||
-                    file_of(s) == FILE_A ||
-                    file_of(s) == FILE_H));
     }
 }
 

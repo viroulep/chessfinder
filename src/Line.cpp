@@ -22,7 +22,9 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
+
 #include "Line.h"
+#include "Options.h"
 
 using namespace std;
 
@@ -38,7 +40,7 @@ Line::Line(float ev, int depth, list<string> mv, bool isMat) :
     moves_.insert(moves_.end(), mv.begin(), mv.end());
 }
 
-string Line::getPrettyEval(bool invertEval)
+string Line::getPrettyEval(bool invertEval) const
 {
 
     ostringstream out;
@@ -55,7 +57,7 @@ string Line::getPrettyEval(bool invertEval)
     return out.str();
 }
 
-string Line::getPretty(bool invertEval)
+string Line::getPretty(bool invertEval) const
 {
     ostringstream out;
 
@@ -73,9 +75,8 @@ string Line::getPretty(bool invertEval)
     out << ", line : ";
     list<string> tmpList = moves_;
     int i = 0;
-    /*TODO re-add dependency on options*/
-    /*while (!tmpList.empty() && i < Options::movesDisplayed) {*/
-    while (!tmpList.empty() && i < 5) {
+    /*TODO add number of displayed line to options*/
+    while (!tmpList.empty() && i < Options::getInstance().getMaxLines()) {
         out << tmpList.front();
         out << " ";
         tmpList.pop_front();
@@ -88,7 +89,7 @@ string Line::getPretty(bool invertEval)
     return out.str();
 }
 
-const list<string> &Line::getMoves()
+const list<string> &Line::getMoves() const
 {
     return moves_;
 }
@@ -104,22 +105,22 @@ void Line::update(Line &line)
     //update(line.eval_, line.depth_, line.moves_, line.isMat_);
 }
 
-bool Line::isMat()
+bool Line::isMat() const
 {
     return isMat_;
 }
 
-float Line::getEval()
+float Line::getEval() const
 {
     return eval_;
 }
 
-bool Line::empty()
+bool Line::empty() const
 {
     return moves_.empty();
 }
 
-string Line::firstMove()
+string Line::firstMove() const
 {
     return moves_.front();
 }

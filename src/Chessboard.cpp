@@ -30,6 +30,7 @@
 #include "Output.h"
 
 using namespace Board;
+using namespace std;
 Chessboard::~Chessboard()
 {
     Out::output("Deleting chessboard\n", 5);

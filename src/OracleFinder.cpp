@@ -39,9 +39,10 @@
 #include "Output.h"
 #include "Hashing.h"
 
+using namespace std;
+using namespace Board;
 
-
-OracleFinder::OracleFinder() : Finder()
+OracleFinder::OracleFinder(int comm) : Finder(comm)
 {
     //engine_side_ = cb_->getActiveSide();
     //engine_play_for_ = MatfinderOptions::getPlayFor();
@@ -95,7 +96,7 @@ void timeval_print(struct timeval *tv)
     printf(" = %s.%06ld\n", buffer, tv->tv_usec);
 }
 
-int OracleFinder::runFinderOnCurrentPosition()
+int OracleFinder::runFinderOnPosition(Position &pos)
 {
 #if 0
     int maxMoves = 254;
@@ -320,6 +321,7 @@ SortedLines OracleFinder::getLines()
     vector<Line *> balanced;
     vector<Line *> unbalanced;
     SortedLines retVal;
+#if 0
     for (int i = 0; i < (int) lines_.size(); ++i) {
         Line l = lines_[i];
         if (l.empty())
@@ -334,6 +336,7 @@ SortedLines OracleFinder::getLines()
     }
     retVal[0] = balanced;
     retVal[1] = unbalanced;
+#endif
     return retVal;
 }
 #if 0

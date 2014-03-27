@@ -30,7 +30,9 @@ using namespace std;
 
 UCIReceiver::UCIReceiver(Finder *finder) : finder_(finder)
 {
+#if 0
     input_ = new InputStream(finder_->getEngineOutRead());
+#endif
 }
 
 UCIReceiver::~UCIReceiver()
@@ -53,7 +55,9 @@ void *UCIReceiver::run()
 void UCIReceiver::readyok(istringstream &)
 {
     Out::output("Engine is ready.\n", 1);
+#if 0
     finder_->signalReadyok();
+#endif
 }
 
 void UCIReceiver::info(istringstream &is)
@@ -76,7 +80,9 @@ void UCIReceiver::info(istringstream &is)
             //Drop
         } else if (token == "time") {
             is >> curThinktime;
+#if 0
             finder_->updateThinktime(curThinktime);
+#endif
         } else if (token == "nodes") {
             //Drop
         } else if (token == "pv") {
@@ -107,7 +113,9 @@ void UCIReceiver::info(istringstream &is)
             cerr << "********** Hashfull : " << token << " *******\n";
         } else if (token == "nps") {
             is >> curNps;
+#if 0
             finder_->updateNps(curNps);
+#endif
         } else if (token == "tbhits") {
             //TODO
         } else if (token == "cpuload") {
@@ -127,7 +135,9 @@ void UCIReceiver::info(istringstream &is)
         }
         Line curLine(curEval, curDepth, curMoves, curIsMat);
         //Update the line in matFinder
+#if 0
         finder_->updateLine(curLineId - 1/*array in matFinder*/, curLine);
+#endif
     }
 }
 
@@ -141,7 +151,9 @@ void UCIReceiver::bestmove(istringstream &is)
     string bm;
     //consume bestmove
     is >> bm;
+#if 0
     finder_->signalBestmove(bm);
+#endif
 }
 
 int UCIReceiver::parseMessage(string msg)

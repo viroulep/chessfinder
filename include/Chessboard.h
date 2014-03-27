@@ -27,7 +27,6 @@
 #include "Board.h"
 #include "Line.h"
 
-using namespace Board;
 class HashTable;
 
 class Chessboard {
@@ -35,69 +34,69 @@ public:
     friend class HashTable;
 
     ~Chessboard();
-    const string to_string();
+    const std::string to_string();
     //Reinit the board with another pos
-    void reInitFromFEN(string fenString);
+    void reInitFromFEN(std::string fenString);
     //Return the pretty move
-    int uciApplyMove(string uciMove);
-    Move getMoveFromUci(string uciMove);
-    int uciApplyMoves(list<string> uciMoves);
+    int uciApplyMove(std::string uciMove);
+    Board::Move getMoveFromUci(std::string uciMove);
+    int uciApplyMoves(std::list<std::string> uciMoves);
     void undoMove();
     //Play the moves, backtrack them, then return
     //corresponding prettyMovesHistory
-    const string tryUciMoves(const list<string> &moves, int limit = -1);
+    const std::string tryUciMoves(const std::list<std::string> &moves, int limit = -1);
 
     /*Move comparators*/
     bool compareLines(Line *lhs, Line *rhs);
 
-    Side getActiveSide();
+    Board::Side getActiveSide();
 
-    const list<string> getUciMoves();
+    const std::list<std::string> getUciMoves();
 
-    const string exportToFEN();
+    const std::string exportToFEN();
 
     //Return true if board has sufficient material to not draw
     bool sufficientMaterial();
 
     static Chessboard *createChessboard();
-    static Chessboard *createFromFEN(string fenString);
+    static Chessboard *createFromFEN(std::string fenString);
 
-    static const string CHESS_STARTPOS;
-    static const string ALAMOS_STARTPOS;
-    static const string GARDNER_STARTPOS;
+    static const std::string CHESS_STARTPOS;
+    static const std::string ALAMOS_STARTPOS;
+    static const std::string GARDNER_STARTPOS;
 private:
     Chessboard();
 
-    Square *squareFromString(string str);
-    int applyMove(Move theMove);
-    bool isValidMove(Move theMove);
-    const string getPrettyMove(Move mv);
-    const string prettyHistoryToString();
-    const string historyToString();
+    Board::Square *squareFromString(std::string str);
+    int applyMove(Board::Move theMove);
+    bool isValidMove(Board::Move theMove);
+    const std::string getPrettyMove(Board::Move mv);
+    const std::string prettyHistoryToString();
+    const std::string historyToString();
 
     void clear();
-    void posFromFEN(string pos);
-    void sideFromFEN(string side);
-    void castleFromFEN(string castle);
-    void enpassantFromFEN(string ep);
-    void halfmoveCkFromFEN(string clock);
-    void fullmoveCkFromFEN(string clock);
+    void posFromFEN(std::string pos);
+    void sideFromFEN(std::string side);
+    void castleFromFEN(std::string castle);
+    void enpassantFromFEN(std::string ep);
+    void halfmoveCkFromFEN(std::string clock);
+    void fullmoveCkFromFEN(std::string clock);
 
     /*TODO restore*/
     /*MoveComparator *comparator_;*/
 
-    list<Piece *> takenPieces_;
-    list<Move> moveHistory_;
-    list<string> prettyMoveHistory_;
+    std::list<Board::Piece *> takenPieces_;
+    std::list<Board::Move> moveHistory_;
+    std::list<std::string> prettyMoveHistory_;
 
-    map<Board::File, map<Board::Rank, Board::Square*>> board_;
-    Side active_ = Side::WHITE;
+    std::map<Board::File, std::map<Board::Rank, Board::Square*>> board_;
+    Board::Side active_ = Board::Side::WHITE;
     //half moves since last pawn advance or capturing move
     int halfmoveClock_ = 0;
     //Number of moves. Incremented after each black move
     int fullmoveClock_ = 1;
     //enpassant square
-    Square *enpassant_ = NULL;
+    Board::Square *enpassant_ = NULL;
 
     int castle_ = 0x0;
 };

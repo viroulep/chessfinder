@@ -24,24 +24,24 @@
 
 #include <string>
 #include <vector>
-#include "Stream.h"
 #include "Line.h"
+#include "SimpleChessboard.h"
 #include "Finder.h"
 
-using namespace std;
 
 //Forward decl
 class UCIReceiver;
 
 class MatFinder : public Finder {
 public:
-    MatFinder();
+    MatFinder(int comm);
     virtual ~MatFinder();
 
 private:
-    int runFinderOnCurrentPosition();
-    int updateMultiPV();
-    Line &getBestLine();
+    int runFinderOnPosition(Board::Position &pos);
+    int computeMultiPV(const std::vector<Line> &lines);
+    const Line &getBestLine(const Board::Position &pos,
+                            const std::vector<Line> &lines);
     Line emptyLine_;
 
 

@@ -159,6 +159,74 @@ namespace Board {
         active_ = WHITE;
     }
 
+    void Position::set(string fenString) throw(InvalidFenException)
+    {
+        clear();
+        queue<string> infos;
+        stringstream ss(fenString);
+        string tmpInfo;
+        while (getline(ss, tmpInfo, ' '))
+            infos.push(tmpInfo);
+
+        //FEN has 6 data fields
+        if (infos.size() != 6)
+            throw InvalidFenException("fen must have 6 fields");
+
+        while (!infos.empty()) {
+            string info = infos.front();
+            switch (infos.size()) {
+                case 6:
+                    setPos(info);
+                    break;
+                case 5:
+                    setSide(info);
+                    break;
+                case 4:
+                    setCastle(info);
+                    break;
+                case 3:
+                    setEP(info);
+                    break;
+                case 2:
+                    setClock(info, startState_.halfmoveClock);
+                    break;
+                case 1:
+                    setClock(info, startState_.fullmoveClock);
+                    break;
+                default:
+                    break;
+
+            }
+            infos.pop();
+        }
+    }
+
+    bool Position::tryAndApplyMove(std::string &uciMove)
+    {
+        Square from = sqFrom_from_uci(uciMove);
+        if (!is_ok(from))
+            return false;
+        PieceKind k = kind_of(piece_on(from));
+        if (k == NO_KIND)
+            return false;
+        vector<Move> legalMoves;
+        DISPATCH(legalMoves, k, gen_moves, from, *this);
+        Move theMove;
+        theMove.from = SQ_NONE;
+        for (Move m : legalMoves) {
+            if (uciMove == move_to_string(m)) {
+                theMove = m;
+                break;
+            }
+        }
+        try {
+            applyMove(theMove);
+            return true;
+        } catch (InvalidMoveException e) {
+            return false;
+        }
+    }
+
     bool Position::tryMove(Move m)
     {
         try {
@@ -221,7 +289,20 @@ namespace Board {
             delete mSI;
     }
 
-    const string Position::pretty() const
+    const std::vector<Move> &Position::getMoves() const
+    {
+        return moves_;
+    }
+
+    std::string Position::getLastMove() const
+    {
+        if (moves_.empty())
+            return "NOMOVES";
+        Move last = moves_.back();
+        return move_to_string(last);
+    }
+
+    string Position::pretty() const
     {
         StateInfo st = *st_;
         const string RED = "\e[31;1m";
@@ -246,8 +327,11 @@ namespace Board {
                                 if (count != 0)
                                     oss << ", ";
                                 /*FIXME generate correct color*/
+                                Color cTaken = (color_of(m.moving) == WHITE) ?
+                                               BLACK : WHITE;
                                 oss << piece_to_string(
-                                        make_piece(WHITE, m.state->captured));
+                                        make_piece(cTaken, m.state->captured),
+                                        true);
                                 count++;
                             }
                         }
@@ -287,49 +371,7 @@ namespace Board {
         return oss.str();
     }
 
-    void Position::set(string fenString) throw(InvalidFenException)
-    {
-        clear();
-        queue<string> infos;
-        stringstream ss(fenString);
-        string tmpInfo;
-        while (getline(ss, tmpInfo, ' '))
-            infos.push(tmpInfo);
-
-        //FEN has 6 data fields
-        if (infos.size() != 6)
-            throw InvalidFenException("fen must have 6 fields");
-
-        while (!infos.empty()) {
-            string info = infos.front();
-            switch (infos.size()) {
-                case 6:
-                    setPos(info);
-                    break;
-                case 5:
-                    setSide(info);
-                    break;
-                case 4:
-                    setCastle(info);
-                    break;
-                case 3:
-                    setEP(info);
-                    break;
-                case 2:
-                    setClock(info, startState_.halfmoveClock);
-                    break;
-                case 1:
-                    setClock(info, startState_.fullmoveClock);
-                    break;
-                default:
-                    break;
-
-            }
-            infos.pop();
-        }
-    }
-
-    const string Position::fen() const {
+    string Position::fen() const {
 
         int emptyCnt;
         std::ostringstream ss;
@@ -533,6 +575,7 @@ namespace Board {
         StateInfo *next = new StateInfo;
         std::memcpy(next, st_, sizeof(StateInfo));
         next->enpassant = SQ_NONE;
+        next->captured = NO_KIND;
         next->halfmoveClock++;
         if (active_ == BLACK)
             next->fullmoveClock++;

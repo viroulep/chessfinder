@@ -36,10 +36,10 @@ public:
     ~UCIReceiver();
     void *run();
 private:
-    void bestmove(istringstream &is);
-    void readyok(istringstream &is);
-    void info(istringstream &is);
-    void option(istringstream &is);
+    void bestmove(std::istringstream &is);
+    void readyok(std::istringstream &is);
+    void info(std::istringstream &is);
+    void option(std::istringstream &is);
     InputStream *input_;
     Finder *finder_;
     int parseMessage(std::string msg);

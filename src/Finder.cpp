@@ -32,31 +32,13 @@
 #include "Utils.h"
 #include "Output.h"
 
+using namespace std;
+using namespace Board;
 
 
-Finder::Finder()
+Finder::Finder(int comm) : commId_(comm),
+                           pool_(Comm::UCICommunicatorPool::getInstance())
 {
-    int pipe_status;
-
-    // Create the pipes
-    // We do this before the fork so both processes will know about
-    // the same pipe and they can communicate.
-
-    pipe_status = pipe(in_fds_);
-    Err::handle("pipe() : Error creating the pipe", pipe_status);
-
-    pipe_status = pipe(out_fds_);
-    Err::handle("pipe() : Error creating the pipe", pipe_status);
-
-    pipe_status = pipe(err_fds_);
-    Err::handle("pipe() : Error creating the pipe", pipe_status);
-
-    engine_input_ = new OutputStream(getEngineInWrite());
-    receiver_input_ = new OutputStream(getEngineOutWrite());
-
-    //Create our UCIReceiver
-    uciReceiver_ = new UCIReceiver(this);
-
     //Arbitrary choice
 #if 0
     engine_play_for_ = Side::WHITE;
@@ -65,42 +47,13 @@ Finder::Finder()
 
 Finder::~Finder()
 {
-    // Close the pipes
-    close(getEngineInRead());
-    close(getEngineOutWrite());
-    close(getEngineErrWrite());
-    close(getEngineInWrite());
-    close(getEngineOutRead());
-    close(getEngineErrRead());
-    delete engine_input_;
-    delete receiver_input_;
-    if (uciReceiver_)
-        delete uciReceiver_;
-}
-
-int Finder::runEngine()
-{
-#if 0
-    // Engine part of the process
-    // Its only duty is to run the chessengine
-
-    // Tie the standard input, output and error streams to the
-    // appropiate pipe ends
-    // The file descriptor 0 is the standard input
-    // We tie it to the read end of the pipe as we will use
-    // this end of the pipe to read from it
-    dup2 (getEngineInRead(),0);
-    dup2 (getEngineOutWrite(),1);
-    dup2 (getEngineErrWrite(),2);
-
-
-    engine_.execEngine();
-#endif
-    return 0;
 }
 
 int Finder::runFinder()
 {
+    Position pos;
+    pos.set("rnb1kb1r/ppp1pppp/5n2/3q4/8/2N5/PPPP1PPP/R1BQKBNR w KQkq - 2 4");
+    runFinderOnPosition(pos);
 #if 0
     //Start the receiver
     Thread *thread = startReceiver();
@@ -160,170 +113,51 @@ int Finder::runFinder()
     return EXIT_SUCCESS;
 }
 
-void Finder::updateLine(int index, Line &line)
+void Finder::sendPositionToEngine(Board::Position &pos)
 {
-    if (index >= (int) lines_.size()) {
-        Err::handle("Index '" + to_string(index) + "' out of bound !");
-    }
-    lines_[index].update(line);
+    string position = "position fen ";
+    position += pos.fen();
+    pool_.send(commId_, position);
 }
 
 
-void Finder::sendCurrentPositionToEngine()
+string Finder::getPrettyLines(const Position &pos, const vector<Line> &lines)
 {
-#if 0
-    string fenPos = "position fen ";
-    fenPos += cb_->exportToFEN();
-    /*
-     *string position("position ");
-     *if (startpos_ != "startpos")
-     *    position += "fen ";
-     *position += startpos_;
-     *position += " ";
-     *const list<string> moves = cb_->getUciMoves();
-     *if (!moves.empty())
-     *    position += "moves ";
-     *for (list<string>::const_iterator it = moves.begin(), itEnd = moves.end();
-     *        it != itEnd; ++it)
-     *    position += (*it) + " ";
-     *sendToEngine(position);
-     */
-    sendToEngine(fenPos);
-#endif
-}
-
-void Finder::sendOptionToEngine(string optionName, string optionValue)
-{
-    string option("setoption");
-    option += " name ";
-    option += optionName;
-    option += " value ";
-    option += optionValue;
-    sendToEngine(option);
-}
-
-void Finder::sendToEngine(string cmd)
-{
-    string toSend(cmd);
-    toSend += "\n";
-    Out::output(toSend, 3);
-    (*engine_input_) << toSend;
-}
-
-void Finder::updateNps(int newNps)
-{
-    nps_ = newNps;
-}
-
-void Finder::updateThinktime(int newThinktime)
-{
-    thinktime_ = newThinktime;
-}
-
-void Finder::signalReadyok()
-{
-    pthread_mutex_lock(&readyok_mutex_);
-    Out::output("Signaling readyok_cond", 5);
-    pthread_cond_signal(&readyok_cond_);
-    pthread_mutex_unlock(&readyok_mutex_);
-}
-
-void Finder::signalBestmove(string &)
-{
-    pthread_mutex_lock(&bestmove_mutex_);
-    Out::output("Signaling bestmove_cond", 5);
-    pthread_cond_signal(&bestmove_cond_);
-    pthread_mutex_unlock(&bestmove_mutex_);
-}
-
-string Finder::getPrettyLines()
-{
-    ostringstream oss;
+    string retVal;
     Line curLine;
-    for (int i = 0; i < (int) lines_.size(); ++i) {
-        curLine = lines_[i];
-        if (!curLine.empty()) {
-            oss << "\t[";
-            oss << (i + 1);
-            oss << "] ";
-            oss << getPrettyLine(curLine, MatfinderOptions::movesDisplayed);
-            oss << "\n";
+    int i = 0;
+    for (Line cur : lines) {
+        if (!cur.empty()) {
+            retVal += "\t[" + to_string(++i) + "] ";
+            retVal += cur.getPretty(pos.side_to_move() == BLACK);
+            retVal += "\n";
         }
+        if (i >= Options::getInstance().getMaxLines())
+            break;
     }
-    return oss.str();
+    return retVal;
 }
 
-string Finder::getPrettyLine(Line &line, int limit)
+/*FIXME : really useful ?*/
+string Finder::getPrettyLine(const Position &pos, const Line &line)
 {
-#if 0
-    ostringstream oss;
-    oss << line.getPrettyEval(cb_->getActiveSide() == Side::BLACK);
-    oss << " : ";
-    oss << cb_->tryUciMoves(line.getMoves(), limit);
-    return oss.str();
-#endif
-    return "";
+    string retVal;
+    retVal += line.getPrettyEval(pos.side_to_move() == BLACK);
+    retVal += " : ";
+    auto moves = line.getMoves();
+    int i = 0;
+    for (string m : moves) {
+        if (i++ < Options::getInstance().getMaxLines())
+            break;
+        if (i > 0)
+            retVal += " ";
+        retVal += m;
+    }
+    /*oss << cb_->tryUciMoves(line.getMoves(), limit);*/
+    return retVal;
 }
 
 /*
  * These are private
  */
-
-#if 0
-Thread *Finder::startReceiver()
-{
-    //Starts in separate thread, so that it's handled background
-    Thread *thread = new Thread(static_cast<Runnable *>(uciReceiver_));
-    thread->start();
-    return thread;
-}
-#endif
-
-void Finder::waitReadyok()
-{
-    pthread_mutex_lock(&readyok_mutex_);
-    struct timespec ts;
-    Utils::getTimeout(&ts, MatfinderOptions::isreadyTimeout);
-    pthread_cond_timedwait(&readyok_cond_,
-            &readyok_mutex_,
-            &ts);
-    pthread_mutex_unlock(&readyok_mutex_);
-}
-
-void Finder::waitBestmove()
-{
-    pthread_mutex_lock(&bestmove_mutex_);
-    pthread_cond_wait(&bestmove_cond_, &bestmove_mutex_);
-    pthread_mutex_unlock(&bestmove_mutex_);
-}
-
-int Finder::getEngineInRead()
-{
-    return in_fds_[0];
-}
-
-int Finder::getEngineInWrite()
-{
-    return in_fds_[1];
-}
-
-int Finder::getEngineOutRead()
-{
-    return out_fds_[0];
-}
-
-int Finder::getEngineOutWrite()
-{
-    return out_fds_[1];
-}
-
-int Finder::getEngineErrRead()
-{
-    return err_fds_[0];
-}
-
-int Finder::getEngineErrWrite()
-{
-    return err_fds_[1];
-}
 

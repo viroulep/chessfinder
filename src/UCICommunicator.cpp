@@ -396,6 +396,16 @@ namespace Comm {
         return (send(id, cmd)) ? waitForBestmove(id) : false;
     }
 
+    bool UCICommunicatorPool::sendOption(int id, const string &name,
+                                         const string &value)
+    {
+        UCICommunicator *engine;
+        if ((engine = get(id))) {
+            engine->sendOption(name, value);
+        }
+        return isReady(id);
+    }
+
     const vector<Line> &UCICommunicatorPool::getResultLines(int id)
     {
         UCICommunicator *engine;
@@ -447,7 +457,8 @@ namespace Comm {
         if (pool_.count(id) > 0 && pool_[id].first->ok())
             return pool_[id].first;
         else {
-            Out::output("Warning : Unknown UCICommunicator id : " + to_string(id), 2);
+            Out::output("Warning : Unknown UCICommunicator id : "
+                        + to_string(id) + "\n", 2);
             return nullptr;
         }
     }

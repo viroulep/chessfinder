@@ -30,14 +30,17 @@
 
 #include "Utils.h"
 #include "Output.h"
-#include "Line.h"
+#include "Options.h"
+/*#include "Line.h"*/
 #include "MatFinder.h"
-#include "CommonMain.h"
-#include "MatfinderOptions.h"
+#include "OracleFinder.h"
+/*#include "MatfinderOptions.h"*/
+/*#include "CommonMain.h"*/
 
 using namespace std;
 
-void CommonMain::parseArgs(int argc, char **argv)
+
+void parseArgs(int argc, char **argv)
 {
     //Program options
     const static struct option long_options[] =
@@ -75,7 +78,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'v':
                 try {
-                    MatfinderOptions::setVerboseLevel(stoi(optarg));
+                    /*MatfinderOptions::setVerboseLevel(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing verbose level");
                 }
@@ -86,29 +89,31 @@ void CommonMain::parseArgs(int argc, char **argv)
                 break;
 
             case 'e':
-                MatfinderOptions::setEngine(optarg);
+                /*MatfinderOptions::setEngine(optarg);*/
                 break;
 
             case 'i':
-                posList = Utils::positionListFromFile(optarg);
-                MatfinderOptions::setPositionList(posList);
+                /*posList = Utils::positionListFromFile(optarg);*/
+                /*MatfinderOptions::setPositionList(posList);*/
                 break;
 
             case 'p':
-                MatfinderOptions::setPath(optarg);
+                /*MatfinderOptions::setPath(optarg);*/
                 break;
 
             case 'm':
-                moveList.clear();
-                if (Utils::parseMovelist(moveList, optarg))
-                    Err::handle("Error parsing movelist");
+                /*
+                 *moveList.clear();
+                 *if (Utils::parseMovelist(moveList, optarg))
+                 *    Err::handle("Error parsing movelist");
+                 */
                 //Adding the move is done after this loop
                 //MatfinderOptions::setUserMoves(moveList);
                 break;
 
             case 'l':
                 try {
-                    MatfinderOptions::setMaxLines(stoi(optarg));
+                    /*MatfinderOptions::setMaxLines(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing lines option");
                 }
@@ -116,7 +121,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 't':
                 try {
-                    MatfinderOptions::setHashmapSize(stoi(optarg));
+                    /*MatfinderOptions::setHashmapSize(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing hasmap size");
                 }
@@ -124,7 +129,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'c':
                 try {
-                    MatfinderOptions::setCpTreshold(stoi(optarg));
+                    /*MatfinderOptions::setCpTreshold(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing centipawn treshold");
                 }
@@ -132,7 +137,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'f':
                 try {
-                    MatfinderOptions::setPlayforMovetime(stoi(optarg));
+                    /*MatfinderOptions::setPlayforMovetime(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing playfor movetime");
                 }
@@ -140,7 +145,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'a':
                 try {
-                    MatfinderOptions::setPlayagainstMovetime(stoi(optarg));
+                    /*MatfinderOptions::setPlayagainstMovetime(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing playagainst movetime");
                 }
@@ -152,7 +157,7 @@ void CommonMain::parseArgs(int argc, char **argv)
                 break;
 
             case 'o':
-                MatfinderOptions::setOutputFile(optarg);
+                /*MatfinderOptions::setOutputFile(optarg);*/
                 break;
 
             case 'u':
@@ -160,12 +165,12 @@ void CommonMain::parseArgs(int argc, char **argv)
                 break;
 
             case 'n':
-                MatfinderOptions::setInputFile(optarg);
+                /*MatfinderOptions::setInputFile(optarg);*/
                 break;
 
             case 'w':
                 try {
-                    MatfinderOptions::setMateEquiv(stoi(optarg));
+                    /*MatfinderOptions::setMateEquiv(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing mateq value");
                 }
@@ -173,7 +178,7 @@ void CommonMain::parseArgs(int argc, char **argv)
 
             case 'x':
                 try {
-                    MatfinderOptions::setEngineThreads(stoi(optarg));
+                    /*MatfinderOptions::setEngineThreads(stoi(optarg));*/
                 } catch (...) {
                     Err::handle("Error parsing engine threads");
                 }
@@ -191,14 +196,16 @@ void CommonMain::parseArgs(int argc, char **argv)
         startingPos = "startpos";
 
     if (startingPos.size() > 0)
-        MatfinderOptions::addPositionToList(startingPos, moveList);
+        Options::getInstance().addPositionToList(startingPos, moveList);
 
 }
 
-
-int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
+int main(int argc, char **argv)
 {
-    Out::output(MatfinderOptions::getPretty(), 1);
+    parseArgs(argc, argv);
+
+
+    /*Out::output(Options::getInstance().getPretty(), 1);*/
 
     // Child error signal install
     struct sigaction action;
@@ -209,34 +216,40 @@ int CommonMain::theMain(int argc, char **argv, Finder *theFinder)
         Err::handle("SIGUSR1 install error");
     }
 
+    Config defconf;
+    Options &options = Options::getInstance();
+    options.addConfig(defconf);
 
-    pid_t pid;
-    // Create child process; both processes continue from here
-    pid = fork();
+    /*Setup some engine options*/
+    Comm::EngineOptions engine_options;
+    engine_options.insert(make_pair("MultiPV", "254"));
+    engine_options.insert(make_pair("UCI_AnalyseMode", "true"));
 
-    if (pid == pid_t(0))
-    {
-        /*theFinder->runEngine();*/
+    Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
 
-        // We should never reach this point
-        // Tell the parent the exec failed
-        kill(getppid(), SIGUSR1);
-        Err::handle("Engine execution failed");
-        exit(EXIT_FAILURE);
+    /*Create the engine and its communicator*/
+    int commId = pool.create<Comm::LocalUCICommunicator>(
+                                   Options::getInstance().getEngineFullpath(),
+                                   engine_options);
 
-    } else if (pid > pid_t(0)) {
+    //The main object
+#ifdef MATFINDER
+    MatFinder *theFinder = new MatFinder(commId);
+#elif ORACLEFINDER
+    OracleFinder *theFinder = new OracleFinder(commId);
+#else
+    Finder *theFinder = nullptr;
+#endif
 
-        //Run the finder
+    //Run the finder
+    if (theFinder) {
         int rt = theFinder->runFinder();
 
         Err::handle("runfinder()", rt);
 
-        //Kill the child to exit properly
-        kill(pid, SIGTERM);
-        /*MatfinderOptions::setMoveComparator(nullptr);*/
-    } else {
-        Err::handle("Error: fork failed");
+        Out::output("Deleting Finder", 5);
+        delete theFinder;
     }
-
+    /*CommonMain::theMain(argc, argv, theFinder);*/
     return 0;
 }

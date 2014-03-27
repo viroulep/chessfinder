@@ -26,15 +26,15 @@
 #include <unistd.h>
 #include "Finder.h"
 #include "MatFinder.h"
-#include "MatfinderOptions.h"
-#include "Stream.h"
-#include "UCIReceiver.h"
 #include "Utils.h"
 #include "Output.h"
+#include "UCICommunicator.h"
 
 
+using namespace std;
+using namespace Board;
 
-MatFinder::MatFinder() : Finder()
+MatFinder::MatFinder(int comm) : Finder(comm)
 {
 }
 
@@ -43,89 +43,83 @@ MatFinder::~MatFinder()
 }
 
 
-int MatFinder::runFinderOnCurrentPosition()
+int MatFinder::runFinderOnPosition(Position &pos)
 {
-#if 0
-    Board::Side sideToMove = cb_->getActiveSide();
+    Color sideToMove = pos.side_to_move();
+    /*playFor should be the weaker side*/
+    playFor_ = sideToMove;
+    Options opt = Options::getInstance();
 
-    Out::output("Starting board is :\n" + cb_->to_string() + "\n");
+    Out::output("Starting board is :\n" + pos.pretty() + "\n");
     Out::output("Doing some basic evaluation on submitted position...\n");
+    pool_.sendOption(commId_, "MultiPV", "8");
 
-    sendCurrentPositionToEngine();
-    lines_.assign(MatfinderOptions::getMaxLines(), Line());
-    sendToEngine("go movetime "
-            + to_string(MatfinderOptions::getPlayforMovetime()));
-    waitBestmove();
+    sendPositionToEngine(pos);
+    string init = "go movetime " + to_string(opt.getPlayforMovetime());
+    pool_.sendAndWaitBestmove(commId_, init);
+
+    const vector<Line> &lines = pool_.getResultLines(commId_);
+
     Out::output("Evaluation is :\n");
-    Out::output(getPrettyLines());
-    //TODO: check
-    if (!lines_[0].empty()) {
-        Side winning;
-        if ((lines_[0].getEval() < 0 && sideToMove == Side::WHITE)
-                || (lines_[0].getEval() > 0 && sideToMove == Side::BLACK))
-            winning = Side::BLACK;
+    Out::output(getPrettyLines(pos, lines));
+    if (!lines[0].empty()) {
+        if ((lines[0].getEval() < 0 && sideToMove == WHITE)
+                || (lines[0].getEval() > 0 && sideToMove == BLACK))
+            playFor_ = BLACK;
         else
-            winning = Side::WHITE;
-        engine_play_for_ = (winning == Side::WHITE)?
-            Side::BLACK:Side::WHITE;
-
+            playFor_ = WHITE;
+        playFor_ = (playFor_ == WHITE)? BLACK : WHITE;
     }
-    Out::output("Engine will play for : "
-            + Board::to_string(engine_play_for_) + "\n");
+    Out::output("Engine will play for : " + color_to_string(playFor_) + "\n");
+
 
 
     //Main loop
     while (true) {
+        Color active = pos.side_to_move();
         Line bestLine;
-        Side active = cb_->getActiveSide();
 
-        Out::output("[" + Board::to_string(active)
-                + "] Depth " + to_string(addedMoves_) + "\n");
+        Out::output("[" + color_to_string(active) + "] Depth "
+                    + to_string(addedMoves_) + "\n");
 
-        sendCurrentPositionToEngine();
+        sendPositionToEngine(pos);
 
-        Out::output(cb_->to_string(), 2);
+        Out::output(pos.pretty(), 2);
 
         //Thinking according to the side the engine play for
-        int moveTime = (active == engine_play_for_ || !addedMoves_) ?
-            MatfinderOptions::getPlayforMovetime() :
-            MatfinderOptions::getPlayagainstMovetime();
+        int moveTime = (active == playFor_ || !addedMoves_) ?
+                        Options::getInstance().getPlayforMovetime() :
+                        Options::getInstance().getPlayagainstMovetime();
 
         //Compute optimal multipv
-        int pv = updateMultiPV();
+        int pv = computeMultiPV(lines);
 
 
         //Scaling moveTime
         //According to number of lines
         moveTime = (int)(moveTime * ((float)
-                    ((float)pv/(float)MatfinderOptions::getMaxLines())
+                    ((float)pv/(float)Options::getInstance().getMaxLines())
                     ));
         if (moveTime <= 600)
             moveTime = 600;
         //Acccording to depth
         moveTime += 10 * addedMoves_;
 
-        //Initialize vector with empty lines
-        lines_.assign(MatfinderOptions::getMaxLines(), Line());
-
         //Increase movetime with depth
-        sendToEngine("go movetime " + to_string(moveTime));
+        pool_.sendAndWaitBestmove(commId_,
+                                  "go movetime " + to_string(moveTime));
 
-        Out::output("[" + Board::to_string(active)
-                + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
+        Out::output("[" + color_to_string(active) + "] Thinking... ("
+                    + to_string(moveTime) + ")\n", 1);
 
-        //Wait for engine to finish thinking
-        waitBestmove();
-
-        Out::output(getPrettyLines(), 2);
-        bestLine = getBestLine();
+        Out::output(getPrettyLines(pos, lines), 2);
+        bestLine = getBestLine(pos, lines);
         if (bestLine.empty() || bestLine.isMat() ||
-                fabs(bestLine.getEval()) > MatfinderOptions::getMateEquiv()) {
-            //Handle the case where we should backtrack
+                fabs(bestLine.getEval()) > Options::getInstance().getMateTreshold()) {
+            /*Handle the case where we should backtrack*/
             if (addedMoves_ > 0) {
-                Out::output("\tBacktracking " + cb_->getUciMoves().back()
-                    + " (addedMove#" + to_string(addedMoves_)
-                    + ")\n");
+                Out::output("\tBacktracking " + pos.getLastMove()
+                            + " (addedMove#" + to_string(addedMoves_) + ")\n");
 
                 /*
                  * We did a "mistake" : a line previously unbalanced is now a
@@ -137,90 +131,91 @@ int MatFinder::runFinderOnCurrentPosition()
 
                 //Remove opposite side previous move
                 addedMoves_--;
-                cb_->undoMove();
+                pos.undoMove();
 
-                if (active == engine_play_for_) {
-                    //Remove our previous move if we had one, since the
-                    //mat is "recorded" by engine
-                    //(not the case if starting side is not the side
-                    //the engine play for)
+                if (active == playFor_) {
+                    /*
+                     *Remove our previous move if we had one, since the
+                     *mat is "recorded" by engine
+                     *(not the case if starting side is not the side
+                     *the engine play for)
+                     */
                     if (addedMoves_ > 0) {
                         addedMoves_--;
-                        cb_->undoMove();
+                        pos.undoMove();
                     }
                 }
                 continue;
             } else {
-                //This is the end (hold your breath and count to ten)
+                /*This is the end (hold your breath and count to ten)*/
                 break;
             }
         }
 
-        //If we are here, we just need to handle the next move
-        Out::output("[" + Board::to_string(active)
+        /*If we are here, we just need to handle the next move*/
+        Out::output("[" + color_to_string(active)
                 + "] Chosen line : \n", 1);
-        Out::output("\t" + getPrettyLine(bestLine,
-                    MatfinderOptions::movesDisplayed) + "\n", 1);
+        Out::output("\t" + getPrettyLine(pos, bestLine) + "\n", 1);
 
         string next = bestLine.firstMove();
         Out::output("\tNext move is " + next + "\n", 3);
         addedMoves_++;
-        cb_->uciApplyMove(next);
+        if (!pos.tryAndApplyMove(next))
+            Err::handle("Invalid Move !");
     }
 
     //Display info at the end of computation
     Out::output("[End] Finder is done. Starting board was : \n");
-    Out::output(cb_->to_string() + "\n");
+    Out::output(pos.pretty() + "\n");
 
-    if (engine_play_for_ == sideToMove)
+    if (playFor_ == sideToMove)
         Out::output("All lines should now be draw or mat :\n");
     else
         Out::output("Best line should be mat or draw.\n");
-    Out::output(getPrettyLines());
+    Out::output(getPrettyLines(pos, lines));
     Out::output("[End] Full best line is : \n");
-    Out::output("[End] " + getPrettyLine(lines_[0]) + "\n");
-    Out::output("[End] " + Utils::listToString(lines_[0].getMoves()) + "\n");
-#endif
+    Out::output("[End] " + getPrettyLine(pos, lines[0]) + "\n");
+    Out::output("[End] " + Utils::listToString(lines[0].getMoves()) + "\n");
     return 0;
 }
 
 
-int MatFinder::updateMultiPV()
+int MatFinder::computeMultiPV(const vector<Line> &lines)
 {
     int diffLimit = 800;
-    int multiPV = MatfinderOptions::getMaxLines();
+    int multiPV = Options::getInstance().getMaxLines();
     int lastEvalValue = 0;
     bool lastEvalMat = false;
     bool allMat = true;
     int nonEmptyLines = 0;
-    for (int i = 0; i < (int) lines_.size(); ++i)
-        if (!lines_[i].empty())
+    for (int i = 0; i < (int) lines.size(); ++i)
+        if (!lines[i].empty())
             nonEmptyLines++;
     Out::output("Non empty : " + to_string(nonEmptyLines) + "\n", 3);
-    for (int i = 0; i < (int) lines_.size(); ++i) {
+    for (int i = 0; i < (int) lines.size(); ++i) {
         if (i > 0) {
             if (lastEvalMat
-                || fabs(lines_[i].getEval() - lastEvalValue) > diffLimit) {
+                || fabs(lines[i].getEval() - lastEvalValue) > diffLimit) {
                 Out::output("Eval/lastEval : "
-                        + to_string(lines_[i].getEval())
+                        + to_string(lines[i].getEval())
                         + "/" + to_string(lastEvalValue), 3);
                 multiPV = i;
                 allMat &= lastEvalMat;
                 break;
             }
         }
-        allMat &= lines_[i].isMat();
-        lastEvalValue = lines_[i].getEval();
-        lastEvalMat = lines_[i].isMat();
+        allMat &= lines[i].isMat();
+        lastEvalValue = lines[i].getEval();
+        lastEvalMat = lines[i].isMat();
     }
     if (allMat)
-        multiPV = MatfinderOptions::getMaxLines();
+        multiPV = Options::getInstance().getMaxLines();
 
     if (multiPV != nonEmptyLines) {
         Out::output("Updating MultiPV to " + to_string(multiPV) + "\n", 2);
-        sendOptionToEngine("MultiPV", to_string(multiPV));
-        sendToEngine("isready");
-        waitReadyok();
+        pool_.sendOption(commId_, "MultiPV", to_string(multiPV));
+        if (!pool_.isReady(commId_))
+            Err::handle("Unable to update MultiPV");
     }
     return multiPV;
 }
@@ -228,31 +223,30 @@ int MatFinder::updateMultiPV()
 /**
  * This function determine the "best" line to follow
  */
-Line &MatFinder::getBestLine()
+const Line &MatFinder::getBestLine(const Position &pos,
+                                   const vector<Line> &lines)
 {
-#if 0
-    Side active = cb_->getActiveSide();
-    for (int i = 0; i < (int) lines_.size(); ++i) {
-        int limit = MatfinderOptions::getCpTreshold();
+    Color active = pos.side_to_move();
+    for (int i = 0; i < (int) lines.size(); ++i) {
+        int limit = Options::getInstance().getCutoffTreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
-        if (lines_[i].isMat()) {
+        if (lines[i].isMat()) {
             //Best line is closed !
-            return lines_[i];
+            return lines[i];
         } else {
-            if (fabs(lines_[i].getEval()) > limit) {
+            if (fabs(lines[i].getEval()) > limit) {
                 //We should only considered lost positions according to
                 //the side the engine play for
-                if ((lines_[i].getEval() < 0 && active == engine_play_for_) ||
-                        (lines_[i].getEval() > 0 && active != engine_play_for_))
-                    return lines_[i];
+                if ((lines[i].getEval() < 0 && active == playFor_) ||
+                        (lines[i].getEval() > 0 && active != playFor_))
+                    return lines[i];
             } else {
                 //If the line is a draw we don't want it
                 return emptyLine_;
             }
         }
     }
-#endif
     //if all are draw, return the same line
     return emptyLine_;
 

@@ -24,58 +24,59 @@
 
 #include <string>
 #include <vector>
-#include "Stream.h"
 #include "Line.h"
+#include "SimpleChessboard.h"
+#include "UCICommunicator.h"
 
-using namespace std;
 
 //Forward decl
 class UCIReceiver;
 
 class Finder {
 public:
-    Finder();
+    Finder(int comm);
     ~Finder();
     int runFinder();
-    int runEngine();
+    /*int runEngine();*/
 
     //Used by the UCIReceiver
-    void updateLine(int index, Line &line);
-    void updateNps(int newNps);
-    void updateThinktime(int newThinktime);
-    int getEngineOutRead();
-    void signalReadyok();
-    void signalBestmove(string &bestmove);
+    /*void updateLine(int index, Line &line);*/
+    /*void updateNps(int newNps);*/
+    /*void updateThinktime(int newThinktime);*/
+    /*int getEngineOutRead();*/
+    /*void signalReadyok();*/
+    /*void signalBestmove(string &bestmove);*/
 
     //General purpose methods
     //FIXME: make these private
-    string getPrettyLines();
-    string getPrettyLine(Line &line, int limit = -1);
-
 protected:
-    virtual int runFinderOnCurrentPosition() = 0;
+    virtual int runFinderOnPosition(Board::Position &pos) = 0;
     /*Thread *startReceiver();*/
-    void sendCurrentPositionToEngine();
-    void sendOptionToEngine(string optionName, string optionValue);
-    void sendToEngine(string cmd);
-    void waitReadyok();
-    void waitBestmove();
+    void sendPositionToEngine(Board::Position &pos);
+    std::string getPrettyLines(const Board::Position &pos,
+                               const std::vector<Line> &lines);
+    std::string getPrettyLine(const Board::Position &pos, const Line &line);
+
+    /*void sendOptionToEngine(string optionName, string optionValue);*/
+    /*void sendToEngine(string cmd);*/
+    /*void waitReadyok();*/
+    /*void waitBestmove();*/
     //TODO: think about getter's visibility...
-    int getEngineInRead();
-    int getEngineInWrite();
-    int getEngineOutWrite();
-    int getEngineErrRead();
-    int getEngineErrWrite();
+    /*int getEngineInRead();*/
+    /*int getEngineInWrite();*/
+    /*int getEngineOutWrite();*/
+    /*int getEngineErrRead();*/
+    /*int getEngineErrWrite();*/
 
 
-    int in_fds_[2], out_fds_[2], err_fds_[2];
-    OutputStream *engine_input_;
-    OutputStream *receiver_input_;
-    UCIReceiver *uciReceiver_;
-    pthread_cond_t readyok_cond_ = PTHREAD_COND_INITIALIZER;
-    pthread_mutex_t readyok_mutex_ = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t bestmove_cond_ = PTHREAD_COND_INITIALIZER;
-    pthread_mutex_t bestmove_mutex_ = PTHREAD_MUTEX_INITIALIZER;
+    /*int in_fds_[2], out_fds_[2], err_fds_[2];*/
+    /*OutputStream *engine_input_;*/
+    /*OutputStream *receiver_input_;*/
+    /*UCIReceiver *uciReceiver_;*/
+    /*pthread_cond_t readyok_cond_ = PTHREAD_COND_INITIALIZER;*/
+    /*pthread_mutex_t readyok_mutex_ = PTHREAD_MUTEX_INITIALIZER;*/
+    /*pthread_cond_t bestmove_cond_ = PTHREAD_COND_INITIALIZER;*/
+    /*pthread_mutex_t bestmove_mutex_ = PTHREAD_MUTEX_INITIALIZER;*/
 
     //Engine specific members
     /*Engine engine_;*/
@@ -84,19 +85,24 @@ protected:
     /*Chessboard *cb_ = NULL;*/
 
     //The starting pos
-    string startpos_ = "startpos";
+    /*std::string startpos_ = "startpos";*/
 
     //NOTE: sorting is done by engine, according to the active side
-    vector<Line> lines_;
+    /*std::vector<Line> lines_;*/
 
-    /*Board::Side engine_play_for_;*/
+    Board::Color playFor_;
 
     //Number of moves "played" by the finder
-    int addedMoves_;
+    int addedMoves_ = 0;
+
+    /*Id of our communicator*/
+    int commId_;
+
+    Comm::UCICommunicatorPool &pool_;
 
     //TODO ?
-    int nps_ = 0;
-    int thinktime_ = 0;
+    /*int nps_ = 0;*/
+    /*int thinktime_ = 0;*/
 
 };
 

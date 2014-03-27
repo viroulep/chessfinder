@@ -27,12 +27,10 @@
 #include <list>
 #include <vector>
 #include <unordered_map>
-#include "Stream.h"
 #include "Line.h"
 #include "Finder.h"
 #include "Hashing.h"
 
-using namespace std;
 
 //Forward decl
 class UCIReceiver;
@@ -41,27 +39,27 @@ class UCIReceiver;
 
 
 
-typedef array<vector<Line *>, 2> SortedLines;
+typedef std::array<std::vector<Line *>, 2> SortedLines;
 
 class OracleFinder : public Finder {
 public:
-    OracleFinder();
+    OracleFinder(int comm);
     virtual ~OracleFinder();
 
 private:
-    int runFinderOnCurrentPosition();
+    int runFinderOnPosition(Board::Position &pos);
     SortedLines getLines();
 #if 0
     Board::LegalMoves getAllMoves();
 #endif
-    void proceedUnbalancedLines(vector<Line *> unbalanced);
+    void proceedUnbalancedLines(std::vector<Line *> unbalanced);
     void pushAllLines(Node *currentNode);
     bool cutNode(Node *currentNode);
     HashTable *oracleTable_;
     /*
      *Node *rootNode_ = NULL;
      */
-    list<Node *> toProceed_;
+    std::list<Node *> toProceed_;
 };
 
 #endif

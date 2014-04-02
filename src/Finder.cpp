@@ -37,12 +37,9 @@ using namespace Board;
 
 
 Finder::Finder(int comm) : commId_(comm),
-                           pool_(Comm::UCICommunicatorPool::getInstance())
+                           pool_(Comm::UCICommunicatorPool::getInstance()),
+                           opt_(Options::getInstance())
 {
-    //Arbitrary choice
-#if 0
-    engine_play_for_ = Side::WHITE;
-#endif
 }
 
 Finder::~Finder()
@@ -51,65 +48,31 @@ Finder::~Finder()
 
 int Finder::runFinder()
 {
-    Position pos;
-    pos.set("rnb1kb1r/ppp1pppp/5n2/3q4/8/2N5/PPPP1PPP/R1BQKBNR w KQkq - 2 4");
-    runFinderOnPosition(pos);
-#if 0
-    //Start the receiver
-    Thread *thread = startReceiver();
+    /*pos.set("rnb1kb1r/ppp1pppp/5n2/3q4/8/2N5/PPPP1PPP/R1BQKBNR w KQkq - 2 4");*/
+
+    const PositionList &allPositions = opt_.getPositionList();
+
+    for (auto startinpos : allPositions) {
+        Position pos;
+        /*Extract infos from pair*/
+        pos.set(startinpos.first);
+        list<string> userMoves = startinpos.second;
+
+        Out::output("Running finder on \"" + pos.fen() + "\", with moves : "
+                    + Utils::listToString(userMoves) + "\n");
 
 
-
-    //Send some commands, init etc...
-    sendToEngine("uci");
-    sendOptionToEngine("Hash", to_string(MatfinderOptions::getHashmapSize()));
-    sendOptionToEngine("UCI_AnalyseMode", "true");
-    sendOptionToEngine("MultiPV", to_string(MatfinderOptions::getMaxLines()));
-    sendOptionToEngine("Threads", to_string(MatfinderOptions::getEngineThreads()));
-    sendToEngine("ucinewgame");
-
-    sendToEngine("isready");
-
-    waitReadyok();
-
-    const PositionList &allPositions = MatfinderOptions::getPositionList();
-
-    for (PositionList::const_iterator it = allPositions.begin(),
-            itEnd = allPositions.end(); it != itEnd; ++it) {
-        //Extract infos from pair
-        string pos = (*it).first;
-        string fenpos = (pos == "startpos")?engine_.getEngineStartpos():pos;
-        list<string> userMoves = (*it).second;
-
-        Out::output("Running finder on \"" + pos + "\", with moves : "
-                + Utils::listToString(userMoves) + "\n");
-
-
-        //TODO: usereinit chessboard
-        //Build chessboard
-        cb_ = Chessboard::createFromFEN(fenpos);
-        //Apply user moves
-        cb_->uciApplyMoves(userMoves);
-
-        //Fresh finder
-        startpos_ = pos;
+        /*Fresh finder*/
         addedMoves_ = 0;
+        /*Run*/
+        runFinderOnPosition(pos, userMoves);
 
-        //Run
-        runFinderOnCurrentPosition();
-
-        delete cb_;
     }
+
     if (allPositions.empty())
         Out::output("No position to run the finder on. Please adjust"\
-                " --startingpos and/or --position_file\n");
+                    " --startingpos and/or --position_file\n");
 
-    Out::output("Exiting receiver and joining threads\n", 4);
-    (*receiver_input_) << "quit\n";
-
-    thread->join();
-    delete thread;
-#endif
     return EXIT_SUCCESS;
 }
 
@@ -132,7 +95,7 @@ string Finder::getPrettyLines(const Position &pos, const vector<Line> &lines)
             retVal += cur.getPretty(pos.side_to_move() == BLACK);
             retVal += "\n";
         }
-        if (i >= Options::getInstance().getMaxLines())
+        if (i >= opt_.getMaxLines())
             break;
     }
     return retVal;
@@ -147,7 +110,7 @@ string Finder::getPrettyLine(const Position &pos, const Line &line)
     auto moves = line.getMoves();
     int i = 0;
     for (string m : moves) {
-        if (i++ < Options::getInstance().getMaxLines())
+        if (i++ < opt_.getMaxLines())
             break;
         if (i > 0)
             retVal += " ";

@@ -34,11 +34,8 @@ namespace Utils {
     std::string helpMessage();
     std::string listToString(const std::list<std::string> &theList);
     void getTimeout(struct timespec *ts, int seconds);
-    extern const std::string RED;
-    extern const std::string RESET;
 
     //FIXME: should belong to board ?
-    int parseMovelist(std::list<std::string> &theList, std::string moves);
     PositionList positionListFromFile(std::string fileName);
 }
 #endif

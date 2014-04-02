@@ -25,9 +25,10 @@
 #include <string>
 #include <list>
 
-#include "ConfigParser.h"
 
 
+class MoveComparator;
+class Config;
 
 typedef std::list<std::pair<std::string, std::list<std::string>>> PositionList;
 
@@ -41,6 +42,8 @@ class Options {
     public:
 
         Variant getVariant() const;
+        void setVariant(std::string sv);
+
         const std::string &getInputFile() const;
         const std::string &getOutputFile() const;
 
@@ -54,11 +57,18 @@ class Options {
         int getCutoffTreshold() const;
         int getPlayforMovetime() const;
         int getPlayagainstMovetime() const;
+
         int getVerboseLevel() const;
+        void setVerboseLevel(int level);
+
         int getMaxMoves() const;
 
         int getMateTreshold() const;
         int getMaxLines() const;
+
+        MoveComparator *getMoveComparator() const;
+        void setMoveComparator(MoveComparator *mc);
+        void setMoveComparator(std::string smc);
 
         const PositionList &getPositionList();
         void setPositionList(PositionList &theList);
@@ -89,6 +99,8 @@ class Options {
         int maxLines_ = 8;
 
         PositionList positions_;
+
+        MoveComparator *comp_ = nullptr;
 
         static Options instance_;
 };

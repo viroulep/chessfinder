@@ -31,11 +31,9 @@
 #include "Utils.h"
 #include "Output.h"
 #include "Options.h"
-/*#include "Line.h"*/
+#include "ConfigParser.h"
 #include "MatFinder.h"
 #include "OracleFinder.h"
-/*#include "MatfinderOptions.h"*/
-/*#include "CommonMain.h"*/
 
 using namespace std;
 
@@ -48,20 +46,12 @@ void parseArgs(int argc, char **argv)
         {"help", no_argument, 0, 'h'},
         {"verbose", required_argument, 0, 'v'},
         {"startpos", required_argument, 0, 's'},
-        {"engine", required_argument, 0, 'e'},
-        {"path", required_argument, 0, 'p'},
         {"moves", required_argument, 0, 'm'},
-        {"lines", required_argument, 0, 'l'},
-        {"position_file", required_argument, 0, 'i'},
-        {"hashmap_size", required_argument, 0, 't'},
-        {"pf_movetime", required_argument, 0, 'f'},
-        {"pa_movetime", required_argument, 0, 'a'},
-        {"cp_treshold", required_argument, 0, 'c'},
+        {"position_file", required_argument, 0, 'f'},
         {"output_file", required_argument, 0, 'o'},
-        {"input_file", required_argument, 0, 'n'},
-        {"mateq", required_argument, 0, 'w'},
-        {"engine_threads", required_argument, 0, 'x'},
-        {"comparator", required_argument, 0, 'u'},
+        {"input_file", required_argument, 0, 'i'},
+        {"config_file", required_argument, 0, 'c'},
+        {0, 0, 0, 0}
     };
 
     int c;
@@ -70,15 +60,17 @@ void parseArgs(int argc, char **argv)
     string startingPos;
     list<string> moveList;
     PositionList posList;
+    Options &opt_instance = Options::getInstance();
 
     while ((c = getopt_long(argc, argv,
-                "hi:v:s:e:p:m:l:t:c:f:a:o:u:n:w:x:",
+                /*"hi:v:s:e:p:m:l:t:c:f:a:o:u:n:w:x:",*/
+                "hv:s:m:f:o:i:c:",
                 long_options, &option_index)) != -1) {
         switch (c) {
 
             case 'v':
                 try {
-                    /*MatfinderOptions::setVerboseLevel(stoi(optarg));*/
+                    opt_instance.setVerboseLevel(stoi(optarg));
                 } catch (...) {
                     Err::handle("Error parsing verbose level");
                 }
@@ -88,66 +80,24 @@ void parseArgs(int argc, char **argv)
                 startingPos = optarg;
                 break;
 
-            case 'e':
-                /*MatfinderOptions::setEngine(optarg);*/
-                break;
-
-            case 'i':
-                /*posList = Utils::positionListFromFile(optarg);*/
-                /*MatfinderOptions::setPositionList(posList);*/
-                break;
-
-            case 'p':
-                /*MatfinderOptions::setPath(optarg);*/
+            case 'f':
+                posList = Utils::positionListFromFile(optarg);
+                opt_instance.setPositionList(posList);
                 break;
 
             case 'm':
-                /*
-                 *moveList.clear();
-                 *if (Utils::parseMovelist(moveList, optarg))
-                 *    Err::handle("Error parsing movelist");
-                 */
-                //Adding the move is done after this loop
-                //MatfinderOptions::setUserMoves(moveList);
-                break;
-
-            case 'l':
-                try {
-                    /*MatfinderOptions::setMaxLines(stoi(optarg));*/
-                } catch (...) {
-                    Err::handle("Error parsing lines option");
-                }
-                break;
-
-            case 't':
-                try {
-                    /*MatfinderOptions::setHashmapSize(stoi(optarg));*/
-                } catch (...) {
-                    Err::handle("Error parsing hasmap size");
-                }
+                moveList.clear();
+                if (Board::parseMovelist(moveList, optarg))
+                    Err::handle("Error parsing movelist");
+                /*Adding the move is done after this loop*/
                 break;
 
             case 'c':
                 try {
-                    /*MatfinderOptions::setCpTreshold(stoi(optarg));*/
+                    Config user(optarg);
+                    opt_instance.addConfig(user);
                 } catch (...) {
-                    Err::handle("Error parsing centipawn treshold");
-                }
-                break;
-
-            case 'f':
-                try {
-                    /*MatfinderOptions::setPlayforMovetime(stoi(optarg));*/
-                } catch (...) {
-                    Err::handle("Error parsing playfor movetime");
-                }
-                break;
-
-            case 'a':
-                try {
-                    /*MatfinderOptions::setPlayagainstMovetime(stoi(optarg));*/
-                } catch (...) {
-                    Err::handle("Error parsing playagainst movetime");
+                    Err::handle("Unable to load user-defined configuration file");
                 }
                 break;
 
@@ -157,31 +107,11 @@ void parseArgs(int argc, char **argv)
                 break;
 
             case 'o':
-                /*MatfinderOptions::setOutputFile(optarg);*/
-                break;
-
-            case 'u':
-                /*MatfinderOptions::setMoveComparator(optarg);*/
+                opt_instance.setOutputFile(optarg);
                 break;
 
             case 'n':
-                /*MatfinderOptions::setInputFile(optarg);*/
-                break;
-
-            case 'w':
-                try {
-                    /*MatfinderOptions::setMateEquiv(stoi(optarg));*/
-                } catch (...) {
-                    Err::handle("Error parsing mateq value");
-                }
-                break;
-
-            case 'x':
-                try {
-                    /*MatfinderOptions::setEngineThreads(stoi(optarg));*/
-                } catch (...) {
-                    Err::handle("Error parsing engine threads");
-                }
+                opt_instance.setInputFile(optarg);
                 break;
 
             case '?':
@@ -192,9 +122,6 @@ void parseArgs(int argc, char **argv)
                 abort ();
         }
     }
-    if (startingPos.size() == 0 && moveList.size() > 0)
-        startingPos = "startpos";
-
     if (startingPos.size() > 0)
         Options::getInstance().addPositionToList(startingPos, moveList);
 
@@ -202,6 +129,14 @@ void parseArgs(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    try {
+        Config defconf;
+        Options &options = Options::getInstance();
+        options.addConfig(defconf);
+    } catch (...) {
+        Out::output("No default configuration file found\n");
+    }
+
     parseArgs(argc, argv);
 
 
@@ -216,9 +151,6 @@ int main(int argc, char **argv)
         Err::handle("SIGUSR1 install error");
     }
 
-    Config defconf;
-    Options &options = Options::getInstance();
-    options.addConfig(defconf);
 
     /*Setup some engine options*/
     Comm::EngineOptions engine_options;

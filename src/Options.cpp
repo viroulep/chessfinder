@@ -21,7 +21,9 @@
  */
 #include <sstream>
 #include "Options.h"
+#include "ConfigParser.h"
 #include "Output.h"
+#include "CompareMove.h"
 
 using namespace std;
 
@@ -30,6 +32,18 @@ Options Options::instance_ = Options();
 Variant Options::getVariant() const
 {
     return variant_;
+}
+
+void Options::setVariant(string sv)
+{
+    if (sv == "standard")
+        variant_ = STANDARD;
+    else if (sv == "gardner")
+        variant_ = GARDNER;
+    else if (sv == "alamos" || sv == "losalamos")
+        variant_ = LOS_ALAMOS;
+    else
+        Err::handle("Unrecognize chess variant : " + sv);
 }
 
 const string &Options::getInputFile() const
@@ -87,6 +101,11 @@ int Options::getVerboseLevel() const
     return verboseLevel_;
 }
 
+void Options::setVerboseLevel(int level)
+{
+    verboseLevel_ = level;
+}
+
 int Options::getMaxMoves() const
 {
     return maxMoves_;
@@ -101,6 +120,38 @@ int Options::getMaxLines() const
 {
     return maxLines_;
 }
+
+MoveComparator *Options::getMoveComparator() const
+{
+    if (!comp_)
+        Err::handle("MoveComparator used but not initialized");
+    return comp_;
+}
+
+void Options::setMoveComparator(MoveComparator *mc)
+{
+    if (comp_)
+        delete comp_;
+    comp_ = mc;
+}
+
+void Options::setMoveComparator(string smc)
+{
+    MoveComparator *mc = nullptr;
+    if (smc == "map") {
+        mc = new MapMoveComparator;
+    } else if (smc == "default") {
+        mc = new DefaultMoveComparator;
+     /*Sample adding of a comparator :*/
+    /*} else if (smc == "sample") {*/
+        /*mc = new SampleMoveComparator;*/
+    } else {
+        Err::handle("Unknown move comparator : " + smc);
+    }
+    setMoveComparator(mc);
+}
+
+
 
 const PositionList &Options::getPositionList()
 {
@@ -145,6 +196,10 @@ void Options::addConfig(Config &conf)
     val = conf("engine", "threads");
     PARSE_INTVAL(engineThreads_, "threads number");
 
+    val = conf("engine", "variant");
+    if (val)
+        setVariant(val);
+
     /*Getting Finder configuration*/
     val = conf("finder", "cutoff_treshold");
     PARSE_INTVAL(finderCutoffTreshold_, "cutoff_treshold");
@@ -165,6 +220,10 @@ void Options::addConfig(Config &conf)
     val = conf("matfinder", "mate_treshold");
     PARSE_INTVAL(mateTreshold_, "mate_treshold");
 
+    /*Getting OracleFinder specific configuration*/
+    val = conf("oraclefinder", "comparator");
+    if (val)
+        setMoveComparator(val);
 }
 
 #undef PARSE_INTVAL

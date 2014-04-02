@@ -29,16 +29,14 @@
 #include "Finder.h"
 
 
-//Forward decl
-class UCIReceiver;
-
 class MatFinder : public Finder {
 public:
     MatFinder(int comm);
     virtual ~MatFinder();
 
 private:
-    int runFinderOnPosition(Board::Position &pos);
+    int runFinderOnPosition(const Board::Position &pos,
+                            const std::list<std::string> &moves);
     int computeMultiPV(const std::vector<Line> &lines);
     const Line &getBestLine(const Board::Position &pos,
                             const std::vector<Line> &lines);

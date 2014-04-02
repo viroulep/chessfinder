@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <string>
+#include <sstream>
 #include <assert.h>
 
 #include "Options.h"
@@ -280,6 +281,26 @@ namespace Board {
         else
             return true;
     }
+
+    inline int parseMovelist(std::list<std::string> &theList,
+                             std::istringstream &is)
+    {
+        Out::output("Parsing moves.\n", 3);
+        std::string mv;
+        while (is >> std::skipws >> mv) {
+            if (!checkMove(mv))
+                return 1;
+            theList.push_back(mv);
+        }
+        return 0;
+    }
+
+    inline int parseMovelist(std::list<std::string> &theList, std::string moves)
+    {
+        std::istringstream is(moves);
+        return parseMovelist(theList, is);
+    }
+
 
     inline Square sqFrom_from_uci(const std::string &mv)
     {

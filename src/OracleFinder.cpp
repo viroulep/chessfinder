@@ -31,13 +31,13 @@
 #include <ctime>
 
 #include "Finder.h"
+#include "ChessboardTypes.h"
 #include "OracleFinder.h"
-#include "MatfinderOptions.h"
 #include "Stream.h"
-#include "UCIReceiver.h"
 #include "Utils.h"
 #include "Output.h"
 #include "Hashing.h"
+#include "Movegen.h"
 
 using namespace std;
 using namespace Board;
@@ -46,13 +46,13 @@ OracleFinder::OracleFinder(int comm) : Finder(comm)
 {
     //engine_side_ = cb_->getActiveSide();
     //engine_play_for_ = MatfinderOptions::getPlayFor();
-    string inputFilename = MatfinderOptions::getInputFile();
+    string inputFilename = opt_.getInputFile();
     if (inputFilename.size() > 0) {
         Out::output("Loading table from " + inputFilename + ".\n", 2);
         ifstream inputFile(inputFilename, ios::binary);
         if (!inputFile.good())
             Err::handle("Unable to load table from file "
-                    + inputFilename);
+                        + inputFilename);
         oracleTable_ = HashTable::fromPolyglot(inputFile);
     } else {
         Out::output("Creating new empty table.\n", 2);
@@ -62,7 +62,7 @@ OracleFinder::OracleFinder(int comm) : Finder(comm)
 
 OracleFinder::~OracleFinder()
 {
-    string outputFilename = MatfinderOptions::getOutputFile();
+    string outputFilename = opt_.getOutputFile();
     if (outputFilename.size() > 0) {
         Out::output("Saving table to " + outputFilename + ".\n", 2);
         ofstream outputFile(outputFilename, ios::binary);
@@ -76,6 +76,7 @@ OracleFinder::~OracleFinder()
 }
 
 /* Return 1 if the difference is negative, otherwise 0.  */
+#if 0
 int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
 {
     long int diff = (t2->tv_usec + 1000000 * t2->tv_sec) - (t1->tv_usec + 1000000 * t1->tv_sec);
@@ -95,8 +96,10 @@ void timeval_print(struct timeval *tv)
     strftime(buffer, 30, "%m-%d-%Y  %T", localtime(&curtime));
     printf(" = %s.%06ld\n", buffer, tv->tv_usec);
 }
+#endif
 
-int OracleFinder::runFinderOnPosition(Position &pos)
+int OracleFinder::runFinderOnPosition(const Position &pos,
+                                      const list<string> &moves)
 {
 #if 0
     int maxMoves = 254;
@@ -174,10 +177,13 @@ int OracleFinder::runFinderOnPosition(Position &pos)
         lines_.assign(maxMoves, Line());
 
         if (engine_play_for_ != active) {
+            /*We are on a node where the opponent has to play*/
             current->st = Node::AGAINST;
-            sendToEngine("go depth 1");
-            waitBestmove();
-            pushAllLines(current);
+            proceedAgainstNode(pos, current);
+            /*FIXME generate moves with pos*/
+            /*sendToEngine("go depth 1");*/
+            /*waitBestmove();*/
+            /*pushAllLines(current);*/
             continue;
         }
 
@@ -315,29 +321,21 @@ int OracleFinder::runFinderOnPosition(Position &pos)
 
 
 
-SortedLines OracleFinder::getLines()
+void OracleFinder::getLines(const vector<Line> all, vector<Line> &balanced,
+                            vector<Line> &unbalanced)
 {
-    /*TODO refactor this to take references instead of pointers*/
-    vector<Line *> balanced;
-    vector<Line *> unbalanced;
-    SortedLines retVal;
-#if 0
-    for (int i = 0; i < (int) lines_.size(); ++i) {
-        Line l = lines_[i];
+    for (Line l : all) {
+        /*TODO check if break would work*/
         if (l.empty())
             continue;
-        int limit = MatfinderOptions::getCpTreshold();
+        int limit = opt_.getCutoffTreshold();
         if (l.isMat())
-            unbalanced.push_back(&(lines_[i]));
+            unbalanced.push_back(l);
         else if (fabs(l.getEval()) <= limit)
-            balanced.push_back(&(lines_[i]));
+            balanced.push_back(l);
         else
-            unbalanced.push_back(&(lines_[i]));
+            unbalanced.push_back(l);
     }
-    retVal[0] = balanced;
-    retVal[1] = unbalanced;
-#endif
-    return retVal;
 }
 #if 0
 Board::LegalMoves OracleFinder::getAllMoves()
@@ -362,64 +360,55 @@ Board::LegalMoves OracleFinder::getAllMoves()
 }
 #endif
 
-/*TODO refactor this to "addlines to hashtable"*/
-void OracleFinder::proceedUnbalancedLines(vector<Line *> unbalanced)
+void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
 {
-#if 0
-    //Do not check access, assume Line * is legal addr
-    for (int i = 0; i < (int) unbalanced.size(); ++i) {
-        Line *l = unbalanced[i];
-        if (!l)
-            Err::handle("An unbalanced line is null ("
-                    + to_string(i) + ")");
-        Node::Status s = Node::TRESHOLD;
-        if (l->isMat())
-            s = Node::MATE;
-        Node *toAdd = new Node();
-        vector<MoveNode> moves;
-        string next = l->firstMove();
-        toAdd->legal_moves = moves;
-        cb_->uciApplyMove(next);
-        toAdd->pos = cb_->exportToFEN();
-        uint64_t hash = HashTable::hashBoard(cb_);
-        cb_->undoMove();
-        toAdd->st = s;
-        pair<uint64_t, Node *> p(hash, toAdd);
-        oracleTable_->insert(p);
-    }
-#endif
-}
-
-void OracleFinder::pushAllLines(Node *currentNode)
-{
-#if 0
+    vector<Move> all = gen_all(pos);
     /*
-     * This function is to be called on "opposite" node, since we need
-     * to push all node for the side we "play for".
+     * Push all node for the side we "play for".
      * eg: if we are building an oracle for white, we need to push all
      * possible white positions when computing a black node.
      */
     Out::output("Push all lines : ", 2);
-    for (Line l : lines_) {
-        /*Stop at the first empty line*/
-        if (l.empty())
-            break;
+    for (Move m : all) {
+        string uciMv = move_to_string(m);
         Out::output("+", 2);
-        Board::UCIMove mv = l.firstMove();
-        cb_->uciApplyMove(mv);
-        SimplePos sp = cb_->exportToFEN();
-        cb_->undoMove();
+        if (!pos.tryAndApplyMove(m))
+            Err::handle("Illegal move pushed ! (While proceeding against Node)");
+        string fen = pos.fen();
+        pos.undoMove();
         Node *next = new Node();
-        next->pos = sp;
+        next->pos = fen;
         toProceed_.push_front(next);
-        MoveNode move(mv, next);
-        currentNode->legal_moves.push_back(move);
+        MoveNode move(uciMv, next);
+        againstNode->legal_moves.push_back(move);
     }
     Out::output("\n", 2);
-#endif
 }
 
-bool OracleFinder::cutNode(Node *)
+/*TODO refactor this to "addlines to hashtable"*/
+void OracleFinder::proceedUnbalancedLines(Position &pos,
+                                          vector<Line> &unbalanced)
+{
+    for (Line l : unbalanced) {
+        Node::Status s = Node::TRESHOLD;
+        if (l.isMat())
+            s = Node::MATE;
+        Node *toAdd = new Node();
+        vector<MoveNode> moves;
+        string next = l.firstMove();
+        toAdd->legal_moves = moves;
+        if (!pos.tryAndApplyMove(next))
+            Err::handle("Illegal move pushed ! (In an unbalanced line)");
+        toAdd->pos = pos.fen();
+        uint64_t hash = pos.hash();
+        pos.undoMove();
+        toAdd->st = s;
+        pair<uint64_t, Node *> p(hash, toAdd);
+        oracleTable_->insert(p);
+    }
+}
+
+bool OracleFinder::cutNode(const Position &pos, const Node *currentNode)
 {
     /*TODO evaluate if we should process this node or not, according to
      * the chessboard state.*/

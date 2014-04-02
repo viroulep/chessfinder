@@ -219,8 +219,13 @@ namespace Board {
                 break;
             }
         }
+        return tryAndApplyMove(theMove);
+    }
+
+    bool Position::tryAndApplyMove(Move m)
+    {
         try {
-            applyMove(theMove);
+            applyMove(m);
             return true;
         } catch (InvalidMoveException e) {
             return false;
@@ -326,7 +331,6 @@ namespace Board {
                             if (m.state->captured != NO_KIND) {
                                 if (count != 0)
                                     oss << ", ";
-                                /*FIXME generate correct color*/
                                 Color cTaken = (color_of(m.moving) == WHITE) ?
                                                BLACK : WHITE;
                                 oss << piece_to_string(
@@ -682,12 +686,14 @@ namespace Board {
             char c;
             while ((c = *crank++)) {
                 Square s = make_square(r, f);
-                if (!is_ok(s))
-                    throw InvalidFenException("Current square is invalid");
                 if (c >= '1' && c <= '8') {
                     //should rotate through files
                     f += File(c - '0');
                 } else {
+                    if (!is_ok(s))
+                        throw InvalidFenException("Current square ("
+                                                  + square_to_string(s)
+                                                  + ") is invalid");
                     Piece p = piece_from_char(c);
                     if (p == NO_PIECE)
                         throw InvalidFenException("Unrecognize char in position");

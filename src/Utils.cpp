@@ -24,6 +24,7 @@
 #include <fstream>
 
 #include "Utils.h"
+#include "ChessboardTypes.h"
 #include "Output.h"
 
 using namespace std;
@@ -136,9 +137,6 @@ namespace Utils {
         return oss.str();
     }
 
-    const string RED = "\e[31;1m";
-    const string RESET = "\e[0m";
-
     string listToString(const list<string> &theList)
     {
         ostringstream oss;
@@ -152,20 +150,6 @@ namespace Utils {
             oss << (*it);
         }
         return oss.str();
-    }
-
-    int parseMovelist(list<string> &theList, string moves)
-    {
-        istringstream is(moves);
-        Out::output("Parsing moves : " + moves + "\n", 3);
-        string mv;
-        while (is >> skipws >> mv) {
-            /*TODO restore the check*/
-            /*if (!Board::checkMove(mv))*/
-                /*return 1;*/
-            theList.push_back(mv);
-        }
-        return 0;
     }
 
     PositionList positionListFromFile(string fileName)
@@ -211,14 +195,8 @@ namespace Utils {
                         if (token.size() > 0)
                             Err::handle("Unrecognize token \"" + token + "\"");
                     } else {
-                        Out::output("Parsing moves\n", 3);
-                        string mv;
-                        while (is >> skipws >> mv) {
-                            /*TODO restore check*/
-                            /*if (!Board::checkMove(mv))*/
-                                /*handleError("Error parsing move list");*/
-                            moves.push_back(mv);
-                        }
+                        Err::handle("parseMovelist",
+                                    Board::parseMovelist(moves, is));
                     }
                 } else
                     Out::output("End of input\n");

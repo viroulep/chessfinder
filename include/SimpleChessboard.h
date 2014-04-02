@@ -80,6 +80,7 @@ namespace Board {
             virtual void clear();
             void set(std::string fenString) throw(InvalidFenException);
             bool tryAndApplyMove(std::string &uciMove);
+            bool tryAndApplyMove(Move m);
             bool tryMove(Move m);
             void undoMove();
             const std::vector<Move> &getMoves() const;

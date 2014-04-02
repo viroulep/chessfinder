@@ -85,11 +85,11 @@ const string Chessboard::to_string()
                     oss << "| Halfmove clock : " << halfmoveClock_ << "\n";
                 } else if (r == 5) {
                     oss << "| ";
-                    if (active_ == Side::BLACK)
-                        oss << Utils::RED;
+                    /*if (active_ == Side::BLACK)*/
+                        /*oss << Utils::RED;*/
                     oss << Board::to_string(active_);
-                    if (active_ == Side::BLACK)
-                        oss << Utils::RESET;
+                    /*if (active_ == Side::BLACK)*/
+                        /*oss << Utils::RESET;*/
                     oss << " to move.\n";
                 } else if (r == 4) {
                     oss << "| Enpassant : ";

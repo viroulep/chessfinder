@@ -1,5 +1,6 @@
 [engine]
     path = /usr/local/bin/stockfish
+    variant = standard
     hashmap_size = 2048
     threads = 2
 [finder]
@@ -9,4 +10,6 @@
     playagainst_movetime = 300
 [matfinder]
     lines = 8
-    mate_threshold = 10000
+    mate_treshold = 8000
+[oraclefinder]
+    comparator = map

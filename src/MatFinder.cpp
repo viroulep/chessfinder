@@ -43,8 +43,17 @@ MatFinder::~MatFinder()
 }
 
 
-int MatFinder::runFinderOnPosition(Position &pos)
+int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
 {
+    Position pos;
+    pos.set(p.fen());
+    for (string mv : moves) {
+        pos.tryAndApplyMove(mv);
+    }
+    string startingFen = pos.fen();
+    pos.clear();
+    pos.set(startingFen);
+
     Color sideToMove = pos.side_to_move();
     /*playFor should be the weaker side*/
     playFor_ = sideToMove;

@@ -32,29 +32,24 @@
 #include "Hashing.h"
 
 
-//Forward decl
-class UCIReceiver;
-
-
-
-
-
-typedef std::array<std::vector<Line *>, 2> SortedLines;
-
 class OracleFinder : public Finder {
 public:
     OracleFinder(int comm);
     virtual ~OracleFinder();
 
 private:
-    int runFinderOnPosition(Board::Position &pos);
-    SortedLines getLines();
+    int runFinderOnPosition(const Board::Position &pos,
+                            const std::list<std::string> &moves);
+    void getLines(const std::vector<Line> all, std::vector<Line> &balanced,
+                  std::vector<Line> &unbalanced);
 #if 0
     Board::LegalMoves getAllMoves();
 #endif
-    void proceedUnbalancedLines(std::vector<Line *> unbalanced);
-    void pushAllLines(Node *currentNode);
-    bool cutNode(Node *currentNode);
+    void proceedAgainstNode(Board::Position &pos, Node *againstNode);
+    void proceedUnbalancedLines(Board::Position &pos,
+                                std::vector<Line> &unbalanced);
+    void pushAllLines(std::vector<Line &> lines, Node *currentNode);
+    bool cutNode(const Board::Position &pos, const Node *currentNode);
     HashTable *oracleTable_;
     /*
      *Node *rootNode_ = NULL;

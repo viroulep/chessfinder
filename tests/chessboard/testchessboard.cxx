@@ -24,9 +24,10 @@
 #include <algorithm>
 #include <cstdlib>
 
+#include "Options.h"
 #include "Movegen.h"
 #include "Output.h"
-#include "Options.h"
+#include "ConfigParser.h"
 #include "SimpleChessboard.h"
 #include "UCICommunicator.h"
 

@@ -50,7 +50,8 @@ public:
     //General purpose methods
     //FIXME: make these private
 protected:
-    virtual int runFinderOnPosition(Board::Position &pos) = 0;
+    virtual int runFinderOnPosition(const Board::Position &pos,
+                                    const std::list<std::string> &moves) = 0;
     /*Thread *startReceiver();*/
     void sendPositionToEngine(Board::Position &pos);
     std::string getPrettyLines(const Board::Position &pos,
@@ -92,13 +93,16 @@ protected:
 
     Board::Color playFor_;
 
-    //Number of moves "played" by the finder
+    /*Number of moves "played" by the finder*/
     int addedMoves_ = 0;
 
     /*Id of our communicator*/
     int commId_;
 
     Comm::UCICommunicatorPool &pool_;
+
+    /*Options instance*/
+    Options &opt_;
 
     //TODO ?
     /*int nps_ = 0;*/

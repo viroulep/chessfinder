@@ -180,11 +180,11 @@ namespace Board {
 
     void Piece::prettyPrint(ostringstream &oss)
     {
-        if (getColor() == Side::BLACK)
-            oss << Utils::RED;
+        /*if (getColor() == Side::BLACK)*/
+            /*oss << Utils::RED;*/
         oss << this->to_char();
-        if (getColor() == Side::BLACK)
-            oss << Utils::RESET;
+        /*if (getColor() == Side::BLACK)*/
+            /*oss << Utils::RESET;*/
     }
 
     char Piece::to_char()

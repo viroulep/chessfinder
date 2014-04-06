@@ -25,15 +25,17 @@ bool MoveComparator::compare(Board::Move &lhs, Board::Move &rhs)
 
 bool CompareMove::compareTake(Move &lhs, Move &rhs)
 {
-    if (lhs.state->captured == NO_KIND && rhs.state->captured == NO_KIND)
+    /*if (lhs.state->captured == NO_KIND && rhs.state->captured == NO_KIND)*/
+    if (lhs.captured == NO_KIND && rhs.captured == NO_KIND)
         return false;
-    else if (lhs.state->captured != NO_KIND && rhs.state->captured == NO_KIND)
+    /*else if (lhs.state->captured != NO_KIND && rhs.state->captured == NO_KIND)*/
+    else if (lhs.captured != NO_KIND && rhs.captured == NO_KIND)
         return true;
-    else if (lhs.state->captured == NO_KIND && rhs.state->captured != NO_KIND)
+    else if (lhs.captured == NO_KIND && rhs.captured != NO_KIND)
         return false;
     else {
-        PieceKind lhsP = lhs.state->captured;
-        PieceKind rhsP = rhs.state->captured;
+        PieceKind lhsP = lhs.captured;
+        PieceKind rhsP = rhs.captured;
         return lhsP > rhsP;
     }
 }
@@ -78,7 +80,8 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
     // promotion/Prise/ pion prioritaire
     if (mv.type == PROMOTION) {
         encodedMove = 0x3;
-    } else if (mv.state->captured != NO_KIND) {
+    /*} else if (mv.state->captured != NO_KIND) {*/
+    } else if (mv.captured != NO_KIND) {
         encodedMove = 0x2;
     } else if (kind_of(pf) == PAWN) {
         encodedMove = 0x1;

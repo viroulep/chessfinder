@@ -273,10 +273,11 @@ namespace Board {
                 || mv[2] > 'h' || mv[2] < 'a'
                 || mv[3] > '8' || mv[3] < '1')
             return false;
-        else if (mv.size() == 5 && (
-                    mv[4] != 'q' || mv[4] != 'n'
-                    || mv[4] != 'b' || mv[4] != 'r'
-                    ))
+        else if (mv.size() == 5
+                 && mv[4] != 'q'
+                 && mv[4] != 'n'
+                 && mv[4] != 'b'
+                 && mv[4] != 'r')
             return false;
         else
             return true;
@@ -285,7 +286,6 @@ namespace Board {
     inline int parseMovelist(std::list<std::string> &theList,
                              std::istringstream &is)
     {
-        Out::output("Parsing moves.\n", 3);
         std::string mv;
         while (is >> std::skipws >> mv) {
             if (!checkMove(mv))

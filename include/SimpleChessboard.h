@@ -26,6 +26,7 @@
 #include <set>
 
 #include "ChessboardTypes.h"
+#include "Line.h"
 
 namespace Board {
     /*TODO get rid of exceptions with retval*/
@@ -51,7 +52,7 @@ namespace Board {
     typedef struct StateInfo {
         Square enpassant = SQ_NONE;
         int castle = 0, halfmoveClock = 0, fullmoveClock = 0;
-        PieceKind captured = NO_KIND;
+        /*PieceKind captured = NO_KIND;*/
     } StateInfo;
 
     typedef struct Move {
@@ -60,6 +61,7 @@ namespace Board {
         MoveType type = NO_TYPE;
         Piece moving = NO_PIECE;
         PieceKind promotion = NO_KIND;
+        PieceKind captured = NO_KIND;
         StateInfo *state = nullptr;
     } Move;
 
@@ -72,6 +74,7 @@ namespace Board {
             bool attacked(Square s, Color c) const;
             bool takes(Square attaker, Square target) const;
             bool kingInCheck(Color c) const;
+            bool hasSufficientMaterial() const;
             std::set<Square> pieces_squares(Color c) const;
             Piece piece_on(Square s) const;
             Square enpassant() const;
@@ -88,6 +91,7 @@ namespace Board {
             std::string pretty() const;
             std::string fen() const;
             uint64_t hash() const;
+            bool compareLines(const Line &lhs, const Line &rhs);
         protected:
             /*A board is an array of 64 pieces (can be NO_PIECE)*/
             Piece board_[64];
@@ -98,6 +102,8 @@ namespace Board {
 
             void applyMove(Move m) throw(InvalidMoveException);
             void applyPseudoMove(Move m) throw(InvalidMoveException);
+
+            bool getMoveFromUci(Move *move, const std::string &mv);
 
             void setPos(std::string fenPos) throw(InvalidFenException);
             void setSide(std::string fenSide) throw(InvalidFenException);

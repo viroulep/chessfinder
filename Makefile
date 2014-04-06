@@ -37,7 +37,7 @@ CHECK_TARGETS =
 CLEAN_TARGETS =
 DISTCLEAN_TARGETS =
 
-CPPFLAGS += -Iinclude -fno-rtti -std=c++11 -Wall
+CPPFLAGS += -Iinclude -fno-rtti -std=c++11 -Wall -g
 
 all: real-all
 

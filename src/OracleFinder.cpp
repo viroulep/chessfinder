@@ -98,19 +98,26 @@ void timeval_print(struct timeval *tv)
 }
 #endif
 
-int OracleFinder::runFinderOnPosition(const Position &pos,
+int OracleFinder::runFinderOnPosition(const Position &p,
                                       const list<string> &moves)
 {
-#if 0
-    int maxMoves = 254;
-    engine_play_for_ = cb_->getActiveSide();
+    Position pos;
+    pos.set(p.fen());
 
-    Out::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
-    sendOptionToEngine("MultiPV", to_string(maxMoves));
-    sendToEngine("isready");
-    waitReadyok();
+    /*Get the side before applying the move*/
+    playFor_ = pos.side_to_move();
 
-    Out::output("Starting board is :\n" + cb_->to_string() + "\n");
+    for (string mv : moves) {
+        pos.tryAndApplyMove(mv);
+    }
+    string startingFen = pos.fen();
+    pos.clear();
+    pos.set(startingFen);
+
+    pool_.sendOption(commId_, "MultiPV", to_string(opt_.getMaxMoves()));
+
+    Out::output("Starting board is :\n" + pos.pretty() + "\n");
+
 /*
  *    Out::output("Doing some basic evaluation on submitted position...\n");
  *
@@ -127,7 +134,7 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
 
     Node *init = new Node();
     Node *rootNode_ = init;
-    init->pos = cb_->exportToFEN();
+    init->pos = pos.fen();
     //depth-first
     toProceed_.push_front(rootNode_);
 
@@ -139,48 +146,45 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
         if (oracleTable_->findPos(current->pos)) {
             Out::output("Position already in table.\n", 1);
             /*TODO think of this*/
-            /*delete current;*/
+            delete current;
             continue;
         }
-        if (cutNode(current)) {
+        if (cutNode(pos, current)) {
             Out::output("Node cut by user-defined function", 1);
             continue;
         }
 
         Line bestLine;
         /*Set the chessboard to current pos*/
-        cb_->reInitFromFEN(current->pos);
-        Side active = cb_->getActiveSide();
+        pos.set(current->pos);
+        Color active = pos.side_to_move();
 
-        Out::output("[" + Board::to_string(active)
-                + "] Proceed size : " + to_string(toProceed_.size()) + "\n");
+        Out::output("[" + color_to_string(active) + "] Proceed size : "
+                    + to_string(toProceed_.size()) + "\n");
 
         /*Register current pos in the table*/
-        uint64_t curHash = HashTable::hashBoard(cb_);
+        uint64_t curHash = pos.hash();
         pair<uint64_t, Node *> p(curHash, current);
         oracleTable_->insert(p);
 
         /*Clear cut*/
-        if (!cb_->sufficientMaterial()) {
+        if (!pos.hasSufficientMaterial()) {
             current->st = Node::DRAW;
-            Out::output("[" + Board::to_string(active)
+            Out::output("[" + color_to_string(active)
                     + "] Insuficient material.\n", 2);
             //Proceed to next node...
             continue;
         }
 
 
-        Out::output(cb_->to_string(), 2);
+        Out::output(pos.pretty(), 2);
+        sendPositionToEngine(pos);
 
-        sendCurrentPositionToEngine();
-        /*Initialize vector with empty lines*/
-        lines_.assign(maxMoves, Line());
-
-        if (engine_play_for_ != active) {
+        if (playFor_ != active) {
             /*We are on a node where the opponent has to play*/
             current->st = Node::AGAINST;
             proceedAgainstNode(pos, current);
-            /*FIXME generate moves with pos*/
+            /*TODO check this work*/
             /*sendToEngine("go depth 1");*/
             /*waitBestmove();*/
             /*pushAllLines(current);*/
@@ -191,43 +195,49 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
         /*Here we are on a node with "playfor" to play*/
         /**********************************************/
 
+        const vector<Line> &lines = pool_.getResultLines(commId_);
+
         /*Thinking according to the side the engine play for*/
-        int moveTime = MatfinderOptions::getPlayforMovetime();
+        int moveTime = opt_.getPlayforMovetime();
 
-        sendToEngine("go movetime " + to_string(moveTime));
+        Out::output("[" + color_to_string(active) + "] Thinking... ("
+                    + to_string(moveTime) + ")\n", 1);
 
-        Out::output("[" + Board::to_string(active)
-                + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
+        //Send go and wait for engine to finish thinking
+        pool_.sendAndWaitBestmove(commId_,
+                                  "go movetime " + to_string(moveTime));
 
-        //Wait for engine to finish thinking
-        waitBestmove();
-        Out::output(getPrettyLines(), 2);
 
-        bestLine = lines_[0];
+        Out::output(getPrettyLines(pos, lines), 2);
+
+        bestLine = lines[0];
         if (bestLine.empty()) {
             //STALEMATE
             current->st = Node::STALEMATE;
-            Out::output("[" + Board::to_string(active)
-                    + "] Bestline is stalemate (cut)\n", 2);
+            Out::output("[" + color_to_string(active)
+                        + "] Bestline is stalemate (cut)\n", 2);
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
             //TODO: register if winning or losing ?
             current->st = Node::MATE;
-            Out::output("[" + Board::to_string(active)
-                    + "] Bestline is mate (cut)\n", 2);
+            Out::output("[" + color_to_string(active)
+                        + "] Bestline is mate (cut)\n", 2);
             continue;
-        } else if (fabs(bestLine.getEval()) > MatfinderOptions::getCpTreshold()) {
+        } else if (fabs(bestLine.getEval()) > opt_.getCutoffTreshold()) {
             //TODO: register if winning or losing ?
             current->st = Node::TRESHOLD;
-            Out::output("[" + Board::to_string(active)
-                    + "] Bestline is above treshold (cut)\n", 2);
+            Out::output("[" + color_to_string(active)
+                        + "] Bestline is above treshold (cut)\n", 2);
             continue;
         }
 
         /*If we are here, bestLine is draw, and we should continue to explore*/
-        /*TODO refactor this with two param ref to vector "draw" and "cut"*/
-        SortedLines all = getLines();
+        vector<Line> draw;
+        vector<Line> cut;
+
+        getLines(lines, draw, cut);
+
         current->st = Node::DRAW;
 
         /*
@@ -235,13 +245,15 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
          *(save some iterations in main loop : we could also push all the
          *unbalanced lines and see...)
          */
-        proceedUnbalancedLines(all[1]);
+        proceedUnbalancedLines(pos, cut);
 
-        vector<Line *> balancedLines = all[0];
 
-        //Then proceed the balanced lines according to the side the engine
-        //play for.
-        if (engine_play_for_ != active)
+
+        /*
+         *Then proceed the balanced lines according to the side the engine
+         *play for.
+         */
+        if (playFor_ != active)
             Err::handle("Current side should be the engine plays for");
 
         /*
@@ -250,20 +262,43 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
          * according to a user defined comparator
          */
         Node *next = NULL;
-        Line *l = NULL;
-        Board::UCIMove mv;
-        SimplePos sp;
+        /*A move*/
+        string mv;
+        /*A fen*/
+        string fenpos;
         /*Try to find a position in the table*/
+#if 0
         for (int i = balancedLines.size() - 1; i >= 0; --i) {
             l = balancedLines[i];
             /*l is not null (or bug)*/
             mv = l->firstMove();
             cb_->uciApplyMove(mv);
             /*This is the next pos*/
-            sp = cb_->exportToFEN();
+            fenpos = cb_->exportToFEN();
             cb_->undoMove();
             //Jean Louis' idea to force finding positions in oracle
-            next = oracleTable_->findPos(sp);
+            next = oracleTable_->findPos(fenpos);
+            if (next)
+                break;
+        }
+#endif
+        /* There must be a reason to go trough it backward, but I can't
+         * remember it right now.
+         */
+        Line l;
+        for (auto rit = draw.rbegin(); rit != draw.rend(); ++rit) {
+            l = *rit;
+            mv = l.firstMove();
+            if (!pos.tryAndApplyMove(mv)) {
+                Err::output(pos.pretty());
+                Err::output("Move : " + mv);
+                Err::handle("Illegal move while proceeding a draw node");
+            }
+            /*This is the next pos*/
+            fenpos = pos.fen();
+            pos.undoMove();
+            //Jean Louis' idea to force finding positions in oracle
+            next = oracleTable_->findPos(fenpos);
             if (next)
                 break;
         }
@@ -271,21 +306,25 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
         /*Maybe just continue, but then we should register that mate or
          * treshold is winning or losing*/
         if (!next) {
-            auto compareFn = std::bind(&Chessboard::compareLines, cb_,
-                    std::placeholders::_1, std::placeholders::_2);
-            std::sort(balancedLines.begin(), balancedLines.end(),
-                    compareFn);
-            l = balancedLines[0];
-            mv = l->firstMove();
-            cb_->uciApplyMove(mv);
-            sp = cb_->exportToFEN();
-            cb_->undoMove();
+            /*auto compareFn = std::bind(&Position::compareLines, pos,*/
+                    /*std::placeholders::_1, std::placeholders::_2);*/
+            /*std::sort(draw.begin(), draw.end(), compareFn);*/
+            std::sort(draw.begin(), draw.end(),
+                         [&pos](const Line &lhs, const Line &rhs)
+                         {
+                             return pos.compareLines(lhs, rhs);
+                         });
+            l = draw[0];
+            mv = l.firstMove();
+            pos.tryAndApplyMove(mv);
+            fenpos = pos.fen();
+            pos.undoMove();
 
             //no next position in the table, push the node to stack
             next = new Node();
-            next->pos = sp;
-            Out::output("[" + Board::to_string(active)
-                    + "] Pushed first line (" + mv + ") : " + sp + "\n", 2);
+            next->pos = fenpos;
+            Out::output("[" + color_to_string(active)
+                    + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
             toProceed_.push_front(next);
         }
         /*Whatever the move is, add it to our move list*/
@@ -305,8 +344,8 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
 
     //Display info at the end of computation
     Out::output("[End] Finder is done. Starting board was : \n");
-    cb_->reInitFromFEN(init->pos);
-    Out::output(cb_->to_string() + "\n");
+    pos.set(init->pos);
+    Out::output(pos.pretty() + "\n");
 
 
     Out::output("Hashtable size = "
@@ -314,7 +353,6 @@ int OracleFinder::runFinderOnPosition(const Position &pos,
     Out::output(oracleTable_->to_string() + "\n", 2);
     Out::output("(size = " + std::to_string(oracleTable_->size()) + ") : \n", 2);
 
-#endif
     return 0;
 }
 
@@ -408,7 +446,7 @@ void OracleFinder::proceedUnbalancedLines(Position &pos,
     }
 }
 
-bool OracleFinder::cutNode(const Position &pos, const Node *currentNode)
+bool OracleFinder::cutNode(const Position &, const Node *)
 {
     /*TODO evaluate if we should process this node or not, according to
      * the chessboard state.*/

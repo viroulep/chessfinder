@@ -122,6 +122,7 @@ Config::~Config()
             delete vstart;
             vstart = svalue;
         }
+        delete vstart;
     }
 }
 

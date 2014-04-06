@@ -22,10 +22,12 @@
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <cstring>
 #include <queue>
 #include <set>
+#include <cstring>
+#include <cmath>
 #include "SimpleChessboard.h"
+#include "CompareMove.h"
 #include "Hashing.h"
 #include "Movegen.h"
 #include "Output.h"
@@ -201,24 +203,11 @@ namespace Board {
         }
     }
 
-    bool Position::tryAndApplyMove(std::string &uciMove)
+    bool Position::tryAndApplyMove(string &uciMove)
     {
-        Square from = sqFrom_from_uci(uciMove);
-        if (!is_ok(from))
-            return false;
-        PieceKind k = kind_of(piece_on(from));
-        if (k == NO_KIND)
-            return false;
-        vector<Move> legalMoves;
-        DISPATCH(legalMoves, k, gen_moves, from, *this);
         Move theMove;
-        theMove.from = SQ_NONE;
-        for (Move m : legalMoves) {
-            if (uciMove == move_to_string(m)) {
-                theMove = m;
-                break;
-            }
-        }
+        if (!getMoveFromUci(&theMove, uciMove))
+            return false;
         return tryAndApplyMove(theMove);
     }
 
@@ -258,8 +247,10 @@ namespace Board {
         board_[m.to] = NO_PIECE;
 
         /*Restore captured piece (En passant is handled separately)*/
-        if (mSI->captured != NO_KIND && m.type != ENPASSANT)
-            board_[m.to] = make_piece(Color(!active_), mSI->captured);
+        /*if (mSI->captured != NO_KIND && m.type != ENPASSANT)*/
+            /*board_[m.to] = make_piece(Color(!active_), mSI->captured);*/
+        if (m.captured != NO_KIND && m.type != ENPASSANT)
+            board_[m.to] = make_piece(Color(!active_), m.captured);
 
         if (m.type == NORMAL) {
             /*
@@ -328,13 +319,15 @@ namespace Board {
                         oss << "Pieces taken : ";
                         int count = 0;
                         for (Move m : moves_) {
-                            if (m.state->captured != NO_KIND) {
+                            /*if (m.state->captured != NO_KIND) {*/
+                            if (m.captured != NO_KIND) {
                                 if (count != 0)
                                     oss << ", ";
                                 Color cTaken = (color_of(m.moving) == WHITE) ?
                                                BLACK : WHITE;
                                 oss << piece_to_string(
-                                        make_piece(cTaken, m.state->captured),
+                                        /*make_piece(cTaken, m.state->captured),*/
+                                        make_piece(cTaken, m.captured),
                                         true);
                                 count++;
                             }
@@ -427,6 +420,33 @@ namespace Board {
     uint64_t Position::hash() const
     {
         return HashTable::hashFEN(fen());
+    }
+
+    /*Return true if lhs < rhs*/
+    bool Position::compareLines(const Line &lhs, const Line &rhs)
+    {
+        Move lhsM;
+        if (!getMoveFromUci(&lhsM, lhs.firstMove()))
+            Err::handle("Comparing illegal moves");
+        Move rhsM;
+        if (!getMoveFromUci(&rhsM, rhs.firstMove()))
+            Err::handle("Comparing illegal moves");
+        /*
+         * First check the eval if they are too different.
+         * (For example if the cp_treshold is 300 cp, then lines at -2.2 and +1.2
+         * are equivalent, but the last one is better !)
+         */
+        float lhsEv = lhs.getEval();
+        float rhsEv = rhs.getEval();
+        Out::output("Comparing " + std::to_string(lhsEv) + " to "
+                    + std::to_string(rhsEv) + "\n", 3);
+        /*Set the limit to .5 eval*/
+        if (abs(lhsEv - rhsEv) > 20) {
+            return lhsEv > rhsEv;
+        }
+
+        /*Optionally add some restriction on the line*/
+        return Options::getInstance().getMoveComparator()->compare(lhsM, rhsM);
     }
 
     /*
@@ -579,18 +599,21 @@ namespace Board {
         StateInfo *next = new StateInfo;
         std::memcpy(next, st_, sizeof(StateInfo));
         next->enpassant = SQ_NONE;
-        next->captured = NO_KIND;
+        /*next->captured = NO_KIND;*/
+        m.captured = NO_KIND;
         next->halfmoveClock++;
         if (active_ == BLACK)
             next->fullmoveClock++;
 
         /* Handle capture (En passant is handle separately) */
         if (!empty(m.to) && m.type != ENPASSANT)
-            next->captured = kind_of(board_[m.to]);
+            m.captured = kind_of(board_[m.to]);
+            /*next->captured = kind_of(board_[m.to]);*/
 
         if (m.type == ENPASSANT) {
             /*Handle capture*/
-            next->captured = PAWN;
+            m.captured = PAWN;
+            /*next->captured = PAWN;*/
             Square taken = (active_ == WHITE)?
                 make_square(Rank(rank_of(m.to) - 1), file_of(m.to)):
                 make_square(Rank(rank_of(m.to) + 1), file_of(m.to));
@@ -647,7 +670,8 @@ namespace Board {
         }
 
         /*Reset 50 moves rule*/
-        if (kind_of(pFrom) == PAWN || next->captured != NO_KIND)
+        /*if (kind_of(pFrom) == PAWN || next->captured != NO_KIND)*/
+        if (kind_of(pFrom) == PAWN || m.captured != NO_KIND)
             next->halfmoveClock = 0;
         board_[m.to] = board_[m.from];
         board_[m.from] = NO_PIECE;
@@ -666,6 +690,46 @@ namespace Board {
             if (board_[ksq] == k)
                 break;
         return attacked(ksq, Color(!c));
+    }
+
+    bool Position::hasSufficientMaterial() const
+    {
+        list<Piece> allPieces;
+        for (Piece p : board_)
+            if (p != NO_PIECE)
+                allPieces.push_back(p);
+
+        if (allPieces.size() > 3)
+            return true;
+        else if (allPieces.size() == 2)
+            return false;
+        else {
+            PieceKind notKing = NO_KIND;
+            for (Piece p : allPieces)
+                if (kind_of(p) != KING)
+                    notKing = kind_of(p);
+            return !(notKing == BISHOP || notKing == KNIGHT);
+        }
+    }
+
+    bool Position::getMoveFromUci(Move *move, const std::string &mv)
+    {
+        Square from = sqFrom_from_uci(mv);
+        if (!is_ok(from))
+            return false;
+        PieceKind k = kind_of(piece_on(from));
+        if (k == NO_KIND)
+            return false;
+        vector<Move> legalMoves;
+        DISPATCH(legalMoves, k, gen_moves, from, *this);
+        move->from = SQ_NONE;
+        for (Move m : legalMoves) {
+            if (mv == move_to_string(m)) {
+                *move = m;
+                break;
+            }
+        }
+        return move->from != SQ_NONE;
     }
 
     void Position::setPos(string fenPos) throw(InvalidFenException)

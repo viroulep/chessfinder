@@ -110,7 +110,7 @@ void parseArgs(int argc, char **argv)
                 opt_instance.setOutputFile(optarg);
                 break;
 
-            case 'n':
+            case 'i':
                 opt_instance.setInputFile(optarg);
                 break;
 

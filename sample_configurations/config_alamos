@@ -1,0 +1,5 @@
+[engine]
+    path = /usr/local/bin/losalamosfish
+    variant = losalamos
+[finder]
+    playfor_movetime = 100

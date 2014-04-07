@@ -1,0 +1,3 @@
+[engine]
+    path = /usr/local/bin/gardnerfish
+    variant = gardner

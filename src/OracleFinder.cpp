@@ -135,6 +135,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
     Node *init = new Node();
     Node *rootNode_ = init;
     init->pos = pos.fen();
+    string initFen = init->pos;
     //depth-first
     toProceed_.push_front(rootNode_);
 
@@ -145,7 +146,6 @@ int OracleFinder::runFinderOnPosition(const Position &p,
         /*Check we are not computing an already existing position*/
         if (oracleTable_->findPos(current->pos)) {
             Out::output("Position already in table.\n", 1);
-            /*TODO think of this*/
             delete current;
             continue;
         }
@@ -344,7 +344,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
     //Display info at the end of computation
     Out::output("[End] Finder is done. Starting board was : \n");
-    pos.set(init->pos);
+    pos.set(initFen);
     Out::output(pos.pretty() + "\n");
 
 

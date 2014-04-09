@@ -117,11 +117,13 @@ namespace Board {
 #undef ENABLE_OPERATORS_ON
 #undef ENABLE_SAFE_OPERATORS_ON
 
-    inline Piece make_piece(Color c, PieceKind pt) {
+    inline Piece make_piece(Color c, PieceKind pt)
+    {
         return Piece((c << 3) | pt);
     }
 
-    inline Square make_square(Rank r, File f) {
+    inline Square make_square(Rank r, File f)
+    {
         return (r < RANK_1 || r > RANK_8 || f < FILE_A || f > FILE_H)?
             SQ_NONE:Square((r << 3) | f);
     }
@@ -132,24 +134,29 @@ namespace Board {
      *}
      */
 
-    inline PieceKind kind_of(Piece p) {
+    inline PieceKind kind_of(Piece p)
+    {
         return PieceKind(p & 7);
     }
 
-    inline Color color_of(Piece p) {
+    inline Color color_of(Piece p)
+    {
         assert(p != NO_PIECE);
         return Color(p >> 3);
     }
 
-    inline File file_of(Square s) {
+    inline File file_of(Square s)
+    {
         return File(s & 7);
     }
 
-    inline Rank rank_of(Square s) {
+    inline Rank rank_of(Square s)
+    {
         return Rank(s >> 3);
     }
 
-    inline bool is_ok(Square s) {
+    inline bool is_ok(Square s)
+    {
         switch (Options::getInstance().getVariant()) {
             case GARDNER:
                 return (rank_of(s) >= RANK_2 && rank_of(s) <= RANK_6

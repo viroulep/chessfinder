@@ -307,7 +307,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             }
             /*This is the next pos*/
             fenpos = pos.fen();
-            pos.undoMove();
+            pos.undoLastMove();
             //Jean Louis' idea to force finding positions in oracle
             next = oracleTable_->findPos(fenpos);
             if (next)
@@ -329,7 +329,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             mv = l.firstMove();
             pos.tryAndApplyMove(mv);
             fenpos = pos.fen();
-            pos.undoMove();
+            pos.undoLastMove();
 
             //no next position in the table, push the node to stack
             next = new Node();
@@ -424,7 +424,7 @@ void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
         if (!pos.tryAndApplyMove(m))
             Err::handle("Illegal move pushed ! (While proceeding against Node)");
         string fen = pos.fen();
-        pos.undoMove();
+        pos.undoLastMove();
         Node *next = new Node();
         next->pos = fen;
         toProceed_.push_front(next);
@@ -450,7 +450,7 @@ void OracleFinder::proceedUnbalancedLines(Position &pos,
             Err::handle("Illegal move pushed ! (In an unbalanced line)");
         toAdd->pos = pos.fen();
         uint64_t hash = pos.hash();
-        pos.undoMove();
+        pos.undoLastMove();
         toAdd->st = s;
         pair<uint64_t, Node *> p(hash, toAdd);
         oracleTable_->insert(p);

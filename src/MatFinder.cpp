@@ -140,7 +140,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
 
                 //Remove opposite side previous move
                 addedMoves_--;
-                pos.undoMove();
+                pos.undoLastMove();
 
                 if (active == playFor_) {
                     /*
@@ -151,7 +151,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
                      */
                     if (addedMoves_ > 0) {
                         addedMoves_--;
-                        pos.undoMove();
+                        pos.undoLastMove();
                     }
                 }
                 continue;

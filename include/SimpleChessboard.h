@@ -85,10 +85,12 @@ namespace Board {
             bool tryAndApplyMove(std::string &uciMove);
             bool tryAndApplyMove(Move m);
             bool tryMove(Move m);
-            void undoMove();
+            void undoLastMove();
             const std::vector<Move> &getMoves() const;
             std::string getLastMove() const;
             std::string pretty() const;
+            std::string moveHistory() const;
+            std::string pgn() const;
             std::string fen() const;
             uint64_t hash() const;
             bool compareLines(const Line &lhs, const Line &rhs);
@@ -99,9 +101,16 @@ namespace Board {
             StateInfo startState_;
             StateInfo *st_ = nullptr;
             std::vector<Move> moves_;
+            std::vector<std::string> pgnMoves_;
+
+            /*Generate pgn notation for last move*/
+            std::string generatePGN(Move &m);
+
+            std::set<Square> getSimilarPieces(Square from);
 
             void applyMove(Move m) throw(InvalidMoveException);
             void applyPseudoMove(Move m) throw(InvalidMoveException);
+            void undoMove();
 
             bool getMoveFromUci(Move *move, const std::string &mv);
 

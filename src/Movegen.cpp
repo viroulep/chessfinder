@@ -220,6 +220,9 @@ namespace Board {
             m.moving = pos.piece_on(from);\
             m.to = s;\
             m.type = NORMAL;\
+            m.captured = NO_KIND;\
+            if (!pos.empty(m.to))\
+                m.captured = kind_of(pos.piece_on(m.to));\
             if (pos.tryMove(m))\
                 moves.push_back(m);\
         }\
@@ -256,6 +259,7 @@ namespace Board {
         m.from = from;
         m.moving = king;
         m.type = CASTLING;
+        m.captured = NO_KIND;
         /*FIXME simplify (delegate castle checking to pos ?)*/
         /*NOTE target square legality is checked by tryMove*/
         if (color_of(king) == WHITE && from == SQ_E1) {
@@ -313,6 +317,9 @@ namespace Board {
         for (Square s : dests) {
             m.to = s;
             m.type = NORMAL;
+            m.captured = NO_KIND;
+            if (!pos.empty(m.to))
+                m.captured = kind_of(pos.piece_on(m.to));
             if (front_or_back_rank(rank_of(s))) {
                 /*Promotion*/
                 m.type = PROMOTION;
@@ -322,8 +329,10 @@ namespace Board {
                         all.push_back(m);
                 }
             } else {
-                if (pos.enpassant() == s)
+                if (pos.enpassant() == s) {
                     m.type = ENPASSANT;
+                    m.captured = PAWN;
+                }
                 if (pos.tryMove(m))
                     all.push_back(m);
             }
@@ -331,7 +340,7 @@ namespace Board {
         return all;
     }
 
-    std::vector<Move> gen_all(Position &pos)
+    vector<Move> gen_all(Position &pos)
     {
         vector<Move> all, partial;
         set<Square> squares = pos.pieces_squares(pos.side_to_move());

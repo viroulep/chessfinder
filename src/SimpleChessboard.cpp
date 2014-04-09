@@ -153,6 +153,7 @@ namespace Board {
         for (Move m : moves_)
             delete m.state;
         moves_.clear();
+        pgnMoves_.clear();
         /*Can't set 0 in whole position because of virtual functions*/
         std::memset(board_, 0, sizeof(board_));
         std::memset(&startState_, 0, sizeof(StateInfo));
@@ -214,7 +215,9 @@ namespace Board {
     bool Position::tryAndApplyMove(Move m)
     {
         try {
+            string pgn = generatePGN(m);
             applyMove(m);
+            pgnMoves_.push_back(pgn);
             return true;
         } catch (InvalidMoveException e) {
             return false;
@@ -232,6 +235,12 @@ namespace Board {
         return true;
     }
 
+    void Position::undoLastMove()
+    {
+        undoMove();
+        pgnMoves_.pop_back();
+    }
+
     void Position::undoMove()
     {
         if (moves_.empty())
@@ -247,8 +256,6 @@ namespace Board {
         board_[m.to] = NO_PIECE;
 
         /*Restore captured piece (En passant is handled separately)*/
-        /*if (mSI->captured != NO_KIND && m.type != ENPASSANT)*/
-            /*board_[m.to] = make_piece(Color(!active_), mSI->captured);*/
         if (m.captured != NO_KIND && m.type != ENPASSANT)
             board_[m.to] = make_piece(Color(!active_), m.captured);
 
@@ -319,14 +326,12 @@ namespace Board {
                         oss << "Pieces taken : ";
                         int count = 0;
                         for (Move m : moves_) {
-                            /*if (m.state->captured != NO_KIND) {*/
                             if (m.captured != NO_KIND) {
                                 if (count != 0)
                                     oss << ", ";
                                 Color cTaken = (color_of(m.moving) == WHITE) ?
                                                BLACK : WHITE;
                                 oss << piece_to_string(
-                                        /*make_piece(cTaken, m.state->captured),*/
                                         make_piece(cTaken, m.captured),
                                         true);
                                 count++;
@@ -362,10 +367,50 @@ namespace Board {
                     oss << "  -----------------\n";
                 }
             }
-        oss << "   a b c d e f g h\n\n";
-        /*oss << prettyHistoryToString() << "\n";*/
-        /*oss << historyToString() << "\n";*/
+        oss << "   a b c d e f g h\n";
+        oss << "Move history :" << moveHistory() << "\n";
+        oss << "PGN history :" << pgn() << "\n\n";
         return oss.str();
+    }
+
+    string Position::moveHistory() const
+    {
+        std::ostringstream ss;
+        for (Move m : moves_) {
+            ss << " " << move_to_string(m);
+        }
+        return ss.str();
+    }
+
+    string Position::pgn() const
+    {
+        std::ostringstream ss;
+        int printed = 0;
+        int moveIndexFirst = st_->fullmoveClock -
+                             (moves_.size() + (int)(active_ == WHITE))/2;
+        int moveIndex = moveIndexFirst;
+        //This is not related to halfmove clock
+        int halfMove = 0;
+        ss << moveIndex << ".";
+        int notPar = moves_.size()%2;
+        if ((active_ == WHITE)^notPar) {
+            ss << "..";
+            halfMove++;
+        }
+        ss << " ";
+
+        for (string m : pgnMoves_) {
+            if (moveIndex != moveIndexFirst && !(halfMove%2))
+                ss << moveIndex << ". ";
+            ss << m << " ";
+            halfMove++;
+            if (!(halfMove%2))
+                moveIndex++;
+            printed++;
+            if (printed%10 == 0)
+                ss << "\n";
+        }
+        return ss.str();
     }
 
     string Position::fen() const {
@@ -570,9 +615,59 @@ namespace Board {
 
     /*---------------------/
      *                     /
-     *Protected methods    /
+     * Protected methods   /
      *                     /
      *--------------------*/
+
+    /**
+     * This method generates the PGN for move m, it assumes the position is
+     * the one *before* the move is done.
+     */
+    string Position::generatePGN(Move &m)
+    {
+        Square from = m.from;
+        Piece p = board_[from];
+        Square to = m.to;
+        bool simSameRank = false;
+        bool simSameFile = false;
+        vector<Move> moves;
+        for (Square s : getSimilarPieces(from)) {
+            moves.clear();
+            DISPATCH(moves, kind_of(p), gen_moves, s, *this);
+            for (Move simMove : moves) {
+                if (simMove.to == to) {
+                    simSameRank |= (rank_of(simMove.from) == rank_of(from));
+                    simSameFile |= (file_of(simMove.from) == file_of(from));
+                }
+            }
+        }
+        string pgn(1, kind_to_char(kind_of(p), false));
+        if (simSameRank)
+            pgn += file_to_char(file_of(from));
+        if (simSameFile)
+            pgn += rank_to_char(rank_of(from));
+        if (m.captured != NO_KIND)
+            pgn += "x";
+        pgn += square_to_string(to);
+        if (m.type == PROMOTION)
+            pgn += kind_to_char(m.promotion, true, true);
+        return pgn;
+    }
+
+    set<Square> Position::getSimilarPieces(Square from)
+    {
+        std::set<Square> retVal;
+        Piece p = piece_on(from);
+        if (p == NO_PIECE)
+            return retVal;
+        for (Square s = SQ_A1; s <= SQ_H8; ++s) {
+            if (s == from)
+                continue;
+            if (board_[s] == p)
+                retVal.insert(s);
+        }
+        return retVal;
+    }
 
     void Position::applyMove(Move m) throw (InvalidMoveException)
     {
@@ -599,21 +694,13 @@ namespace Board {
         StateInfo *next = new StateInfo;
         std::memcpy(next, st_, sizeof(StateInfo));
         next->enpassant = SQ_NONE;
-        /*next->captured = NO_KIND;*/
-        m.captured = NO_KIND;
         next->halfmoveClock++;
         if (active_ == BLACK)
             next->fullmoveClock++;
 
-        /* Handle capture (En passant is handle separately) */
-        if (!empty(m.to) && m.type != ENPASSANT)
-            m.captured = kind_of(board_[m.to]);
-            /*next->captured = kind_of(board_[m.to]);*/
 
         if (m.type == ENPASSANT) {
             /*Handle capture*/
-            m.captured = PAWN;
-            /*next->captured = PAWN;*/
             Square taken = (active_ == WHITE)?
                 make_square(Rank(rank_of(m.to) - 1), file_of(m.to)):
                 make_square(Rank(rank_of(m.to) + 1), file_of(m.to));
@@ -670,7 +757,6 @@ namespace Board {
         }
 
         /*Reset 50 moves rule*/
-        /*if (kind_of(pFrom) == PAWN || next->captured != NO_KIND)*/
         if (kind_of(pFrom) == PAWN || m.captured != NO_KIND)
             next->halfmoveClock = 0;
         board_[m.to] = board_[m.from];

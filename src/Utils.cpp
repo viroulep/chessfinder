@@ -106,7 +106,7 @@ namespace Utils {
         oss << "                           (default is 1500)\n";
         oss << "        playagaint_movetime : the time given to the side the finder plays"\
                "against (ms)\n";
-        oss << "                           (default is 1000)\n";
+        oss << "                              (default is 1000)\n";
         oss << "    - Matfinder\n";
         oss << "        lines : number of lines to consider (default is 8)\n";
         oss << "        mate_treshold : minimal value for an evaluation to be considered"\
@@ -115,6 +115,12 @@ namespace Utils {
         oss << "    - Oraclefinder\n";
         oss << "        comparator : the move comparator to use (default is \"map\")\n";
         oss << "                     Other values are \"default\".\n";
+        oss << "        oracle_side : the side for which to build the oracle\n";
+        oss << "                      (\"white\" or \"black\", default is white)\n";
+        oss << "        search_mode : the engine search mode (default is \"time\")\n";
+        oss << "                      Other values are \"depth\" or \"mixed\"\n";
+        oss << "        search_depth : the search depth when the engine is in depth mode\n";
+        oss << "                       (default is 10)\n";
         oss << "\n";
         oss << "Contact\n";
         oss << "    Philippe Virouleau <philippe.viroulea@imag.fr>\n";

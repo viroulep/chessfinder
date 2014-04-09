@@ -101,7 +101,7 @@ namespace Comm {
             } else if (token == "time") {
                 is >> curThinktime;
                 Out::output("Updated current thinktime to "
-                            + to_string(curThinktime) + "\n", 3);
+                            + to_string(curThinktime) + "\n", 4);
             } else if (token == "nodes") {
                 //Drop
             } else if (token == "pv") {
@@ -132,7 +132,7 @@ namespace Comm {
                 Err::output("********** Hashfull : " + token + " *******");
             } else if (token == "nps") {
                 is >> curNps;
-                Out::output("Updated NPS to " + to_string(curNps) + "\n", 3);
+                Out::output("Updated NPS to " + to_string(curNps) + "\n", 4);
             } else if (token == "tbhits") {
                 //Drop
             } else if (token == "cpuload") {
@@ -289,7 +289,7 @@ namespace Comm {
 
     bool LocalUCICommunicator::send(const string &cmd) const
     {
-        Out::output("Sending \"" + cmd + "\" to engine !\n", 5);
+        Out::output("Sending \"" + cmd + "\" to engine !\n", 3);
         (*engine_input_) << cmd << "\n";
         return true;
     }

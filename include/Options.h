@@ -25,8 +25,6 @@
 #include <string>
 #include <list>
 
-
-
 class MoveComparator;
 class Config;
 
@@ -38,11 +36,25 @@ enum Variant {
     GARDNER
 };
 
+enum SearchMode {
+    DEPTH,
+    TIME,
+    MIXED
+};
+
 class Options {
     public:
 
         Variant getVariant() const;
         void setVariant(std::string sv);
+
+        SearchMode getSearchMode() const;
+        void setSearchMode(std::string sm);
+
+        int getSearchDepth() const;
+
+        bool buildOracleForWhite() const;
+        void setOracleSide(std::string side);
 
         const std::string &getInputFile() const;
         const std::string &getOutputFile() const;
@@ -82,6 +94,12 @@ class Options {
         /*TODO comment*/
 
         Variant variant_ = STANDARD;
+
+        SearchMode mode_ = TIME;
+        int searchDepth_ = 10;
+
+        bool buildOracleForWhite_ = true;
+
         std::string inputFile_ = "";
         std::string outputFile_ = "";
 

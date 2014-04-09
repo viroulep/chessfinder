@@ -104,8 +104,8 @@ int OracleFinder::runFinderOnPosition(const Position &p,
     Position pos;
     pos.set(p.fen());
 
-    /*Get the side before applying the move*/
-    playFor_ = pos.side_to_move();
+    /*Get the side from option*/
+    playFor_ = (opt_.buildOracleForWhite()) ? WHITE : BLACK;
 
     for (string mv : moves) {
         pos.tryAndApplyMove(mv);
@@ -116,6 +116,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
     pool_.sendOption(commId_, "MultiPV", to_string(opt_.getMaxMoves()));
 
+    Out::output("Building an oracle for : " + color_to_string(playFor_) + "\n");
     Out::output("Starting board is :\n" + pos.pretty() + "\n");
 
 /*
@@ -203,9 +204,19 @@ int OracleFinder::runFinderOnPosition(const Position &p,
         Out::output("[" + color_to_string(active) + "] Thinking... ("
                     + to_string(moveTime) + ")\n", 1);
 
+        string cmd = "go ";
+        switch (opt_.getSearchMode()) {
+            case DEPTH:
+                cmd += "depth " + to_string(opt_.getSearchDepth());
+                break;
+            case MIXED://Intentional no-break TODO: implement mixed search ?
+            case TIME:
+            default:
+                cmd += "movetime " + to_string(moveTime);
+                break;
+        }
         //Send go and wait for engine to finish thinking
-        pool_.sendAndWaitBestmove(commId_,
-                                  "go movetime " + to_string(moveTime));
+        pool_.sendAndWaitBestmove(commId_, cmd);
 
 
         Out::output(getPrettyLines(pos, lines), 2);

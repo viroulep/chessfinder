@@ -46,6 +46,43 @@ void Options::setVariant(string sv)
         Err::handle("Unrecognize chess variant : " + sv);
 }
 
+SearchMode Options::getSearchMode() const
+{
+    return mode_;
+}
+
+void Options::setSearchMode(string sm)
+{
+    if (sm == "depth")
+        mode_ = DEPTH;
+    else if (sm == "time")
+        mode_ = TIME;
+    else if (sm == "mixed")
+        mode_ = MIXED;
+    else
+        Err::handle("Unrecognize search mode : " + sm);
+}
+
+int Options::getSearchDepth() const
+{
+    return searchDepth_;
+}
+
+bool Options::buildOracleForWhite() const
+{
+    return buildOracleForWhite_;
+}
+
+void Options::setOracleSide(string side)
+{
+    if (side == "white")
+        buildOracleForWhite_ = true;
+    else if (side == "black")
+        buildOracleForWhite_ = false;
+    else
+        Err::handle("Unrecognize side : " + side);
+}
+
 const string &Options::getInputFile() const
 {
     return inputFile_;
@@ -224,6 +261,16 @@ void Options::addConfig(Config &conf)
     val = conf("oraclefinder", "comparator");
     if (val)
         setMoveComparator(val);
+    val = conf("oraclefinder", "oracle_side");
+    if (val)
+        setOracleSide(val);
+    val = conf("oraclefinder", "search_mode");
+    if (val)
+        setSearchMode(val);
+
+    val = conf("oraclefinder", "search_depth");
+    PARSE_INTVAL(searchDepth_, "search_depth");
+
 }
 
 #undef PARSE_INTVAL

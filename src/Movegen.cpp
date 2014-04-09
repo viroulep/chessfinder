@@ -316,7 +316,7 @@ namespace Board {
             if (front_or_back_rank(rank_of(s))) {
                 /*Promotion*/
                 m.type = PROMOTION;
-                for (PieceKind k = KNIGHT; k <= QUEEN; ++k) {
+                for (PieceKind k : promotion_kind()) {
                     m.promotion = k;
                     if (pos.tryMove(m))
                         all.push_back(m);

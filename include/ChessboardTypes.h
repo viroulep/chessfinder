@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <string>
+#include <set>
 #include <sstream>
 #include <assert.h>
 
@@ -161,6 +162,17 @@ namespace Board {
                 return s >= SQ_A1 && s <= SQ_H8;
                 break;
         }
+    }
+
+    inline std::set<PieceKind> promotion_kind()
+    {
+        std::set<PieceKind> retVal;
+        for (PieceKind k = KNIGHT; k <= QUEEN; ++k) {
+            if (Options::getInstance().getVariant() == LOS_ALAMOS && k == BISHOP)
+                continue;
+            retVal.insert(k);
+        }
+        return retVal;
     }
 
     inline bool front_or_back_rank(Rank r)

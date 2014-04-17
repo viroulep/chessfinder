@@ -190,13 +190,18 @@ uint64_t HashTable::hashFEN(string fenString)
                 fenHash ^= piecesFromFEN(info);
                 break;
             case 5:
-                fenHash ^= turnFromFEN(info);
+                if (info == "w") {
+                    fenHash ^= Random64_[780];//RandomTurn offset (last entry)
+                } else if (info != "b")
+                    Err::handle("Invalid input fen : can't determine active side");
                 break;
             case 4:
-                fenHash ^= castleFromFEN(info);
+                if (info != "-")
+                    fenHash ^= castleFromFEN(info);
                 break;
             case 3:
-                fenHash ^= enpassantFromFEN(info);
+                if (info != "-")
+                    fenHash ^= enpassantFromFEN(info);
                 break;
             default:
                 /*Drop the clocks*/
@@ -221,30 +226,11 @@ uint64_t HashTable::hashBoard(Chessboard *cb)
 
 int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {
-    /*
-     *Out::output("pieceOffset(" + std::to_string(kind) + "," + to_char(r)
-     *        + "," + to_char(f) + ")\n");
-     *Out::output("offset : " + std::to_string(64*kind+8*(r-1)+f) + "\n");
-     */
-    //r-1 to have rank in 0-7
-    return 64 * kind + 8 * (r - 1) + f;
-}
-
-uint64_t HashTable::turnFromFEN(string side)
-{
-    /*Out::output("Turn : " + side + "\n");*/
-    if (side == "w")
-        return Random64_[780];//RandomTurn offset (last entry)
-    else if (side == "b")
-        return U64(0x0);
-    else
-        Err::handle("Invalid input fen : can't determine active side");
-    return U64(0x0);
+    return 64 * kind + 8 * r + f;
 }
 
 uint64_t HashTable::enpassantFromFEN(string enpassant)
 {
-    /*Out::output("Enpassant : " + enpassant + "\n");*/
     if (enpassant == "-") {
         return U64(0x0);
     } else if (enpassant.length() != 2) {
@@ -258,7 +244,6 @@ uint64_t HashTable::enpassantFromFEN(string enpassant)
 
 uint64_t HashTable::castleFromFEN(string castle)
 {
-    /*Out::output("Castle : " + castle + "\n");*/
     if (castle == "-")
         return U64(0x0);
     else {
@@ -280,7 +265,8 @@ uint64_t HashTable::castleFromFEN(string castle)
                     castleKey ^= Random64_[771];
                     break;
                 default:
-                    Err::handle("Invalid input fen : can't get castle");
+                    Err::handle("Invalid input fen : can't get castle : '"
+                                + string(1, c) + "'");
             }
         }
         return castleKey;

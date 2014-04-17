@@ -34,8 +34,8 @@
 namespace Board {
 
     enum Color {
-        WHITE,
-        BLACK,
+        WHITE = 0x0,
+        BLACK = 0x1,
         NOCOLOR
     };
 
@@ -48,11 +48,13 @@ namespace Board {
     };
 
     enum CastlingFlag {
-        NONE  = 0x0,
-        W_OO  = 0x0001,
-        W_OOO = 0x0010,
-        B_OO  = 0x0100,
-        B_OOO = 0x1000
+        NONE,
+        W_OO,
+        W_OOO   = W_OO << 1,
+        B_OO    = W_OO << 2,
+        B_OOO   = W_OO << 3,
+        ANY_CASTLING = W_OO | W_OOO | B_OO | B_OOO,
+        CASTLING_FLAG_NB = 16
     };
 
     enum PieceKind {

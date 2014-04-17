@@ -25,7 +25,6 @@ CLEAN_TARGETS += clean-matfinder
 
 .PHONY: outCxx
 
-.SILENT:
 
 
 common_SOURCES           := $(wildcard src/*.cpp)

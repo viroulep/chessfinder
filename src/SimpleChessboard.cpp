@@ -890,7 +890,8 @@ namespace Board {
                         castle |= B_OOO;
                         break;
                     default:
-                        throw InvalidFenException("Can't set castle");
+                        throw InvalidFenException("Can't set castle : '"
+                                                  + string(1, c) + "'");
                 }
             }
             startState_.castle = castle;

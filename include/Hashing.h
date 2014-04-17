@@ -29,11 +29,7 @@
 
 #include "SimpleChessboard.h"
 
-#ifdef _MSC_VER
-#define U64(u) (u##ui64)
-#else
 #define U64(u) (u##ULL)
-#endif
 
 
 class Node;
@@ -81,7 +77,6 @@ public:
     static HashTable *fromPolyglot(std::istream &is);
 private:
     static int pieceOffset(int kind, Board::Rank r, Board::File f);
-    static uint64_t turnFromFEN(std::string side);
     static uint64_t piecesFromFEN(std::string pos);
     static uint64_t enpassantFromFEN(std::string enpassant);
     static uint64_t castleFromFEN(std::string castle);

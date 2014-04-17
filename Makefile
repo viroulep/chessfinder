@@ -41,7 +41,10 @@ CPPFLAGS += -Iinclude -fno-rtti -std=c++11 -Wall -g
 
 all: real-all
 
+.SILENT:
+
 include src/main.mk
+include tests/hashing/testhashing.mk
 include tests/chessboard/testchessboard.mk
 include boardtest/boardTest.mk
 

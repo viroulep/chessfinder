@@ -24,7 +24,6 @@ ALL_TARGETS += testchessboard
 CLEAN_TARGETS += clean-chessboardTest
 CHECK_TARGETS += check-chessboardTest
 
-.SILENT:
 
 chessboardTest_SOURCES           := $(wildcard src/*.cpp)
 chessboardTest_SOURCES_CXX       := $(wildcard tests/chessboard/*.cxx)

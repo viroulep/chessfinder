@@ -22,14 +22,14 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <utility>
 #include <cstdlib>
+#include <cstdio>
+#include <map>
 
-#include "Options.h"
-#include "Movegen.h"
+#include "polyglot_reference.h"
 #include "Output.h"
-#include "ConfigParser.h"
 #include "SimpleChessboard.h"
-#include "UCICommunicator.h"
 
 using namespace std;
 using namespace Board;
@@ -87,69 +87,34 @@ int main(int argc, char **argv)
     }
     inputfile.close();
 
-    Config defconf;
-    Options &options = Options::getInstance();
-    options.addConfig(defconf);
-
-    /*Setup some engine options*/
-    Comm::EngineOptions engine_options;
-    engine_options.insert(make_pair("MultiPV", "254"));
-    engine_options.insert(make_pair("UCI_AnalyseMode", "true"));
-
-    Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
-
-    /*Create the engine and its communicator*/
-    int commId = pool.create<Comm::LocalUCICommunicator>(options.getEngineFullpath(),
-                                                         engine_options);
     Position chessboard;
     chessboard.init();
-    vector<string> boardMoves;
-    vector<string> engineMoves;
 
-    pool.send(commId, "ucinewgame");
-    if (!pool.isReady(commId))
-        exit(EXIT_FAILURE);
-
-    map<string, int> failed;
+    map<string, string> failed;
 
     Out::output("Starting test with " + to_string(positions.size()) + " positions\n");
 
     int col = 0;
     for (string pos : positions) {
         chessboard.clear();
-        boardMoves.clear();
-        engineMoves.clear();
         try {
             chessboard.set(pos);
             if (DEBUG)
                 Out::output(chessboard.pretty());
-            /*
-             * This has way too many loops, but it works and I'm too
-             * lazy to optimize it.
-             */
+            uint64_t myHash = chessboard.hash();
+            uint64_t expectedHash = pg_ref_hash(chessboard.fen().c_str());
 
-            /*Generate board moves*/
-            for (Move m : Board::gen_all(chessboard)) {
-                boardMoves.push_back(Board::move_to_string(m));
+            if (myHash != expectedHash) {
+                pair<string, string> fail;
+                fprintf(stdout, "%lx vs %lx\n", myHash, expectedHash);
+                failed.insert(pair<string, string>(pos, to_string(myHash)
+                                             + " vs "
+                                             + to_string(expectedHash)));
             }
-
-            pool.send(commId, "position fen " + pos);
-            if (!pool.isReady(commId))
-                exit(EXIT_FAILURE);
-
-            /*Generate engine moves*/
-            pool.sendAndWaitBestmove(commId, "go depth 1");
-            for (Line l : pool.getResultLines(commId)) {
-                if (l.empty())
-                    break;
-                engineMoves.push_back(l.firstMove());
-            }
-
-            int movediff = diff(boardMoves, engineMoves);
-            if (movediff)
-                failed.insert(make_pair(pos, movediff));
         } catch (InvalidFenException e) {
-            failed.insert(make_pair(pos, -1));
+            failed.insert(make_pair(pos, "Invalid fen"));
+        } catch (...) {
+            Out::output("Unexpected exception.\n");
         }
         col++;
         if (col % 10000 == 0) {
@@ -169,11 +134,7 @@ int main(int argc, char **argv)
         for (auto test : failed) {
             Out::output(test.first);
             Out::output("\n");
-            if (test.second > 0)
-                Out::output(" has " + to_string(test.second)
-                            + " differences with engine.");
-            else
-                Out::output("is not a valid position.");
+            Out::output(test.second);
             Out::output("\n");
         }
     }

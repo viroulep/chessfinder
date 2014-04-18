@@ -127,6 +127,12 @@ void parseArgs(int argc, char **argv)
 
 }
 
+void sigintHandler(int rc)
+{
+    OracleFinder::dumpStat();
+    Err::handle("Program interrupted by user (rc = " + std::to_string(rc) + ")");
+}
+
 int main(int argc, char **argv)
 {
     try {
@@ -168,6 +174,14 @@ int main(int argc, char **argv)
 #ifdef MATFINDER
     MatFinder *theFinder = new MatFinder(commId);
 #elif ORACLEFINDER
+    struct sigaction actInt;
+    actInt.sa_handler = sigintHandler;
+    sigemptyset(&actInt.sa_mask);
+    actInt.sa_flags = 0;
+    if (sigaction(SIGINT, &actInt, NULL) < 0) {
+        Err::handle("SIGINT install error");
+    }
+
     OracleFinder *theFinder = new OracleFinder(commId);
 #else
     Finder *theFinder = nullptr;

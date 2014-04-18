@@ -36,6 +36,7 @@ class OracleFinder : public Finder {
 public:
     OracleFinder(int comm);
     virtual ~OracleFinder();
+    static void dumpStat();
 
 private:
     int runFinderOnPosition(const Board::Position &pos,
@@ -55,6 +56,7 @@ private:
      *Node *rootNode_ = NULL;
      */
     std::list<Node *> toProceed_;
+    static std::map<std::string, int> signStat_;
 };
 
 #endif

@@ -24,6 +24,7 @@
 #include <string>
 #include <queue>
 #include <set>
+#include <algorithm>
 #include <cstring>
 #include <cmath>
 #include "SimpleChessboard.h"
@@ -460,6 +461,17 @@ namespace Board {
         ss << st_->halfmoveClock << " " << st_->fullmoveClock;
 
         return ss.str();
+    }
+
+    string Position::signature() const
+    {
+        string retVal = "";
+        for (Piece p : board_) {
+            if (p != NO_PIECE)
+                retVal += PieceToChar[p];
+        }
+        std::sort(retVal.begin(), retVal.end());
+        return retVal;
     }
 
     uint64_t Position::hash() const

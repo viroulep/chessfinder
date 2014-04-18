@@ -92,6 +92,7 @@ namespace Board {
             std::string moveHistory() const;
             std::string pgn() const;
             std::string fen() const;
+            std::string signature() const;
             uint64_t hash() const;
             bool compareLines(const Line &lhs, const Line &rhs);
         protected:

@@ -42,6 +42,9 @@
 using namespace std;
 using namespace Board;
 
+
+std::map<std::string, int> OracleFinder::signStat_;
+
 OracleFinder::OracleFinder(int comm) : Finder(comm)
 {
     //engine_side_ = cb_->getActiveSide();
@@ -73,6 +76,17 @@ OracleFinder::~OracleFinder()
             oracleTable_->toPolyglot(outputFile);
     }
     delete oracleTable_;
+    dumpStat();
+}
+
+void OracleFinder::dumpStat()
+{
+    Out::output("Materiel signature hit statistics :\n", 2);
+    for (auto elem : signStat_) {
+        Out::output(elem.first + " : " + to_string(elem.second) + "\n", 2);
+    }
+    if (signStat_.size() == 0)
+        Out::output("No hit...\n", 2);
 }
 
 /* Return 1 if the difference is negative, otherwise 0.  */
@@ -179,6 +193,9 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
 
         Out::output(pos.pretty(), 2);
+        string signature = pos.signature();
+        int hit = signStat_[signature];
+        signStat_[signature] = ++hit;
         sendPositionToEngine(pos);
 
         if (playFor_ != active) {

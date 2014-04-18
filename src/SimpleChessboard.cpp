@@ -642,7 +642,7 @@ namespace Board {
             }
         }
         string pgn(1, kind_to_char(kind_of(p), false));
-        if (simSameRank)
+        if (simSameRank || kind_of(p) == PAWN)
             pgn += file_to_char(file_of(from));
         if (simSameFile)
             pgn += rank_to_char(rank_of(from));
@@ -650,7 +650,7 @@ namespace Board {
             pgn += "x";
         pgn += square_to_string(to);
         if (m.type == PROMOTION)
-            pgn += kind_to_char(m.promotion, true, true);
+            pgn += "=" + string(1, kind_to_char(m.promotion, true, true));
         return pgn;
     }
 

@@ -124,7 +124,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
  */
 
 
-    Node *init = new Node();
+    Node *init = new Node(nullptr);
     Node *rootNode_ = init;
     init->pos = pos.fen();
     string initFen = init->pos;
@@ -220,16 +220,29 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
-            //TODO: register if winning or losing ?
-            current->st = Node::MATE;
+            current->st = Node::MATE_US;
             Out::output("[" + color_to_string(active)
                         + "] Bestline is mate (cut)\n", 2);
+            /*Eval is always negative if it's bad for us*/
+            if (bestLine.getEval() < 0) {
+                current->st = Node::MATE_THEM;
+                displayNodeHistory(current);
+                Err::handle("A node has gone from draw to mate, this is an error"
+                            " until we decide on what to do, and if it's a bug"
+                            " in the engine.");
+            }
             continue;
         } else if (fabs(bestLine.getEval()) > opt_.getCutoffTreshold()) {
-            //TODO: register if winning or losing ?
-            current->st = Node::TRESHOLD;
+            current->st = Node::TRESHOLD_US;
             Out::output("[" + color_to_string(active)
                         + "] Bestline is above treshold (cut)\n", 2);
+            if (bestLine.getEval() < 0) {
+                current->st = Node::TRESHOLD_THEM;
+                displayNodeHistory(current);
+                Err::handle("A node has gone from draw to threshold, this is an error"
+                            " until we decide on what to do, and if it's a bug"
+                            " in the engine.");
+            }
             continue;
         }
 
@@ -246,7 +259,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
          *(save some iterations in main loop : we could also push all the
          *unbalanced lines and see...)
          */
-        proceedUnbalancedLines(pos, cut);
+        proceedUnbalancedLines(pos, current, cut);
 
 
 
@@ -304,7 +317,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             pos.undoLastMove();
 
             //no next position in the table, push the node to stack
-            next = new Node();
+            next = new Node(current);
             next->pos = fenpos;
             Out::output("[" + color_to_string(active)
                     + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
@@ -324,7 +337,6 @@ int OracleFinder::runFinderOnPosition(const Position &p,
      *    - what to do with treshold/mate node ? Matfinder has to close
      *    these lines
      */
-
     //Display info at the end of computation
     Out::output("[End] Finder is done. Starting board was : \n");
     pos.set(initFen);
@@ -375,7 +387,7 @@ void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
             Err::handle("Illegal move pushed ! (While proceeding against Node)");
         string fen = pos.fen();
         pos.undoLastMove();
-        Node *next = new Node();
+        Node *next = new Node(againstNode);
         next->pos = fen;
         toProceed_.push_front(next);
         MoveNode move(uciMv, next);
@@ -385,14 +397,14 @@ void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
 }
 
 /*TODO refactor this to "addlines to hashtable"*/
-void OracleFinder::proceedUnbalancedLines(Position &pos,
+void OracleFinder::proceedUnbalancedLines(Position &pos, const Node *cur,
                                           vector<Line> &unbalanced)
 {
     for (Line l : unbalanced) {
-        Node::Status s = Node::TRESHOLD;
+        Node::Status s = Node::TRESHOLD_THEM;
         if (l.isMat())
-            s = Node::MATE;
-        Node *toAdd = new Node();
+            s = Node::MATE_THEM;
+        Node *toAdd = new Node(cur);
         vector<MoveNode> moves;
         string next = l.firstMove();
         toAdd->legal_moves = moves;
@@ -412,4 +424,22 @@ bool OracleFinder::cutNode(const Position &, const Node *)
     /*TODO evaluate if we should process this node or not, according to
      * the chessboard state.*/
     return false;
+}
+
+void OracleFinder::displayNodeHistory(const Node *start)
+{
+    const Node *cur = start;
+    /*
+     * I guess 30 positions are enough to display, since we display this message
+     * as soon as we detect an inversion in evaluation.
+     */
+    int limit = 30;
+    int i = 0;
+    Out::output("Displaying node history for " + start->pos
+                + " (reverse order)\n");
+    while (cur && i < limit) {
+        Out::output(cur->to_string() + "\n");
+        cur = cur->prev_;
+        i++;
+    }
 }

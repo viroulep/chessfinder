@@ -27,13 +27,16 @@
 #include "Output.h"
 using namespace std;
 
+Node::Node(const Node *prev) : prev_(prev)
+{
+}
 
 Node::~Node()
 {
 
 }
 
-string Node::to_string()
+string Node::to_string() const
 {
     string retVal;
     //TODO: display moves ?
@@ -46,14 +49,18 @@ string Node::to_string(Status s)
     switch (s) {
         case AGAINST:
             return "against";
-        case MATE:
-            return "mate";
+        case MATE_US:
+            return "mate_us";
+        case MATE_THEM:
+            return "mate_them";
         case STALEMATE:
             return "stalemate";
         case DRAW:
             return "draw";
-        case TRESHOLD:
-            return "treshold";
+        case TRESHOLD_US:
+            return "treshold_us";
+        case TRESHOLD_THEM:
+            return "treshold_them";
     }
     return "";
 }
@@ -158,7 +165,7 @@ HashTable *HashTable::fromPolyglot(istream &is)
         is.read((char *)&learn, sizeof(uint32_t));
         if (!is.good())
             break;
-        Node *toAdd = new Node();
+        Node *toAdd = new Node(nullptr);
         toAdd->pos = "";//No position when loading table
         toAdd->st = (Node::Status)learn;
         MoveNode mn(Board::polyglotToUci(move), NULL);

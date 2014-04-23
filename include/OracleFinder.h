@@ -48,9 +48,11 @@ private:
 #endif
     void proceedAgainstNode(Board::Position &pos, Node *againstNode);
     void proceedUnbalancedLines(Board::Position &pos,
+                                const Node *cur,
                                 std::vector<Line> &unbalanced);
     void pushAllLines(std::vector<Line &> lines, Node *currentNode);
     bool cutNode(const Board::Position &pos, const Node *currentNode);
+    void displayNodeHistory(const Node *start);
     HashTable *oracleTable_;
     /*
      *Node *rootNode_ = NULL;

@@ -39,11 +39,14 @@ typedef std::vector<MoveNode> LegalNodes;
 
 class Node {
 public:
+    Node(const Node *prev);
     ~Node();
     enum Status {
         AGAINST,
-        TRESHOLD,
-        MATE,
+        TRESHOLD_US,
+        TRESHOLD_THEM,
+        MATE_US,
+        MATE_THEM,
         STALEMATE,
         DRAW
     };
@@ -58,8 +61,9 @@ public:
     LegalNodes legal_moves;
     //Polyglot "learn" field, uint32_t
     Status st;
-    std::string to_string();
+    std::string to_string() const;
     static std::string to_string(Status s);
+    const Node * const prev_;
 };
 
 //map is internally ordered by key, ascending

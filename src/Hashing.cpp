@@ -214,16 +214,6 @@ uint64_t HashTable::hashFEN(string fenString)
 }
 
 
-#if 0
-uint64_t HashTable::hashBoard(Chessboard *cb)
-{
-    if (!cb)
-        return U64(0x0);
-    else
-        return hashFEN(cb->exportToFEN());
-}
-#endif
-
 int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {
     return 64 * kind + 8 * r + f;

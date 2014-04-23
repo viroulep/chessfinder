@@ -75,7 +75,6 @@ string Line::getPretty(bool invertEval) const
     out << ", line : ";
     list<string> tmpList = moves_;
     int i = 0;
-    /*TODO add number of displayed line to options*/
     while (!tmpList.empty() && i < Options::getInstance().getMaxLines()) {
         out << tmpList.front();
         out << " ";

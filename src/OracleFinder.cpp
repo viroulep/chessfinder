@@ -89,29 +89,6 @@ void OracleFinder::dumpStat()
         Out::output("No hit...\n", 2);
 }
 
-/* Return 1 if the difference is negative, otherwise 0.  */
-#if 0
-int timeval_subtract(struct timeval *result, struct timeval *t2, struct timeval *t1)
-{
-    long int diff = (t2->tv_usec + 1000000 * t2->tv_sec) - (t1->tv_usec + 1000000 * t1->tv_sec);
-    result->tv_sec = diff / 1000000;
-    result->tv_usec = diff % 1000000;
-
-    return (diff<0);
-}
-
-void timeval_print(struct timeval *tv)
-{
-    char buffer[30];
-    time_t curtime;
-
-    printf("%ld.%06ld", tv->tv_sec, tv->tv_usec);
-    curtime = tv->tv_sec;
-    strftime(buffer, 30, "%m-%d-%Y  %T", localtime(&curtime));
-    printf(" = %s.%06ld\n", buffer, tv->tv_usec);
-}
-#endif
-
 int OracleFinder::runFinderOnPosition(const Position &p,
                                       const list<string> &moves)
 {
@@ -202,10 +179,6 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             /*We are on a node where the opponent has to play*/
             current->st = Node::AGAINST;
             proceedAgainstNode(pos, current);
-            /*TODO check this work*/
-            /*sendToEngine("go depth 1");*/
-            /*waitBestmove();*/
-            /*pushAllLines(current);*/
             continue;
         }
 
@@ -295,21 +268,6 @@ int OracleFinder::runFinderOnPosition(const Position &p,
         /*A fen*/
         string fenpos;
         /*Try to find a position in the table*/
-#if 0
-        for (int i = balancedLines.size() - 1; i >= 0; --i) {
-            l = balancedLines[i];
-            /*l is not null (or bug)*/
-            mv = l->firstMove();
-            cb_->uciApplyMove(mv);
-            /*This is the next pos*/
-            fenpos = cb_->exportToFEN();
-            cb_->undoMove();
-            //Jean Louis' idea to force finding positions in oracle
-            next = oracleTable_->findPos(fenpos);
-            if (next)
-                break;
-        }
-#endif
         /* There must be a reason to go trough it backward, but I can't
          * remember it right now.
          */
@@ -334,9 +292,6 @@ int OracleFinder::runFinderOnPosition(const Position &p,
         /*Maybe just continue, but then we should register that mate or
          * treshold is winning or losing*/
         if (!next) {
-            /*auto compareFn = std::bind(&Position::compareLines, pos,*/
-                    /*std::placeholders::_1, std::placeholders::_2);*/
-            /*std::sort(draw.begin(), draw.end(), compareFn);*/
             std::sort(draw.begin(), draw.end(),
                          [&pos](const Line &lhs, const Line &rhs)
                          {
@@ -403,28 +358,6 @@ void OracleFinder::getLines(const vector<Line> all, vector<Line> &balanced,
             unbalanced.push_back(l);
     }
 }
-#if 0
-Board::LegalMoves OracleFinder::getAllMoves()
-{
-    LegalMoves list;
-    int maxMoves = 254;
-
-    Out::output("Getting legal moves\n");
-    Out::output("Updating MultiPV to " + to_string(maxMoves) + "\n", 2);
-    sendOptionToEngine("MultiPV", to_string(maxMoves));
-    sendToEngine("isready");
-    waitReadyok();
-
-    sendCurrentPositionToEngine();
-    lines_.assign(maxMoves, Line());
-    sendToEngine("go depth 1");
-    waitBestmove();
-    Out::output("Evaluation is :\n");
-    Out::output(getPrettyLines());
-    lines_.clear();
-    return list;
-}
-#endif
 
 void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
 {

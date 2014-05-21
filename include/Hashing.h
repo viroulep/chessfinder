@@ -41,6 +41,8 @@ class Node {
 public:
     Node(const Node *prev);
     ~Node();
+    void addParent(const Node *parent);
+    std::vector<const Node *> getParents() const;
     enum Status {
         AGAINST,
         TRESHOLD_US,
@@ -63,7 +65,8 @@ public:
     Status st;
     std::string to_string() const;
     static std::string to_string(Status s);
-    const Node * const prev_;
+private:
+    std::vector<const Node *> prev_;
 };
 
 //map is internally ordered by key, ascending

@@ -27,8 +27,9 @@
 #include "Output.h"
 using namespace std;
 
-Node::Node(const Node *prev) : prev_(prev)
+Node::Node(const Node *prev)
 {
+    prev_.push_back(prev);
 }
 
 Node::~Node()
@@ -36,11 +37,22 @@ Node::~Node()
 
 }
 
+void Node::addParent(const Node *parent)
+{
+    prev_.push_back(parent);
+}
+
+std::vector<const Node *> Node::getParents() const
+{
+    return prev_;
+}
+
 string Node::to_string() const
 {
     string retVal;
     //TODO: display moves ?
-    retVal += "(" + to_string(st) + "," + pos + ")";
+    retVal += "(p:" + std::to_string(prev_.size())
+              + "," + to_string(st) + "," + pos + ")";
     return retVal;
 }
 

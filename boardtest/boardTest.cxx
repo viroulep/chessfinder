@@ -56,17 +56,44 @@ int main()
 {
     /*atexit(Comm::UCICommunicatorPool::atexit);*/
     Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
+    /*Options::getInstance().setVerboseLevel(10);*/
+
+    Comm::EngineOptions engine_options;
+    engine_options.insert(make_pair("MultiPV", "5"));
+    engine_options.insert(make_pair("Threads", "2"));
     /*Comm::UCICommunicator *comm = pool.create<Comm::LocalUCICommunicator>();*/
-    int commId = pool.create<Comm::LocalUCICommunicator>("/usr/local/bin/stockfish", Comm::EngineOptions());
+    int commId = pool.create<Comm::LocalUCICommunicator>("/usr/local/bin/stockfish", engine_options);
+    int commId2 = pool.create<Comm::LocalUCICommunicator>("/usr/local/bin/stockfish", engine_options);
+
 
     pool.send(commId, "uci");
+    pool.send(commId2, "uci");
     if (!pool.isReady(commId))
         exit(EXIT_FAILURE);
-    string cmd = "go movetime 1000";
-    pool.sendAndWaitBestmove(commId, cmd);
+    string cmd = "go movetime 6000";
+    pool.send(commId, cmd);
+
+    string startFen = "8/8/7k/1Q2P3/7K/q7/8/1R4b1 w - - 0 1";
+    Position pos;
+    /*pos.init();*/
+    pos.set(startFen);
+    cout << pos.pretty() << endl;
+    string position = "position fen ";
+    position += pos.fen();
+    pool.send(commId2, position);
+    if (!pool.isReady(commId2))
+        exit(EXIT_FAILURE);
+    pool.sendAndWaitBestmove(commId2, cmd);
     const vector<Line> &res = pool.getResultLines(commId);
     Out::output("Lines :\n");
     for (Line l : res) {
+        if (l.empty())
+            break;
+        Out::output(l.getPretty(false));
+    }
+    const vector<Line> &res2 = pool.getResultLines(commId2);
+    Out::output("Lines 2 :\n");
+    for (Line l : res2) {
         if (l.empty())
             break;
         Out::output(l.getPretty(false));
@@ -76,16 +103,11 @@ int main()
         cout << "destroy ok\n";
 
 
-    string startFen = "8/8/7k/1Q2P3/7K/q7/8/1R4b1 w - f6 0 1";
-    Position pos;
-    pos.init();
-    /*pos.set(startFen);*/
-    cout << pos.pretty() << endl;
 
-    set<Square> gen;
-    vector<Move> moves;
+    /*set<Square> gen;*/
+    /*vector<Move> moves;*/
 
-    Move m;
+    /*Move m;*/
 
 #if 0
     string startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

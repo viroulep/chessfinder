@@ -66,7 +66,7 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
 
     Square to = mv.to;
     Square from = mv.from;
-    if (!to || !from)
+    if (!is_ok(to) || !is_ok(from))
         Err::handle("Comparing move on undefined squares");
     ft = file_of(to);
     rt = rank_of(to);

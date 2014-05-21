@@ -298,8 +298,11 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             pos.undoLastMove();
             //Jean Louis' idea to force finding positions in oracle
             next = oracleTable_->findPos(fenpos);
-            if (next)
+            if (next) {
+                /*FIXME "safeaddparent"*/
+                next->addParent(current);
                 break;
+            }
         }
         /*FIXME: what if positive eval ?*/
         /*Maybe just continue, but then we should register that mate or
@@ -437,9 +440,10 @@ void OracleFinder::displayNodeHistory(const Node *start)
     int i = 0;
     Out::output("Displaying node history for " + start->pos
                 + " (reverse order)\n");
+    /*TODO think about what to do if multiple parent*/
     while (cur && i < limit) {
         Out::output(cur->to_string() + "\n");
-        cur = cur->prev_;
+        cur = cur->getParents().back();
         i++;
     }
 }

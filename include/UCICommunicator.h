@@ -32,7 +32,10 @@
 
 namespace Comm {
 
-    typedef std::map<std::string, std::string> EngineOptions;
+    class EngineOptions : public std::map<std::string, std::string> {
+        public:
+            EngineOptions();
+    };
     class UCICommunicatorPool;
 
     /**

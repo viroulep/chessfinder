@@ -15,6 +15,13 @@ using namespace std;
 
 namespace Comm {
 
+    EngineOptions::EngineOptions()
+    {
+        Options &opts = Options::getInstance();
+        insert(make_pair("Threads", std::to_string(opts.getEngineThreads())));
+        insert(make_pair("Hash", std::to_string(opts.getEngineHashmapSize())));
+    }
+
     UCICommunicator::UCICommunicator(const EngineOptions &options) :
         optionsMap_(options)
     {
@@ -59,7 +66,7 @@ namespace Comm {
         else if (token == "bestmove") bestmove(is);
         else if (token == "readyok") readyok(is);
         else if (token == "info") info(is);
-        else if (token == "option") ;
+        else if (token == "option") Out::output(msg + "\n", 6);
         else {
             Out::output("Warning : Unrecognise command from engine :", 3);
             Out::output("\"" + msg + "\"", 3);

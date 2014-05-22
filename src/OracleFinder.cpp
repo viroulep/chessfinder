@@ -136,6 +136,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
         Node *current = toProceed_.front();
         toProceed_.pop_front();
         /*Check we are not computing an already existing position*/
+        /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
         if (oracleTable_->findPos(current->pos)) {
             Out::output("Position already in table.\n", 1);
             delete current;
@@ -374,6 +375,7 @@ void OracleFinder::getLines(const vector<Line> all, vector<Line> &balanced,
     }
 }
 
+/*FIXME re-inline this in worker*/
 void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
 {
     vector<Move> all = gen_all(pos);
@@ -392,6 +394,7 @@ void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
         pos.undoLastMove();
         Node *next = new Node(againstNode);
         next->pos = fen;
+        /*FIXME safeinsert*/
         toProceed_.push_front(next);
         MoveNode move(uciMv, next);
         againstNode->legal_moves.push_back(move);
@@ -407,6 +410,7 @@ void OracleFinder::proceedUnbalancedLines(Position &pos, const Node *cur,
         Node::Status s = Node::TRESHOLD_THEM;
         if (l.isMat())
             s = Node::MATE_THEM;
+        /*FIXME there is likely a memory leak here, if position already in table*/
         Node *toAdd = new Node(cur);
         vector<MoveNode> moves;
         string next = l.firstMove();

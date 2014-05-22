@@ -39,8 +39,18 @@ public:
     static void dumpStat();
 
 private:
+    /*This should now create workers and handle termination*/
     int runFinderOnPosition(const Board::Position &pos,
                             const std::list<std::string> &moves);
+    /*TODO*/
+/*
+ *Idea :
+ *    - workers get work from toProceed_ via getSafeNode
+ *    - toproceed should have safeInsert (+signal) and safeGet
+ *    - workers does somthg, if safeGet = null && sleeping workers = N-1 then quit
+ *        else cond.wait
+ */
+    static void *exploreNode(void *args);
     void getLines(const std::vector<Line> all, std::vector<Line> &balanced,
                   std::vector<Line> &unbalanced);
 #if 0
@@ -59,6 +69,7 @@ private:
      */
     std::list<Node *> toProceed_;
     static std::map<std::string, int> signStat_;
+    int nWorkers_ = 3;
 };
 
 #endif

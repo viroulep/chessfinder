@@ -70,4 +70,4 @@ matfinder: $(finder_OBJECTS) src/main_finder.o
 
 clean-matfinder:
 	echo "[matfinder] Clean"
-	rm -f $(matfinder_OBJECTS) $(oraclefinder_OBJECTS) matfinder oraclefinder
+	rm -f $(matfinder_OBJECTS) $(oraclefinder_OBJECTS) matfinder oraclefinder src/main_oracle.o src/main_finder.o

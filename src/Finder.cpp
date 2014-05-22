@@ -26,9 +26,7 @@
 #include <unistd.h>
 
 #include "Finder.h"
-#include "MatfinderOptions.h"
 #include "Stream.h"
-#include "UCIReceiver.h"
 #include "Utils.h"
 #include "Output.h"
 

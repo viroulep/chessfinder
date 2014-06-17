@@ -32,19 +32,65 @@ Node::Node(const Node *prev)
     prev_.push_back(prev);
 }
 
+Node::Node(const Node *prev, string pos, Status st) : pos_(pos), st_(st)
+{
+    prev_.push_back(prev);
+}
+
 Node::~Node()
 {
 
 }
 
-void Node::addParent(const Node *parent)
+void Node::safeAddParent(const Node *parent)
 {
+    bool lock = false;
+    while (!__atomic_compare_exchange_n(&lockP_, &lock, 1, false,
+                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        ;
+    lock = true;
     prev_.push_back(parent);
+    if (!__atomic_compare_exchange_n(&lockP_, &lock, 0, false,
+                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        Err::handle("Unable to release lock on Node.");
 }
 
-std::vector<const Node *> Node::getParents() const
+void Node::safeAddMove(MoveNode mv)
+{
+    bool lock = false;
+    while (!__atomic_compare_exchange_n(&lockM_, &lock, 1, false,
+                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        ;
+    lock = true;
+    legal_moves_.push_back(mv);
+    if (!__atomic_compare_exchange_n(&lockM_, &lock, 0, false,
+                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        Err::handle("Unable to release lock on Node.");
+}
+
+void Node::updateStatus(Status st)
+{
+    st_ = st;
+}
+
+const vector<const Node *> &Node::getParents() const
 {
     return prev_;
+}
+
+const LegalNodes &Node::getMoves() const
+{
+    return legal_moves_;
+}
+
+const string &Node::getPos() const
+{
+    return pos_;
+}
+
+Node::Status Node::getStatus() const
+{
+    return st_;
 }
 
 string Node::to_string() const
@@ -52,13 +98,15 @@ string Node::to_string() const
     string retVal;
     //TODO: display moves ?
     retVal += "(p:" + std::to_string(prev_.size())
-              + "," + to_string(st) + "," + pos + ")";
+              + "," + to_string(st_) + "," + pos_ + ")";
     return retVal;
 }
 
 string Node::to_string(Status s)
 {
     switch (s) {
+        case PENDING:
+            return "pending";
         case AGAINST:
             return "against";
         case MATE_US:
@@ -99,15 +147,42 @@ string HashTable::to_string()
     return retVal;
 }
 
-  Node *HashTable::findPos(std::string sp)
+Node *HashTable::findPos(std::string sp)
 {
     uint64_t hash = HashTable::hashFEN(sp);
+    bool lock = false;
+    Node *retVal = nullptr;
+    while (!__atomic_compare_exchange_n(&lock_, &lock, 1, false,
+                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        ;
+    lock = true;
     auto it = find(hash);
-    if (it == end())
-        return NULL;
-    else
-        return it->second;
+    if (it != end())
+        retVal = it->second;
+    if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
+                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        Err::handle("Unable to release lock on Hashtable.");
+    return retVal;
 }
+
+void HashTable::safeAddNode(uint64_t hash, Node *Node)
+{
+    bool lock = false;
+    while (!__atomic_compare_exchange_n(&lock_, &lock, 1, false,
+                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        ;
+    lock = true;
+    insert(std::make_pair(hash, Node));
+    if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
+                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        Err::handle("Unable to release lock on Hashtable.");
+}
+
+int HashTable::size() const
+{
+    return size();
+}
+
 /*
  *Node *HashTable::find(SimplePos sp)
  *{
@@ -146,17 +221,19 @@ void HashTable::toPolyglot(ostream &os)
         uint16_t move = 0x0;
         uint16_t weight = 0x0;
         uint32_t learn = 0x0;
-        if (n.legal_moves.size() == 1)
-            move = Board::uciToPolyglot(n.legal_moves.front().first);
+        const LegalNodes &movelist = n.getMoves();
+        if (movelist.size() == 1)
+            move = Board::uciToPolyglot(movelist.front().first);
         //else multiple move = other side of oracle
         //write move
         os.write((char *)&move, sizeof(uint16_t));
 
-        if (n.st == Node::STALEMATE || n.st == Node::DRAW)
+        Node::Status st = n.getStatus();
+        if (st == Node::STALEMATE || st == Node::DRAW)
             weight++;
         //write weight
         os.write((char *)&weight, sizeof(uint16_t));
-        learn = (uint32_t)n.st;
+        learn = (uint32_t)n.getStatus();
         //write learn
         os.write((char *)&learn, sizeof(uint32_t));
     }
@@ -177,11 +254,9 @@ HashTable *HashTable::fromPolyglot(istream &is)
         is.read((char *)&learn, sizeof(uint32_t));
         if (!is.good())
             break;
-        Node *toAdd = new Node(nullptr);
-        toAdd->pos = "";//No position when loading table
-        toAdd->st = (Node::Status)learn;
+        Node *toAdd = new Node(nullptr, "", (Node::Status)learn);
         MoveNode mn(Board::polyglotToUci(move), NULL);
-        toAdd->legal_moves.push_back(mn);
+        toAdd->safeAddMove(mn);
         pair<uint64_t, Node *> p(hash, toAdd);
         retValue->insert(p);
         Out::output("Inserting pos in hashtable.\n", 3);

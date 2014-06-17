@@ -124,20 +124,20 @@ int OracleFinder::runFinderOnPosition(const Position &p,
  */
 
 
-    Node *init = new Node(nullptr);
+    string initFen = pos.fen();
+    Node *init = new Node(nullptr, initFen, Node::PENDING);
     Node *rootNode_ = init;
-    init->pos = pos.fen();
-    string initFen = init->pos;
     //depth-first
     toProceed_.push_front(rootNode_);
 
     //Main loop
     while (toProceed_.size() != 0) {
         Node *current = toProceed_.front();
+        const string currentPos = current->getPos();
         toProceed_.pop_front();
         /*Check we are not computing an already existing position*/
         /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
-        if (oracleTable_->findPos(current->pos)) {
+        if (oracleTable_->findPos(currentPos)) {
             Out::output("Position already in table.\n", 1);
             delete current;
             continue;
@@ -149,7 +149,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
         Line bestLine;
         /*Set the chessboard to current pos*/
-        pos.set(current->pos);
+        pos.set(currentPos);
         Color active = pos.side_to_move();
 
         Out::output("[" + color_to_string(active) + "] Proceed size : "
@@ -157,12 +157,11 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
         /*Register current pos in the table*/
         uint64_t curHash = pos.hash();
-        pair<uint64_t, Node *> p(curHash, current);
-        oracleTable_->insert(p);
+        oracleTable_->safeAddNode(curHash, current);
 
         /*Clear cut*/
         if (!pos.hasSufficientMaterial()) {
-            current->st = Node::DRAW;
+            current->updateStatus(Node::DRAW);
             Out::output("[" + color_to_string(active)
                     + "] Insuficient material.\n", 2);
             //Proceed to next node...
@@ -178,7 +177,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
         if (playFor_ != active) {
             /*We are on a node where the opponent has to play*/
-            current->st = Node::AGAINST;
+            current->updateStatus(Node::AGAINST);
             proceedAgainstNode(pos, current);
             continue;
         }
@@ -215,18 +214,18 @@ int OracleFinder::runFinderOnPosition(const Position &p,
         bestLine = lines[0];
         if (bestLine.empty()) {
             //STALEMATE
-            current->st = Node::STALEMATE;
+            current->updateStatus(Node::STALEMATE);
             Out::output("[" + color_to_string(active)
                         + "] Bestline is stalemate (cut)\n", 2);
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
-            current->st = Node::MATE_US;
+            current->updateStatus(Node::MATE_US);
             Out::output("[" + color_to_string(active)
                         + "] Bestline is mate (cut)\n", 2);
             /*Eval is always negative if it's bad for us*/
             if (bestLine.getEval() < 0) {
-                current->st = Node::MATE_THEM;
+                current->updateStatus(Node::MATE_THEM);
                 displayNodeHistory(current);
                 Err::handle("A node has gone from draw to mate, this is an error"
                             " until we decide on what to do, and if it's a bug"
@@ -234,11 +233,11 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             }
             continue;
         } else if (fabs(bestLine.getEval()) > opt_.getCutoffTreshold()) {
-            current->st = Node::TRESHOLD_US;
+            current->updateStatus(Node::TRESHOLD_US);
             Out::output("[" + color_to_string(active)
                         + "] Bestline is above treshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
-                current->st = Node::TRESHOLD_THEM;
+                current->updateStatus(Node::TRESHOLD_THEM);
                 displayNodeHistory(current);
                 Err::handle("A node has gone from draw to threshold, this is an error"
                             " until we decide on what to do, and if it's a bug"
@@ -253,7 +252,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
         getLines(lines, draw, cut);
 
-        current->st = Node::DRAW;
+        current->updateStatus(Node::DRAW);
 
         /*
          *Add all the imbalanced line to the hashtable (either mat or "treshold")
@@ -301,7 +300,7 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             next = oracleTable_->findPos(fenpos);
             if (next) {
                 /*FIXME "safeaddparent"*/
-                next->addParent(current);
+                next->safeAddParent(current);
                 break;
             }
         }
@@ -321,15 +320,14 @@ int OracleFinder::runFinderOnPosition(const Position &p,
             pos.undoLastMove();
 
             //no next position in the table, push the node to stack
-            next = new Node(current);
-            next->pos = fenpos;
+            next = new Node(current, fenpos, Node::PENDING);
             Out::output("[" + color_to_string(active)
                     + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
             toProceed_.push_front(next);
         }
         /*Whatever the move is, add it to our move list*/
         MoveNode move(mv, next);
-        current->legal_moves.push_back(move);
+        current->safeAddMove(move);
         Out::output("-----------------------\n", 1);
 
     }
@@ -392,12 +390,11 @@ void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
             Err::handle("Illegal move pushed ! (While proceeding against Node)");
         string fen = pos.fen();
         pos.undoLastMove();
-        Node *next = new Node(againstNode);
-        next->pos = fen;
+        Node *next = new Node(againstNode, fen, Node::PENDING);
         /*FIXME safeinsert*/
         toProceed_.push_front(next);
         MoveNode move(uciMv, next);
-        againstNode->legal_moves.push_back(move);
+        againstNode->safeAddMove(move);
     }
     Out::output("\n", 2);
 }
@@ -411,18 +408,14 @@ void OracleFinder::proceedUnbalancedLines(Position &pos, const Node *cur,
         if (l.isMat())
             s = Node::MATE_THEM;
         /*FIXME there is likely a memory leak here, if position already in table*/
-        Node *toAdd = new Node(cur);
-        vector<MoveNode> moves;
+        Node *toAdd = new Node(cur, pos.fen(), s);
         string next = l.firstMove();
-        toAdd->legal_moves = moves;
         if (!pos.tryAndApplyMove(next))
             Err::handle("Illegal move pushed ! (In an unbalanced line)");
-        toAdd->pos = pos.fen();
         uint64_t hash = pos.hash();
         pos.undoLastMove();
-        toAdd->st = s;
         pair<uint64_t, Node *> p(hash, toAdd);
-        oracleTable_->insert(p);
+        oracleTable_->safeAddNode(hash, toAdd);
     }
 }
 
@@ -442,7 +435,7 @@ void OracleFinder::displayNodeHistory(const Node *start)
      */
     int limit = 30;
     int i = 0;
-    Out::output("Displaying node history for " + start->pos
+    Out::output("Displaying node history for " + start->getPos()
                 + " (reverse order)\n");
     /*TODO think about what to do if multiple parent*/
     while (cur && i < limit) {

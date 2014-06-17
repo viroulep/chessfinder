@@ -39,11 +39,8 @@ typedef std::vector<MoveNode> LegalNodes;
 
 class Node {
 public:
-    Node(const Node *prev);
-    ~Node();
-    void addParent(const Node *parent);
-    std::vector<const Node *> getParents() const;
     enum Status {
+        PENDING,
         AGAINST,
         TRESHOLD_US,
         TRESHOLD_THEM,
@@ -52,25 +49,37 @@ public:
         STALEMATE,
         DRAW
     };
+    Node(const Node *prev);
+    Node(const Node *prev, std::string pos, Status st);
+    ~Node();
+    void safeAddParent(const Node *parent);
+    void safeAddMove(MoveNode mv);
+    void updateStatus(Status st);
+    const std::vector<const Node *> &getParents() const;
+    const LegalNodes &getMoves() const;
+    const std::string &getPos() const;
+    Status getStatus() const;
+    std::string to_string() const;
+    static std::string to_string(Status s);
+private:
     /*Fen string without clock informations*/
     /*Actually its the full fen*/
-    std::string pos;
+    std::string pos_;
     /*
      * FIXME: only store the move !
      * And sort according to the natural ordering
      */
     //vector<UCIMove> legal_moves;
-    LegalNodes legal_moves;
+    LegalNodes legal_moves_;
     //Polyglot "learn" field, uint32_t
-    Status st;
-    std::string to_string() const;
-    static std::string to_string(Status s);
-private:
+    Status st_ = PENDING;
     std::vector<const Node *> prev_;
+    bool lockP_ = false;
+    bool lockM_ = false;
 };
 
 //map is internally ordered by key, ascending
-class HashTable : public std::multimap<uint64_t, Node *>
+class HashTable : private std::multimap<uint64_t, Node *>
 {
 public:
 
@@ -80,6 +89,8 @@ public:
     std::string to_string();
     //TODO: rename simplepos to FEN
     Node *findPos(std::string sp);
+    void safeAddNode(uint64_t hash, Node *node);
+    int size() const;
     void toPolyglot(std::ostream &os);
     static HashTable *fromPolyglot(std::istream &is);
 private:
@@ -89,6 +100,7 @@ private:
     static uint64_t castleFromFEN(std::string castle);
 
     static const uint64_t Random64_[781];
+    bool lock_ = false;
 };
 
 #endif

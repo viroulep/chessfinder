@@ -34,7 +34,7 @@ class UCIReceiver;
 
 class Finder {
 public:
-    Finder(int comm);
+    Finder(std::vector<int> &commIds);
     ~Finder();
     int runFinder();
     /*int runEngine();*/
@@ -53,10 +53,10 @@ protected:
     virtual int runFinderOnPosition(const Board::Position &pos,
                                     const std::list<std::string> &moves) = 0;
     /*Thread *startReceiver();*/
-    void sendPositionToEngine(Board::Position &pos);
-    std::string getPrettyLines(const Board::Position &pos,
+    static void sendPositionToEngine(Board::Position &pos, int commId);
+    static std::string getPrettyLines(const Board::Position &pos,
                                const std::vector<Line> &lines);
-    std::string getPrettyLine(const Board::Position &pos, const Line &line);
+    static std::string getPrettyLine(const Board::Position &pos, const Line &line);
 
     /*void sendOptionToEngine(string optionName, string optionValue);*/
     /*void sendToEngine(string cmd);*/
@@ -91,18 +91,18 @@ protected:
     //NOTE: sorting is done by engine, according to the active side
     /*std::vector<Line> lines_;*/
 
-    Board::Color playFor_;
+    static Board::Color playFor_;
 
     /*Number of moves "played" by the finder*/
     int addedMoves_ = 0;
 
-    /*Id of our communicator*/
-    int commId_;
+    /*Id of our communicators*/
+    static std::vector<int> commIds_;
 
-    Comm::UCICommunicatorPool &pool_;
+    static Comm::UCICommunicatorPool &pool_;
 
     /*Options instance*/
-    Options &opt_;
+    static Options &opt_;
 
     //TODO ?
     /*int nps_ = 0;*/

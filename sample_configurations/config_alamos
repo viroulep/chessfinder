@@ -2,4 +2,4 @@
     path = /usr/local/bin/stockfish_6x6
     variant = losalamos
 [finder]
-    playfor_movetime = 100
+    playfor_movetime = 300

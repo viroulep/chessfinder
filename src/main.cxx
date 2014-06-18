@@ -165,14 +165,19 @@ int main(int argc, char **argv)
 
     Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
 
-    /*Create the engine and its communicator*/
-    int commId = pool.create<Comm::LocalUCICommunicator>(
-                                   Options::getInstance().getEngineFullpath(),
-                                   engine_options);
+    vector<int> commIds;
+    /*TODO take parameters*/
+    for (int i = 0; i < 2; i++) {
+        /*Create the engine and its communicator*/
+        int commId = pool.create<Comm::LocalUCICommunicator>(
+                                       Options::getInstance().getEngineFullpath(),
+                                       engine_options);
+        commIds.push_back(commId);
+    }
 
     //The main object
 #ifdef MATFINDER
-    MatFinder *theFinder = new MatFinder(commId);
+    MatFinder *theFinder = new MatFinder(commIds);
 #elif ORACLEFINDER
     struct sigaction actInt;
     actInt.sa_handler = sigintHandler;
@@ -182,7 +187,7 @@ int main(int argc, char **argv)
         Err::handle("SIGINT install error");
     }
 
-    OracleFinder *theFinder = new OracleFinder(commId);
+    OracleFinder *theFinder = new OracleFinder(commIds);
 #else
     Finder *theFinder = nullptr;
 #endif

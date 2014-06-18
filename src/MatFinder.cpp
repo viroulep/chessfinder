@@ -34,8 +34,9 @@
 using namespace std;
 using namespace Board;
 
-MatFinder::MatFinder(int comm) : Finder(comm)
+MatFinder::MatFinder(vector<int> &comm) : Finder(comm)
 {
+    commId_ = comm.front();
 }
 
 MatFinder::~MatFinder()
@@ -63,7 +64,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
     Out::output("Doing some basic evaluation on submitted position...\n");
     pool_.sendOption(commId_, "MultiPV", "8");
 
-    sendPositionToEngine(pos);
+    sendPositionToEngine(pos, commId_);
     string init = "go movetime " + to_string(opt.getPlayforMovetime());
     pool_.sendAndWaitBestmove(commId_, init);
 
@@ -91,7 +92,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
         Out::output("[" + color_to_string(active) + "] Depth "
                     + to_string(addedMoves_) + "\n");
 
-        sendPositionToEngine(pos);
+        sendPositionToEngine(pos, commId_);
 
         Out::output(pos.pretty(), 2);
 

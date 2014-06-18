@@ -74,8 +74,12 @@ private:
     //Polyglot "learn" field, uint32_t
     Status st_ = PENDING;
     std::vector<const Node *> prev_;
-    bool lockP_ = false;
-    bool lockM_ = false;
+    pthread_mutex_t lockP_ = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_t lockM_ = PTHREAD_MUTEX_INITIALIZER;
+    /*
+     *bool lockP_ = false;
+     *bool lockM_ = false;
+     */
 };
 
 //map is internally ordered by key, ascending
@@ -90,7 +94,7 @@ public:
     //TODO: rename simplepos to FEN
     Node *findPos(std::string sp);
     void safeAddNode(uint64_t hash, Node *node);
-    int size() const;
+    int hash_size() const;
     void toPolyglot(std::ostream &os);
     static HashTable *fromPolyglot(std::istream &is);
 private:
@@ -100,7 +104,7 @@ private:
     static uint64_t castleFromFEN(std::string castle);
 
     static const uint64_t Random64_[781];
-    bool lock_ = false;
+    pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
 };
 
 #endif

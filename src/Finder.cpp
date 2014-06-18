@@ -33,11 +33,15 @@
 using namespace std;
 using namespace Board;
 
+Options &Finder::opt_ = Options::getInstance();
+Comm::UCICommunicatorPool &Finder::pool_ = Comm::UCICommunicatorPool::getInstance();
+Board::Color Finder::playFor_;
+std::vector<int> Finder::commIds_;
 
-Finder::Finder(int comm) : commId_(comm),
-                           pool_(Comm::UCICommunicatorPool::getInstance()),
-                           opt_(Options::getInstance())
+
+Finder::Finder(vector<int> &commIds)
 {
+    commIds_.insert(commIds_.end(), commIds.begin(), commIds.end());
 }
 
 Finder::~Finder()
@@ -74,11 +78,11 @@ int Finder::runFinder()
     return EXIT_SUCCESS;
 }
 
-void Finder::sendPositionToEngine(Board::Position &pos)
+void Finder::sendPositionToEngine(Board::Position &pos, int commId)
 {
     string position = "position fen ";
     position += pos.fen();
-    pool_.send(commId_, position);
+    pool_.send(commId, position);
 }
 
 

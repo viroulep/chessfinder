@@ -44,28 +44,40 @@ Node::~Node()
 
 void Node::safeAddParent(const Node *parent)
 {
-    bool lock = false;
-    while (!__atomic_compare_exchange_n(&lockP_, &lock, 1, false,
-                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        ;
-    lock = true;
+    /*bool lock = false;*/
+    pthread_mutex_lock(&lockP_);
+    /*
+     *while (!__atomic_compare_exchange_n(&lockP_, &lock, 1, true,
+     *                                    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    ;
+     *lock = true;
+     */
     prev_.push_back(parent);
-    if (!__atomic_compare_exchange_n(&lockP_, &lock, 0, false,
-                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        Err::handle("Unable to release lock on Node.");
+    /*
+     *if (!__atomic_compare_exchange_n(&lockP_, &lock, 0, false,
+     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    Err::handle("Unable to release lock on Node.");
+     */
+    pthread_mutex_unlock(&lockP_);
 }
 
 void Node::safeAddMove(MoveNode mv)
 {
-    bool lock = false;
-    while (!__atomic_compare_exchange_n(&lockM_, &lock, 1, false,
-                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        ;
-    lock = true;
+    pthread_mutex_lock(&lockM_);
+    /*bool lock = false;*/
+    /*
+     *while (!__atomic_compare_exchange_n(&lockM_, &lock, 1, true,
+     *                                    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    ;
+     *lock = true;
+     */
     legal_moves_.push_back(mv);
-    if (!__atomic_compare_exchange_n(&lockM_, &lock, 0, false,
-                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        Err::handle("Unable to release lock on Node.");
+    /*
+     *if (!__atomic_compare_exchange_n(&lockM_, &lock, 0, false,
+     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    Err::handle("Unable to release lock on Node.");
+     */
+    pthread_mutex_unlock(&lockM_);
 }
 
 void Node::updateStatus(Status st)
@@ -150,37 +162,47 @@ string HashTable::to_string()
 Node *HashTable::findPos(std::string sp)
 {
     uint64_t hash = HashTable::hashFEN(sp);
-    bool lock = false;
+    /*bool lock = false;*/
     Node *retVal = nullptr;
-    while (!__atomic_compare_exchange_n(&lock_, &lock, 1, false,
-                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        ;
-    lock = true;
+    /*while (!__atomic_compare_exchange_n(&lock_, &lock, 1, true,*/
+                                        /*__ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))*/
+        /*;*/
+    pthread_mutex_lock(&lock_);
+    /*lock = true;*/
     auto it = find(hash);
     if (it != end())
         retVal = it->second;
-    if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
-                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        Err::handle("Unable to release lock on Hashtable.");
+    pthread_mutex_unlock(&lock_);
+    /*
+     *if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
+     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    Err::handle("Unable to release lock on Hashtable.");
+     */
     return retVal;
 }
 
 void HashTable::safeAddNode(uint64_t hash, Node *Node)
 {
-    bool lock = false;
-    while (!__atomic_compare_exchange_n(&lock_, &lock, 1, false,
-                                        __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        ;
-    lock = true;
+    pthread_mutex_lock(&lock_);
+    /*
+     *bool lock = false;
+     *while (!__atomic_compare_exchange_n(&lock_, &lock, 1, true,
+     *                                    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    ;
+     *lock = true;
+     */
     insert(std::make_pair(hash, Node));
-    if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
-                                     __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-        Err::handle("Unable to release lock on Hashtable.");
+    /*
+     *if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
+     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+     *    Err::handle("Unable to release lock on Hashtable.");
+     */
+    pthread_mutex_unlock(&lock_);
 }
 
-int HashTable::size() const
+int HashTable::hash_size() const
 {
-    return size();
+    return this->size();
 }
 
 /*

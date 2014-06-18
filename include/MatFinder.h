@@ -31,7 +31,7 @@
 
 class MatFinder : public Finder {
 public:
-    MatFinder(int comm);
+    MatFinder(std::vector<int> &comm);
     virtual ~MatFinder();
 
 private:
@@ -41,7 +41,7 @@ private:
     const Line &getBestLine(const Board::Position &pos,
                             const std::vector<Line> &lines);
     Line emptyLine_;
-
+    int commId_;
 
 };
 

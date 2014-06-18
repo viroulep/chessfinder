@@ -25,16 +25,29 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <vector>
+#include <stack>
 #include <unordered_map>
+#include <pthread.h>
 #include "Line.h"
 #include "Finder.h"
 #include "Hashing.h"
 
+class NodeStack : private std::stack<Node *> {
+    public:
+        NodeStack(unsigned long workers);
+        void push(Node *n);
+        void push(std::vector<Node *> &nodes);
+        Node *poptop();
+    private:
+        pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
+        pthread_cond_t cond_ = PTHREAD_COND_INITIALIZER;
+        unsigned long waitingWorkers_ = 0;
+        const unsigned long maxWorkers_;
+};
 
 class OracleFinder : public Finder {
 public:
-    OracleFinder(int comm);
+    OracleFinder(std::vector<int> &commIds);
     virtual ~OracleFinder();
     static void dumpStat();
 
@@ -51,25 +64,30 @@ private:
  *        else cond.wait
  */
     static void *exploreNode(void *args);
-    void getLines(const std::vector<Line> all, std::vector<Line> &balanced,
-                  std::vector<Line> &unbalanced);
+    static void getLines(const std::vector<Line> all, std::vector<Line> &balanced,
+                         std::vector<Line> &unbalanced);
 #if 0
     Board::LegalMoves getAllMoves();
 #endif
-    void proceedAgainstNode(Board::Position &pos, Node *againstNode);
-    void proceedUnbalancedLines(Board::Position &pos,
-                                const Node *cur,
-                                std::vector<Line> &unbalanced);
-    void pushAllLines(std::vector<Line &> lines, Node *currentNode);
-    bool cutNode(const Board::Position &pos, const Node *currentNode);
-    void displayNodeHistory(const Node *start);
-    HashTable *oracleTable_;
+    static void proceedAgainstNode(Board::Position &pos, Node *againstNode);
+    static void proceedUnbalancedLines(Board::Position &pos,
+                                       const Node *cur,
+                                       std::vector<Line> &unbalanced);
+    static void pushAllLines(std::vector<Line &> lines, Node *currentNode);
+    static bool cutNode(const Board::Position &pos, const Node *currentNode);
+    static void displayNodeHistory(const Node *start);
+    static void push_node(Node *n);
+    static void push_nodes(std::vector<Node *> &nodes);
+    static Node *pop_node();
+    static HashTable *oracleTable_;
     /*
      *Node *rootNode_ = NULL;
      */
-    std::list<Node *> toProceed_;
+    static std::list<Node *> toProceed_;
     static std::map<std::string, int> signStat_;
-    int nWorkers_ = 3;
+    static pthread_cond_t stackCond_;
+    static pthread_mutex_t stackLock_;
+    static unsigned long waitingWorkers_;
 };
 
 #endif

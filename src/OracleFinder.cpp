@@ -45,11 +45,8 @@ using namespace Board;
 
 std::map<std::string, int> OracleFinder::signStat_;
 HashTable *OracleFinder::oracleTable_ = nullptr;
-list<Node *> OracleFinder::toProceed_;
+NodeStack OracleFinder::toProceed_(2);
 map<string, int> signStat_;
-pthread_cond_t OracleFinder::stackCond_ = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t OracleFinder::stackLock_ = PTHREAD_MUTEX_INITIALIZER;
-unsigned long OracleFinder::waitingWorkers_ = 0;
 
 
 NodeStack::NodeStack(unsigned long workers) : maxWorkers_(workers)
@@ -58,7 +55,7 @@ NodeStack::NodeStack(unsigned long workers) : maxWorkers_(workers)
 void NodeStack::push(Node *n)
 {
     pthread_mutex_lock(&lock_);
-    push(n);
+    std::stack<Node *>::push(n);
     pthread_cond_signal(&cond_);
     pthread_mutex_unlock(&lock_);
 }
@@ -67,7 +64,7 @@ void NodeStack::push(std::vector<Node *> &nodes)
 {
     pthread_mutex_lock(&lock_);
     for (Node *n : nodes)
-        push(n);
+        std::stack<Node *>::push(n);
     pthread_cond_signal(&cond_);
     pthread_mutex_unlock(&lock_);
 }
@@ -76,7 +73,7 @@ Node *NodeStack::poptop()
 {
     Node *n = nullptr;
     pthread_mutex_lock(&lock_);
-    while (!empty()) {
+    while (empty()) {
         waitingWorkers_++;
         if (waitingWorkers_ == maxWorkers_) {
             pthread_cond_broadcast(&cond_);
@@ -92,6 +89,121 @@ Node *NodeStack::poptop()
     pthread_mutex_unlock(&lock_);
     return n;
 }
+
+unsigned int NodeStack::size()
+{
+    return std::stack<Node *>::size();
+}
+
+void OracleBuilder::displayNodeHistory(const Node *start)
+{
+    const Node *cur = start;
+    /*
+     * I guess 30 positions are enough to display, since we display this message
+     * as soon as we detect an inversion in evaluation.
+     */
+    int limit = 30;
+    int i = 0;
+    Out::output("Displaying node history for " + start->getPos()
+                + " (reverse order)\n");
+    /*TODO think about what to do if multiple parent*/
+    while (cur && i < limit) {
+        Out::output(cur->to_string() + "\n");
+        cur = cur->getParents().back();
+        i++;
+    }
+}
+
+bool OracleBuilder::cutNode(const Position &, const Node *)
+{
+    /*TODO evaluate if we should process this node or not, according to
+     * the chessboard state.*/
+    return false;
+}
+
+void *OracleBuilder::exploreNode(void *)
+{
+    return 0;
+}
+
+int OracleBuilder::buildOracle(Board::Color playFor,
+                               HashTable *oracle,
+                               const vector<int> &communicators,
+                               const Position &p,
+                               const list<string> &moves)
+{
+    Position pos;
+    /*int commId = commIds_.front();*/
+    pos.set(p.fen());
+
+    /*Get the side from option*/
+    /*playFor_ = (opt_.buildOracleForWhite()) ? WHITE : BLACK;*/
+
+    for (string mv : moves) {
+        pos.tryAndApplyMove(mv);
+    }
+    string startingFen = pos.fen();
+    pos.clear();
+    pos.set(startingFen);
+
+
+    Out::output("Building an oracle for : " + color_to_string(playFor) + "\n");
+    Out::output("Starting board is :\n" + pos.pretty() + "\n");
+
+/*
+ *    Out::output("Doing some basic evaluation on submitted position...\n");
+ *
+ *    sendCurrentPositionToEngine();
+ *    lines_.assign(maxMoves, Line::emptyLine);
+ *    sendToEngine("go movetime "
+ *            + to_string(MatfinderOptions::getPlayforMovetime()));
+ *    waitBestmove();
+ *    Out::output("Evaluation is :\n");
+ *    Out::output(getPrettyLines());
+ *    lines_.clear();
+ */
+
+    NodeStack nodes(communicators.size());
+    string initFen = pos.fen();
+    Node *init = new Node(nullptr, initFen, Node::PENDING);
+    Node *rootNode_ = init;
+    //depth-first
+    nodes.push(rootNode_);
+    vector<pthread_t> threads;
+    for (unsigned i = 0; i < communicators.size(); i++) {
+        pthread_t thread;
+        threads.push_back(thread);
+        Err::handle(pthread_create(&(threads.back()),
+                                   nullptr, OracleBuilder::exploreNode,
+                                   (void *)&communicators[i]));
+    }
+
+    for (pthread_t thread : threads)
+        Err::handle(pthread_join(thread, nullptr));
+
+    /*
+     *TODO we still need to do some cleaning in the table :
+     *    - if all moves after a draw are mate or tresh, then this line is not
+     *    a draw and should be updated.
+     *    - what to do with treshold/mate node ? Matfinder has to close
+     *    these lines
+     */
+    //Display info at the end of computation
+    Out::output("[End] Finder is done. Starting board was : \n");
+    pos.set(initFen);
+    Out::output(pos.pretty() + "\n");
+
+
+    Out::output("Hashtable size = "
+            + std::to_string(oracle->hash_size()) + ") : \n");
+    Out::output(oracle->to_string() + "\n", 2);
+    Out::output("(size = " + std::to_string(oracle->hash_size()) + ") : \n", 2);
+
+    return 0;
+}
+
+
+
 
 OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
 {
@@ -144,7 +256,7 @@ void *OracleFinder::exploreNode(void *args)
     pool_.sendOption(commId, "MultiPV", to_string(opt_.getMaxMoves()));
     //Main loop
     Node *current = nullptr;
-    while ((current = pop_node())) {
+    while ((current = toProceed_.poptop())) {
         const string currentPos = current->getPos();
         /*Check we are not computing an already existing position*/
         /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
@@ -159,7 +271,7 @@ void *OracleFinder::exploreNode(void *args)
         pos.set(currentPos);
         Color active = pos.side_to_move();
 
-        if (cutNode(pos, current)) {
+        if (OracleBuilder::cutNode(pos, current)) {
             Out::output("Node cut by user-defined function", 1);
             continue;
         }
@@ -189,7 +301,27 @@ void *OracleFinder::exploreNode(void *args)
         if (playFor_ != active) {
             /*We are on a node where the opponent has to play*/
             current->updateStatus(Node::AGAINST);
-            proceedAgainstNode(pos, current);
+            /*proceedAgainstNode(pos, current);*/
+            vector<Move> all = gen_all(pos);
+            /*
+             * Push all node for the side we "play for".
+             * eg: if we are building an oracle for white, we need to push all
+             * possible white positions when computing a black node.
+             */
+            Out::output("Push all lines : ", 2);
+            for (Move m : all) {
+                string uciMv = move_to_string(m);
+                Out::output("+", 2);
+                if (!pos.tryAndApplyMove(m))
+                    Err::handle("Illegal move pushed ! (While proceeding against Node)");
+                string fen = pos.fen();
+                pos.undoLastMove();
+                Node *next = new Node(current, fen, Node::PENDING);
+                toProceed_.push(next);
+                MoveNode move(uciMv, next);
+                current->safeAddMove(move);
+            }
+            Out::output("\n", 2);
             continue;
         }
 
@@ -237,7 +369,7 @@ void *OracleFinder::exploreNode(void *args)
             /*Eval is always negative if it's bad for us*/
             if (bestLine.getEval() < 0) {
                 current->updateStatus(Node::MATE_THEM);
-                displayNodeHistory(current);
+                OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to mate, this is an error"
                             " until we decide on what to do, and if it's a bug"
                             " in the engine.");
@@ -249,7 +381,7 @@ void *OracleFinder::exploreNode(void *args)
                         + "] Bestline is above treshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
                 current->updateStatus(Node::TRESHOLD_THEM);
-                displayNodeHistory(current);
+                OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to threshold, this is an error"
                             " until we decide on what to do, and if it's a bug"
                             " in the engine.");
@@ -261,7 +393,19 @@ void *OracleFinder::exploreNode(void *args)
         vector<Line> draw;
         vector<Line> cut;
 
-        getLines(lines, draw, cut);
+        /*Split draw and unbalanced lines*/
+        for (Line l : lines) {
+            /*TODO check if break would work*/
+            if (l.empty())
+                continue;
+            int limit = opt_.getCutoffTreshold();
+            if (l.isMat())
+                cut.push_back(l);
+            else if (fabs(l.getEval()) <= limit)
+                draw.push_back(l);
+            else
+                cut.push_back(l);
+        }
 
         current->updateStatus(Node::DRAW);
 
@@ -270,7 +414,20 @@ void *OracleFinder::exploreNode(void *args)
          *(save some iterations in main loop : we could also push all the
          *unbalanced lines and see...)
          */
-        proceedUnbalancedLines(pos, current, cut);
+        for (Line l : cut) {
+            Node::Status s = Node::TRESHOLD_THEM;
+            if (l.isMat())
+                s = Node::MATE_THEM;
+            /*FIXME there is likely a memory leak here, if position already in table*/
+            Node *toAdd = new Node(current, pos.fen(), s);
+            string next = l.firstMove();
+            if (!pos.tryAndApplyMove(next))
+                Err::handle("Illegal move pushed ! (In an unbalanced line)");
+            uint64_t hash = pos.hash();
+            pos.undoLastMove();
+            pair<uint64_t, Node *> p(hash, toAdd);
+            oracleTable_->safeAddNode(hash, toAdd);
+        }
 
 
 
@@ -333,7 +490,7 @@ void *OracleFinder::exploreNode(void *args)
             next = new Node(current, fenpos, Node::PENDING);
             Out::output("[" + color_to_string(active)
                     + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
-            push_node(next);
+            toProceed_.push(next);
         }
         /*Whatever the move is, add it to our move list*/
         MoveNode move(mv, next);
@@ -383,21 +540,17 @@ int OracleFinder::runFinderOnPosition(const Position &p,
     Node *init = new Node(nullptr, initFen, Node::PENDING);
     Node *rootNode_ = init;
     //depth-first
-    push_node(rootNode_);
+    toProceed_.push(rootNode_);
     vector<pthread_t> threads;
     for (unsigned i = 0; i < commIds_.size(); i++) {
         pthread_t thread;
         threads.push_back(thread);
-        Out::output("Create thread (" + to_string(commIds_[i]) + ")\n");
         Err::handle(pthread_create(&(threads.back()),
                                    nullptr, exploreNode, &commIds_[i]));
-        /*exploreNode(&commId);*/
     }
 
-    for (pthread_t thread : threads) {
-        Out::output("Join thread\n");
+    for (pthread_t thread : threads)
         Err::handle(pthread_join(thread, nullptr));
-    }
 
     /*
      *TODO we still need to do some cleaning in the table :
@@ -419,134 +572,3 @@ int OracleFinder::runFinderOnPosition(const Position &p,
 
     return 0;
 }
-
-
-
-
-void OracleFinder::getLines(const vector<Line> all, vector<Line> &balanced,
-                            vector<Line> &unbalanced)
-{
-    for (Line l : all) {
-        /*TODO check if break would work*/
-        if (l.empty())
-            continue;
-        int limit = opt_.getCutoffTreshold();
-        if (l.isMat())
-            unbalanced.push_back(l);
-        else if (fabs(l.getEval()) <= limit)
-            balanced.push_back(l);
-        else
-            unbalanced.push_back(l);
-    }
-}
-
-/*FIXME re-inline this in worker*/
-void OracleFinder::proceedAgainstNode(Position &pos, Node *againstNode)
-{
-    vector<Move> all = gen_all(pos);
-    /*
-     * Push all node for the side we "play for".
-     * eg: if we are building an oracle for white, we need to push all
-     * possible white positions when computing a black node.
-     */
-    Out::output("Push all lines : ", 2);
-    for (Move m : all) {
-        string uciMv = move_to_string(m);
-        Out::output("+", 2);
-        if (!pos.tryAndApplyMove(m))
-            Err::handle("Illegal move pushed ! (While proceeding against Node)");
-        string fen = pos.fen();
-        pos.undoLastMove();
-        Node *next = new Node(againstNode, fen, Node::PENDING);
-        push_node(next);
-        MoveNode move(uciMv, next);
-        againstNode->safeAddMove(move);
-    }
-    Out::output("\n", 2);
-}
-
-/*TODO refactor this to "addlines to hashtable"*/
-void OracleFinder::proceedUnbalancedLines(Position &pos, const Node *cur,
-                                          vector<Line> &unbalanced)
-{
-    for (Line l : unbalanced) {
-        Node::Status s = Node::TRESHOLD_THEM;
-        if (l.isMat())
-            s = Node::MATE_THEM;
-        /*FIXME there is likely a memory leak here, if position already in table*/
-        Node *toAdd = new Node(cur, pos.fen(), s);
-        string next = l.firstMove();
-        if (!pos.tryAndApplyMove(next))
-            Err::handle("Illegal move pushed ! (In an unbalanced line)");
-        uint64_t hash = pos.hash();
-        pos.undoLastMove();
-        pair<uint64_t, Node *> p(hash, toAdd);
-        oracleTable_->safeAddNode(hash, toAdd);
-    }
-}
-
-bool OracleFinder::cutNode(const Position &, const Node *)
-{
-    /*TODO evaluate if we should process this node or not, according to
-     * the chessboard state.*/
-    return false;
-}
-
-void OracleFinder::displayNodeHistory(const Node *start)
-{
-    const Node *cur = start;
-    /*
-     * I guess 30 positions are enough to display, since we display this message
-     * as soon as we detect an inversion in evaluation.
-     */
-    int limit = 30;
-    int i = 0;
-    Out::output("Displaying node history for " + start->getPos()
-                + " (reverse order)\n");
-    /*TODO think about what to do if multiple parent*/
-    while (cur && i < limit) {
-        Out::output(cur->to_string() + "\n");
-        cur = cur->getParents().back();
-        i++;
-    }
-}
-
-
-void OracleFinder::push_node(Node *n)
-{
-    pthread_mutex_lock(&stackLock_);
-    toProceed_.push_back(n);
-    pthread_cond_signal(&stackCond_);
-    pthread_mutex_unlock(&stackLock_);
-}
-
-void OracleFinder::push_nodes(std::vector<Node *> &nodes)
-{
-    pthread_mutex_lock(&stackLock_);
-    for (Node *n : nodes)
-        toProceed_.push_back(n);
-    pthread_cond_broadcast(&stackCond_);
-    pthread_mutex_unlock(&stackLock_);
-}
-
-Node *OracleFinder::pop_node()
-{
-    Node *n = nullptr;
-    pthread_mutex_lock(&stackLock_);
-    while (toProceed_.size() == 0) {
-        waitingWorkers_++;
-        if (waitingWorkers_ == commIds_.size()) {
-            pthread_cond_broadcast(&stackCond_);
-            pthread_mutex_unlock(&stackLock_);
-            return nullptr;
-        } else {
-            pthread_cond_wait(&stackCond_, &stackLock_);
-            waitingWorkers_--;
-        }
-    }
-    n = toProceed_.front();
-    toProceed_.pop_front();
-    pthread_mutex_unlock(&stackLock_);
-    return n;
-}
-

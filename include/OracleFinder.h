@@ -38,12 +38,24 @@ class NodeStack : private std::stack<Node *> {
         void push(Node *n);
         void push(std::vector<Node *> &nodes);
         Node *poptop();
+        unsigned int size();
     private:
         pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
         pthread_cond_t cond_ = PTHREAD_COND_INITIALIZER;
         unsigned long waitingWorkers_ = 0;
         const unsigned long maxWorkers_;
 };
+
+namespace OracleBuilder {
+    int buildOracle(Board::Color playFor,
+                    HashTable *oracle,
+                    const std::vector<int> &communicators,
+                    const Board::Position &pos,
+                    const std::list<std::string> &moves);
+    void *exploreNode(void *args);
+    void displayNodeHistory(const Node *start);
+    bool cutNode(const Board::Position &pos, const Node *currentNode);
+}
 
 class OracleFinder : public Finder {
 public:
@@ -55,39 +67,17 @@ private:
     /*This should now create workers and handle termination*/
     int runFinderOnPosition(const Board::Position &pos,
                             const std::list<std::string> &moves);
-    /*TODO*/
-/*
- *Idea :
- *    - workers get work from toProceed_ via getSafeNode
- *    - toproceed should have safeInsert (+signal) and safeGet
- *    - workers does somthg, if safeGet = null && sleeping workers = N-1 then quit
- *        else cond.wait
- */
     static void *exploreNode(void *args);
-    static void getLines(const std::vector<Line> all, std::vector<Line> &balanced,
-                         std::vector<Line> &unbalanced);
 #if 0
     Board::LegalMoves getAllMoves();
 #endif
-    static void proceedAgainstNode(Board::Position &pos, Node *againstNode);
-    static void proceedUnbalancedLines(Board::Position &pos,
-                                       const Node *cur,
-                                       std::vector<Line> &unbalanced);
-    static void pushAllLines(std::vector<Line &> lines, Node *currentNode);
-    static bool cutNode(const Board::Position &pos, const Node *currentNode);
-    static void displayNodeHistory(const Node *start);
-    static void push_node(Node *n);
-    static void push_nodes(std::vector<Node *> &nodes);
-    static Node *pop_node();
     static HashTable *oracleTable_;
     /*
      *Node *rootNode_ = NULL;
      */
-    static std::list<Node *> toProceed_;
+    /*static std::list<Node *> toProceed_;*/
+    static NodeStack toProceed_;
     static std::map<std::string, int> signStat_;
-    static pthread_cond_t stackCond_;
-    static pthread_mutex_t stackLock_;
-    static unsigned long waitingWorkers_;
 };
 
 #endif

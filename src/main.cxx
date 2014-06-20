@@ -135,9 +135,9 @@ void sigintHandler(int rc)
 
 int main(int argc, char **argv)
 {
+    Options &options = Options::getInstance();
     try {
         Config defconf;
-        Options &options = Options::getInstance();
         options.addConfig(defconf);
     } catch (...) {
         Out::output("No default configuration file found\n");
@@ -166,11 +166,10 @@ int main(int argc, char **argv)
     Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
 
     vector<int> commIds;
-    /*TODO take parameters*/
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < options.getEngineNumber(); i++) {
         /*Create the engine and its communicator*/
         int commId = pool.create<Comm::LocalUCICommunicator>(
-                                       Options::getInstance().getEngineFullpath(),
+                                       options.getEngineFullpath(),
                                        engine_options);
         commIds.push_back(commId);
     }

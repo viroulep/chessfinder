@@ -43,10 +43,7 @@ using namespace std;
 using namespace Board;
 
 
-std::map<std::string, int> OracleFinder::signStat_;
-HashTable *OracleFinder::oracleTable_ = nullptr;
-NodeStack OracleFinder::toProceed_(2);
-map<string, int> signStat_;
+map<string, int> OracleFinder::signStat_;
 
 
 NodeStack::NodeStack(unsigned long workers) : maxWorkers_(workers)
@@ -121,11 +118,6 @@ bool OracleBuilder::cutNode(const Position &, const Node *)
     return false;
 }
 
-void *OracleBuilder::exploreNode(void *)
-{
-    return 0;
-}
-
 int OracleBuilder::buildOracle(Board::Color playFor,
                                HashTable *oracle,
                                const vector<int> &communicators,
@@ -169,17 +161,23 @@ int OracleBuilder::buildOracle(Board::Color playFor,
     Node *rootNode_ = init;
     //depth-first
     nodes.push(rootNode_);
-    vector<pthread_t> threads;
+    /*vector<pthread_t> threads;*/
+    vector<explorerArgs *> argsVect;
     for (unsigned i = 0; i < communicators.size(); i++) {
-        pthread_t thread;
-        threads.push_back(thread);
-        Err::handle(pthread_create(&(threads.back()),
-                                   nullptr, OracleBuilder::exploreNode,
-                                   (void *)&communicators[i]));
+        explorerArgs *args = (explorerArgs *)malloc(sizeof(explorerArgs));
+        argsVect.push_back(args);
+        args->commdId = communicators[i];
+        args->table = oracle;
+        args->stack = &nodes;
+        args->playFor = playFor;
+        Err::handle(pthread_create(&(args->th),
+                                   nullptr, exploreNode, args));
     }
 
-    for (pthread_t thread : threads)
-        Err::handle(pthread_join(thread, nullptr));
+    for (explorerArgs *args : argsVect) {
+        Err::handle(pthread_join(args->th, nullptr));
+        free(args);
+    }
 
     /*
      *TODO we still need to do some cleaning in the table :
@@ -249,18 +247,25 @@ void OracleFinder::dumpStat()
         Out::output("No hit...\n", 2);
 }
 
-void *OracleFinder::exploreNode(void *args)
+void *OracleBuilder::exploreNode(void *args)
 {
     Position pos;
-    int commId = *(int *)args;
-    pool_.sendOption(commId, "MultiPV", to_string(opt_.getMaxMoves()));
+    Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
+    Options &opt = Options::getInstance();
+    explorerArgs *all = (explorerArgs *)args;
+    Board::Color playFor = all->playFor;
+    int commId = all->commdId;
+    HashTable *oracle = all->table;
+    NodeStack *nodes = all->stack;
+    Err::handle("Args unpacking", !(oracle && nodes));
+    pool.sendOption(commId, "MultiPV", to_string(opt.getMaxMoves()));
     //Main loop
     Node *current = nullptr;
-    while ((current = toProceed_.poptop())) {
+    while ((current = nodes->poptop())) {
         const string currentPos = current->getPos();
         /*Check we are not computing an already existing position*/
         /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
-        if (oracleTable_->findPos(currentPos)) {
+        if (oracle->findPos(currentPos)) {
             Out::output("Position already in table.\n", 1);
             delete current;
             continue;
@@ -276,11 +281,11 @@ void *OracleFinder::exploreNode(void *args)
             continue;
         }
         Out::output("[" + color_to_string(active) + "] Proceed size : "
-                    + to_string(toProceed_.size()) + "\n");
+                    + to_string(nodes->size()) + "\n");
 
         /*Register current pos in the table*/
         uint64_t curHash = pos.hash();
-        oracleTable_->safeAddNode(curHash, current);
+        oracle->safeAddNode(curHash, current);
 
         /*Clear cut*/
         if (!pos.hasSufficientMaterial()) {
@@ -294,11 +299,13 @@ void *OracleFinder::exploreNode(void *args)
 
         Out::output(pos.pretty(), 2);
         string signature = pos.signature();
-        int hit = signStat_[signature];
-        signStat_[signature] = ++hit;
-        sendPositionToEngine(pos, commId);
+        int hit = OracleFinder::signStat_[signature];
+        OracleFinder::signStat_[signature] = ++hit;
+        string position = "position fen ";
+        position += pos.fen();
+        pool.send(commId, position);
 
-        if (playFor_ != active) {
+        if (playFor != active) {
             /*We are on a node where the opponent has to play*/
             current->updateStatus(Node::AGAINST);
             /*proceedAgainstNode(pos, current);*/
@@ -317,7 +324,7 @@ void *OracleFinder::exploreNode(void *args)
                 string fen = pos.fen();
                 pos.undoLastMove();
                 Node *next = new Node(current, fen, Node::PENDING);
-                toProceed_.push(next);
+                nodes->push(next);
                 MoveNode move(uciMv, next);
                 current->safeAddMove(move);
             }
@@ -329,18 +336,18 @@ void *OracleFinder::exploreNode(void *args)
         /*Here we are on a node with "playfor" to play*/
         /**********************************************/
 
-        const vector<Line> &lines = pool_.getResultLines(commId);
+        const vector<Line> &lines = pool.getResultLines(commId);
 
         /*Thinking according to the side the engine play for*/
-        int moveTime = opt_.getPlayforMovetime();
+        int moveTime = opt.getPlayforMovetime();
 
         Out::output("[" + color_to_string(active) + "] Thinking... ("
                     + to_string(moveTime) + ")\n", 1);
 
         string cmd = "go ";
-        switch (opt_.getSearchMode()) {
+        switch (opt.getSearchMode()) {
             case DEPTH:
-                cmd += "depth " + to_string(opt_.getSearchDepth());
+                cmd += "depth " + to_string(opt.getSearchDepth());
                 break;
             case MIXED://Intentional no-break TODO: implement mixed search ?
             case TIME:
@@ -349,10 +356,10 @@ void *OracleFinder::exploreNode(void *args)
                 break;
         }
         //Send go and wait for engine to finish thinking
-        pool_.sendAndWaitBestmove(commId, cmd);
+        pool.sendAndWaitBestmove(commId, cmd);
 
 
-        Out::output(getPrettyLines(pos, lines), 2);
+        Out::output(Utils::getPrettyLines(pos, lines), 2);
 
         bestLine = lines[0];
         if (bestLine.empty()) {
@@ -375,7 +382,7 @@ void *OracleFinder::exploreNode(void *args)
                             " in the engine.");
             }
             continue;
-        } else if (fabs(bestLine.getEval()) > opt_.getCutoffTreshold()) {
+        } else if (fabs(bestLine.getEval()) > opt.getCutoffTreshold()) {
             current->updateStatus(Node::TRESHOLD_US);
             Out::output("[" + color_to_string(active)
                         + "] Bestline is above treshold (cut)\n", 2);
@@ -398,7 +405,7 @@ void *OracleFinder::exploreNode(void *args)
             /*TODO check if break would work*/
             if (l.empty())
                 continue;
-            int limit = opt_.getCutoffTreshold();
+            int limit = opt.getCutoffTreshold();
             if (l.isMat())
                 cut.push_back(l);
             else if (fabs(l.getEval()) <= limit)
@@ -426,7 +433,7 @@ void *OracleFinder::exploreNode(void *args)
             uint64_t hash = pos.hash();
             pos.undoLastMove();
             pair<uint64_t, Node *> p(hash, toAdd);
-            oracleTable_->safeAddNode(hash, toAdd);
+            oracle->safeAddNode(hash, toAdd);
         }
 
 
@@ -435,7 +442,7 @@ void *OracleFinder::exploreNode(void *args)
          *Then proceed the balanced lines according to the side the engine
          *play for.
          */
-        if (playFor_ != active)
+        if (playFor != active)
             Err::handle("Current side should be the engine plays for");
 
         /*
@@ -465,7 +472,7 @@ void *OracleFinder::exploreNode(void *args)
             fenpos = pos.fen();
             pos.undoLastMove();
             //Jean Louis' idea to force finding positions in oracle
-            next = oracleTable_->findPos(fenpos);
+            next = oracle->findPos(fenpos);
             if (next) {
                 next->safeAddParent(current);
                 break;
@@ -490,7 +497,7 @@ void *OracleFinder::exploreNode(void *args)
             next = new Node(current, fenpos, Node::PENDING);
             Out::output("[" + color_to_string(active)
                     + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
-            toProceed_.push(next);
+            nodes->push(next);
         }
         /*Whatever the move is, add it to our move list*/
         MoveNode move(mv, next);
@@ -504,71 +511,11 @@ void *OracleFinder::exploreNode(void *args)
 int OracleFinder::runFinderOnPosition(const Position &p,
                                       const list<string> &moves)
 {
-    Position pos;
-    /*int commId = commIds_.front();*/
-    pos.set(p.fen());
+    using namespace OracleBuilder;
 
     /*Get the side from option*/
     playFor_ = (opt_.buildOracleForWhite()) ? WHITE : BLACK;
 
-    for (string mv : moves) {
-        pos.tryAndApplyMove(mv);
-    }
-    string startingFen = pos.fen();
-    pos.clear();
-    pos.set(startingFen);
 
-
-    Out::output("Building an oracle for : " + color_to_string(playFor_) + "\n");
-    Out::output("Starting board is :\n" + pos.pretty() + "\n");
-
-/*
- *    Out::output("Doing some basic evaluation on submitted position...\n");
- *
- *    sendCurrentPositionToEngine();
- *    lines_.assign(maxMoves, Line::emptyLine);
- *    sendToEngine("go movetime "
- *            + to_string(MatfinderOptions::getPlayforMovetime()));
- *    waitBestmove();
- *    Out::output("Evaluation is :\n");
- *    Out::output(getPrettyLines());
- *    lines_.clear();
- */
-
-
-    string initFen = pos.fen();
-    Node *init = new Node(nullptr, initFen, Node::PENDING);
-    Node *rootNode_ = init;
-    //depth-first
-    toProceed_.push(rootNode_);
-    vector<pthread_t> threads;
-    for (unsigned i = 0; i < commIds_.size(); i++) {
-        pthread_t thread;
-        threads.push_back(thread);
-        Err::handle(pthread_create(&(threads.back()),
-                                   nullptr, exploreNode, &commIds_[i]));
-    }
-
-    for (pthread_t thread : threads)
-        Err::handle(pthread_join(thread, nullptr));
-
-    /*
-     *TODO we still need to do some cleaning in the table :
-     *    - if all moves after a draw are mate or tresh, then this line is not
-     *    a draw and should be updated.
-     *    - what to do with treshold/mate node ? Matfinder has to close
-     *    these lines
-     */
-    //Display info at the end of computation
-    Out::output("[End] Finder is done. Starting board was : \n");
-    pos.set(initFen);
-    Out::output(pos.pretty() + "\n");
-
-
-    Out::output("Hashtable size = "
-            + std::to_string(oracleTable_->hash_size()) + ") : \n");
-    Out::output(oracleTable_->to_string() + "\n", 2);
-    Out::output("(size = " + std::to_string(oracleTable_->hash_size()) + ") : \n", 2);
-
-    return 0;
+    return buildOracle(playFor_, oracleTable_, commIds_, p, moves);
 }

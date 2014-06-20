@@ -54,9 +54,6 @@ protected:
                                     const std::list<std::string> &moves) = 0;
     /*Thread *startReceiver();*/
     static void sendPositionToEngine(Board::Position &pos, int commId);
-    static std::string getPrettyLines(const Board::Position &pos,
-                               const std::vector<Line> &lines);
-    static std::string getPrettyLine(const Board::Position &pos, const Line &line);
 
     /*void sendOptionToEngine(string optionName, string optionValue);*/
     /*void sendToEngine(string cmd);*/

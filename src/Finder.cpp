@@ -86,42 +86,6 @@ void Finder::sendPositionToEngine(Board::Position &pos, int commId)
 }
 
 
-string Finder::getPrettyLines(const Position &pos, const vector<Line> &lines)
-{
-    string retVal;
-    Line curLine;
-    int i = 0;
-    for (Line cur : lines) {
-        if (!cur.empty()) {
-            retVal += "\t[" + to_string(++i) + "] ";
-            retVal += cur.getPretty(pos.side_to_move() == BLACK);
-            retVal += "\n";
-        }
-        if (i >= opt_.getMaxLines())
-            break;
-    }
-    return retVal;
-}
-
-/*FIXME : really useful ?*/
-string Finder::getPrettyLine(const Position &pos, const Line &line)
-{
-    string retVal;
-    retVal += line.getPrettyEval(pos.side_to_move() == BLACK);
-    retVal += " : ";
-    auto moves = line.getMoves();
-    int i = 0;
-    for (string m : moves) {
-        if (i++ < opt_.getMaxLines())
-            break;
-        if (i > 0)
-            retVal += " ";
-        retVal += m;
-    }
-    /*oss << cb_->tryUciMoves(line.getMoves(), limit);*/
-    return retVal;
-}
-
 /*
  * These are private
  */

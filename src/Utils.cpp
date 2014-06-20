@@ -214,4 +214,39 @@ namespace Utils {
         ts->tv_nsec = tp.tv_usec * 1000;
         ts->tv_sec += seconds;
     }
+
+    string getPrettyLines(const Board::Position &pos, const vector<Line> &lines)
+    {
+        string retVal;
+        Line curLine;
+        int i = 0;
+        for (Line cur : lines) {
+            if (!cur.empty()) {
+                retVal += "\t[" + to_string(++i) + "] ";
+                retVal += cur.getPretty(pos.side_to_move() == Board::BLACK);
+                retVal += "\n";
+            }
+            if (i >= Options::getInstance().getMaxLines())
+                break;
+        }
+        return retVal;
+    }
+
+    string getPrettyLine(const Board::Position &pos, const Line &line)
+    {
+        string retVal;
+        retVal += line.getPrettyEval(pos.side_to_move() == Board::BLACK);
+        retVal += " : ";
+        auto moves = line.getMoves();
+        int i = 0;
+        for (string m : moves) {
+            if (i++ < Options::getInstance().getMaxLines())
+                break;
+            if (i > 0)
+                retVal += " ";
+            retVal += m;
+        }
+        /*oss << cb_->tryUciMoves(line.getMoves(), limit);*/
+        return retVal;
+    }
 }

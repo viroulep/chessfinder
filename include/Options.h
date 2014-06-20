@@ -67,6 +67,7 @@ class Options {
         int getEngineThreads() const;
 
         int getCutoffTreshold() const;
+        int getEngineNumber() const;
         int getPlayforMovetime() const;
         int getPlayagainstMovetime() const;
 
@@ -108,6 +109,7 @@ class Options {
         int engineThreads_ = 2;
 
         int finderCutoffTreshold_ = 100;
+        int finderEngineNumber = 1;
         int playforMovetime_ = 1500;
         int playagainstMovetime_ = 1000;
         int verboseLevel_ = 0;

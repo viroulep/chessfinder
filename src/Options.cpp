@@ -123,6 +123,11 @@ int Options::getCutoffTreshold() const
     return finderCutoffTreshold_;
 }
 
+int Options::getEngineNumber() const
+{
+    return finderEngineNumber;
+}
+
 int Options::getPlayforMovetime() const
 {
     return playforMovetime_;
@@ -238,6 +243,9 @@ void Options::addConfig(Config &conf)
         setVariant(val);
 
     /*Getting Finder configuration*/
+    val = conf("finder", "engine_number");
+    PARSE_INTVAL(finderEngineNumber, "engine_number");
+
     val = conf("finder", "cutoff_treshold");
     PARSE_INTVAL(finderCutoffTreshold_, "cutoff_treshold");
 

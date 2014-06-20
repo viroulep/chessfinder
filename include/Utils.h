@@ -28,6 +28,7 @@
 #include <sys/time.h>
 
 #include "Options.h"
+#include "SimpleChessboard.h"
 
 
 namespace Utils {
@@ -37,5 +38,8 @@ namespace Utils {
 
     //FIXME: should belong to board ?
     PositionList positionListFromFile(std::string fileName);
+    std::string getPrettyLines(const Board::Position &pos,
+                               const std::vector<Line> &lines);
+    std::string getPrettyLine(const Board::Position &pos, const Line &line);
 }
 #endif

@@ -71,7 +71,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
     const vector<Line> &lines = pool_.getResultLines(commId_);
 
     Out::output("Evaluation is :\n");
-    Out::output(getPrettyLines(pos, lines));
+    Out::output(Utils::getPrettyLines(pos, lines));
     if (!lines[0].empty()) {
         if ((lines[0].getEval() < 0 && sideToMove == WHITE)
                 || (lines[0].getEval() > 0 && sideToMove == BLACK))
@@ -122,7 +122,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
         Out::output("[" + color_to_string(active) + "] Thinking... ("
                     + to_string(moveTime) + ")\n", 1);
 
-        Out::output(getPrettyLines(pos, lines), 2);
+        Out::output(Utils::getPrettyLines(pos, lines), 2);
         bestLine = getBestLine(pos, lines);
         if (bestLine.empty() || bestLine.isMat() ||
                 fabs(bestLine.getEval()) > Options::getInstance().getMateTreshold()) {
@@ -165,7 +165,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
         /*If we are here, we just need to handle the next move*/
         Out::output("[" + color_to_string(active)
                 + "] Chosen line : \n", 1);
-        Out::output("\t" + getPrettyLine(pos, bestLine) + "\n", 1);
+        Out::output("\t" + Utils::getPrettyLine(pos, bestLine) + "\n", 1);
 
         string next = bestLine.firstMove();
         Out::output("\tNext move is " + next + "\n", 3);
@@ -182,9 +182,9 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
         Out::output("All lines should now be draw or mat :\n");
     else
         Out::output("Best line should be mat or draw.\n");
-    Out::output(getPrettyLines(pos, lines));
+    Out::output(Utils::getPrettyLines(pos, lines));
     Out::output("[End] Full best line is : \n");
-    Out::output("[End] " + getPrettyLine(pos, lines[0]) + "\n");
+    Out::output("[End] " + Utils::getPrettyLine(pos, lines[0]) + "\n");
     Out::output("[End] " + Utils::listToString(lines[0].getMoves()) + "\n");
     return 0;
 }

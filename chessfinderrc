@@ -1,9 +1,10 @@
 [engine]
     path = /usr/local/bin/stockfish
     variant = standard
-    hashmap_size = 2048
+    hashmap_size = 1024
     threads = 2
 [finder]
+    engine_number = 2
     verbose_level = 2
     cutoff_treshold = 100
     playfor_movetime = 600

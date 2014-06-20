@@ -47,6 +47,14 @@ class NodeStack : private std::stack<Node *> {
 };
 
 namespace OracleBuilder {
+    typedef struct explorerArgs {
+        pthread_t th;
+        HashTable *table = nullptr;
+        NodeStack *stack = nullptr;
+        Board::Color playFor = Board::NOCOLOR;
+        int commdId = -1;
+    } explorerArgs;
+
     int buildOracle(Board::Color playFor,
                     HashTable *oracle,
                     const std::vector<int> &communicators,
@@ -62,22 +70,13 @@ public:
     OracleFinder(std::vector<int> &commIds);
     virtual ~OracleFinder();
     static void dumpStat();
+    static std::map<std::string, int> signStat_;
 
 private:
     /*This should now create workers and handle termination*/
     int runFinderOnPosition(const Board::Position &pos,
                             const std::list<std::string> &moves);
-    static void *exploreNode(void *args);
-#if 0
-    Board::LegalMoves getAllMoves();
-#endif
-    static HashTable *oracleTable_;
-    /*
-     *Node *rootNode_ = NULL;
-     */
-    /*static std::list<Node *> toProceed_;*/
-    static NodeStack toProceed_;
-    static std::map<std::string, int> signStat_;
+    HashTable *oracleTable_;
 };
 
 #endif

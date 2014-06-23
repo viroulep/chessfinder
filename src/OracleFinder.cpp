@@ -119,7 +119,7 @@ bool OracleBuilder::cutNode(const Position &, const Node *)
 }
 
 int OracleBuilder::buildOracle(Board::Color playFor,
-                               HashTable *oracle,
+                               map<string, HashTable *> *oracle,
                                const vector<int> &communicators,
                                const Position &p,
                                const list<string> &moves)
@@ -167,7 +167,7 @@ int OracleBuilder::buildOracle(Board::Color playFor,
         explorerArgs *args = (explorerArgs *)malloc(sizeof(explorerArgs));
         argsVect.push_back(args);
         args->commdId = communicators[i];
-        args->table = oracle;
+        args->tables = oracle;
         args->stack = &nodes;
         args->playFor = playFor;
         Err::handle(pthread_create(&(args->th),
@@ -193,9 +193,9 @@ int OracleBuilder::buildOracle(Board::Color playFor,
 
 
     Out::output("Hashtable size = "
-            + std::to_string(oracle->hash_size()) + ") : \n");
-    Out::output(oracle->to_string() + "\n", 2);
-    Out::output("(size = " + std::to_string(oracle->hash_size()) + ") : \n", 2);
+            + std::to_string((*oracle)[""]->hash_size()) + ") : \n");
+    Out::output((*oracle)[""]->to_string() + "\n", 2);
+    Out::output("(size = " + std::to_string((*oracle)[""]->hash_size()) + ") : \n", 2);
 
     return 0;
 }
@@ -208,16 +208,30 @@ OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
     //engine_side_ = cb_->getActiveSide();
     //engine_play_for_ = MatfinderOptions::getPlayFor();
     string inputFilename = opt_.getInputFile();
+    /*TODO load signature table*/
     if (inputFilename.size() > 0) {
-        Out::output("Loading table from " + inputFilename + ".\n", 2);
+        Out::output("Loading main table from " + inputFilename + ".\n", 2);
         ifstream inputFile(inputFilename, ios::binary);
         if (!inputFile.good())
             Err::handle("Unable to load table from file "
                         + inputFilename);
-        oracleTable_ = HashTable::fromPolyglot(inputFile);
+        oracleTables_[""] = HashTable::fromPolyglot(inputFile);
     } else {
-        Out::output("Creating new empty table.\n", 2);
-        oracleTable_ = new HashTable();
+        Out::output("Creating new main empty table.\n", 2);
+        oracleTables_[""] = new HashTable();
+    }
+    for (auto pair : opt_.getInputTables()) {
+        const string &sign = pair.first;
+        const string &inFile = pair.second;
+        if (oracleTables_.count(sign))
+            Err::handle("Loading twice a table for the same signature ("
+                        + sign +")");
+        Out::output("Loading main table from " + inputFilename + ".\n", 2);
+        ifstream inputFile(inputFilename, ios::binary);
+        if (!inputFile.good())
+            Err::handle("Unable to load signature table \"" + sign
+                        + "\" from file " + inFile);
+        oracleTables_[sign] = HashTable::fromPolyglot(inputFile);
     }
 }
 
@@ -231,9 +245,11 @@ OracleFinder::~OracleFinder()
             Out::output("Unable to save table to file "
                     + outputFilename + "\n");
         else
-            oracleTable_->toPolyglot(outputFile);
+            oracleTables_[""]->toPolyglot(outputFile);
     }
-    delete oracleTable_;
+    for (auto entry : oracleTables_) {
+        delete entry.second;
+    }
     dumpStat();
 }
 
@@ -255,7 +271,8 @@ void *OracleBuilder::exploreNode(void *args)
     explorerArgs *all = (explorerArgs *)args;
     Board::Color playFor = all->playFor;
     int commId = all->commdId;
-    HashTable *oracle = all->table;
+    map<string, HashTable *> *tables = all->tables;
+    HashTable *oracle = (*tables)[""];
     NodeStack *nodes = all->stack;
     Err::handle("Args unpacking", !(oracle && nodes));
     pool.sendOption(commId, "MultiPV", to_string(opt.getMaxMoves()));
@@ -263,25 +280,29 @@ void *OracleBuilder::exploreNode(void *args)
     Node *current = nullptr;
     while ((current = nodes->poptop())) {
         const string currentPos = current->getPos();
-        /*Check we are not computing an already existing position*/
-        /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
-        if (oracle->findPos(currentPos)) {
-            Out::output("Position already in table.\n", 1);
-            delete current;
-            continue;
-        }
 
         Line bestLine;
         /*Set the chessboard to current pos*/
         pos.set(currentPos);
         Color active = pos.side_to_move();
+        string signature = pos.signature();
+
+        /*Check we are not computing an already existing position*/
+        /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
+        if (oracle->findPos(currentPos)) {
+            /*TODO use signature to check correct table*/
+            Out::output("Position already in table.\n", 1);
+            delete current;
+            continue;
+        }
 
         if (OracleBuilder::cutNode(pos, current)) {
             Out::output("Node cut by user-defined function", 1);
             continue;
         }
-        Out::output("[" + color_to_string(active) + "] Proceed size : "
-                    + to_string(nodes->size()) + "\n");
+        if (nodes->size() % 10000 == 0)
+            Out::output("[" + color_to_string(active) + "] Proceed size : "
+                        + to_string(nodes->size()) + "\n");
 
         /*Register current pos in the table*/
         uint64_t curHash = pos.hash();
@@ -298,7 +319,6 @@ void *OracleBuilder::exploreNode(void *args)
 
 
         Out::output(pos.pretty(), 2);
-        string signature = pos.signature();
         int hit = OracleFinder::signStat_[signature];
         OracleFinder::signStat_[signature] = ++hit;
         string position = "position fen ";
@@ -517,5 +537,5 @@ int OracleFinder::runFinderOnPosition(const Position &p,
     playFor_ = (opt_.buildOracleForWhite()) ? WHITE : BLACK;
 
 
-    return buildOracle(playFor_, oracleTable_, commIds_, p, moves);
+    return buildOracle(playFor_, &oracleTables_, commIds_, p, moves);
 }

@@ -24,6 +24,7 @@
 
 #include <string>
 #include <list>
+#include <map>
 
 class MoveComparator;
 class Config;
@@ -58,6 +59,8 @@ class Options {
 
         const std::string &getInputFile() const;
         const std::string &getOutputFile() const;
+
+        const std::map<std::string, std::string> &getInputTables() const;
 
         void setInputFile(std::string in);
         void setOutputFile(std::string out);
@@ -121,6 +124,8 @@ class Options {
         PositionList positions_;
 
         MoveComparator *comp_ = nullptr;
+
+        std::map<std::string, std::string> inputTables_;
 
         static Options instance_;
 };

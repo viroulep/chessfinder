@@ -93,6 +93,11 @@ const string &Options::getOutputFile() const
     return outputFile_;
 }
 
+const map<string, string> &Options::getInputTables() const
+{
+    return inputTables_;
+}
+
 void Options::setInputFile(string in)
 {
     inputFile_ = in;

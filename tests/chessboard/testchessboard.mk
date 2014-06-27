@@ -45,7 +45,7 @@ tests/chessboard/%.o: tests/chessboard/%.cxx $(chessboardTest_HEADERS_DEP)
 
 testchessboard: $(chessboardTest_OBJECTS)
 	echo "[Chessboard Tester] Link tester"
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 check-chessboardTest: testchessboard tests/chessboard/input/testpositions.fen tests/chessboard/input/testpositions_2.fen
 	echo "[Chessboard Tester] Check 1"

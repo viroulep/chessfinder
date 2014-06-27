@@ -51,7 +51,7 @@ tests/hashing/%.o: tests/hashing/%.cxx $(testhashing_HEADERS_DEP)
 
 testhashing: $(testhashing_OBJECTS)
 	echo "[Hashing Tester] Link tester"
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 check-testhashing: testhashing tests/chessboard/input/testpositions.fen
 	echo "[Hashing Tester] Check 1"

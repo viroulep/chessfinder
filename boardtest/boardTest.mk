@@ -44,7 +44,7 @@ boardtest/%.o: boardtest/%.cxx $(boardTest_HEADERS_DEP)
 
 board: $(boardTest_OBJECTS)
 	echo "[boardTest] Link board"
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 clean-boardTest:
 	echo "[boardTest] Clean"

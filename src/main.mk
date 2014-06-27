@@ -62,11 +62,11 @@ src/main_finder.o: src/main.cxx $(finder_HEADERS_DEP)
 
 oraclefinder: $(finder_OBJECTS) src/main_oracle.o
 	echo "[oraclefinder] Link oraclefinder"
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 matfinder: $(finder_OBJECTS) src/main_finder.o
 	echo "[matfinder] Link matfinder"
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 clean-matfinder:
 	echo "[matfinder] Clean"

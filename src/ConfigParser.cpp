@@ -208,6 +208,37 @@ const char* Config::search_value(int col)
     return svalue->sget();
 }
 
+Value *Config::ikey(const char* block, int index)
+{
+    if (index < 1)
+        return NULL;
+
+    svalue = vstart;
+
+    int block_id = 0;
+    if (block)
+        block_id = search_block(block);
+
+    int count = 0;
+    while (svalue->next)
+    {
+        if (block)
+            if (block_id != svalue->get_block_id())
+                break;
+
+        /* If keyword is found  */
+        if (svalue->is_keyword() )
+            count++;
+
+        /* Searching specified value  */
+        if (count == index)
+            return svalue;
+
+        svalue = svalue->next;
+    }
+
+    return NULL;
+}
 
 const char* Config::_ivalue(const char* block, const char* name, int index, int col)
 {

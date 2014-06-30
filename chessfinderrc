@@ -17,3 +17,4 @@
     oracle_side = white
     search_mode = depth
     search_depth = 20
+[oracletables]

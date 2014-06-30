@@ -20,6 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <sstream>
+#include <algorithm>
 #include "Options.h"
 #include "ConfigParser.h"
 #include "Output.h"
@@ -280,6 +281,18 @@ void Options::addConfig(Config &conf)
     val = conf("oraclefinder", "search_mode");
     if (val)
         setSearchMode(val);
+
+    /*Getting all input tables*/
+    int index = 1;
+    Value *key;
+    string tableSection = "oracletables";
+    while ((key = conf.ikey(tableSection.c_str(), index))
+           && (val = conf.ivalue(tableSection.c_str(), index))) {
+        string skey = key->get();
+        std::sort(skey.begin(), skey.end());
+        inputTables_[skey] = val;
+        index++;
+    }
 
     val = conf("oraclefinder", "search_depth");
     PARSE_INTVAL(searchDepth_, "search_depth");

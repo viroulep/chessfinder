@@ -89,6 +89,7 @@ class Config
         const char *operator()(const char *name, int col = 1);
         const char *operator()(const char *block, const char *name, int col = 1);
 
+        Value *ikey(const char* block, int index);
         const char *_ivalue(const char *block, const char *name, int index, int col);
         const char *ivalue(int index, int col = 1);
         const char *ivalue(const char *block, int index, int col = 1);

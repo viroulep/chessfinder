@@ -208,7 +208,6 @@ OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
     //engine_side_ = cb_->getActiveSide();
     //engine_play_for_ = MatfinderOptions::getPlayFor();
     string inputFilename = opt_.getInputFile();
-    /*TODO load signature table*/
     if (inputFilename.size() > 0) {
         Out::output("Loading main table from " + inputFilename + ".\n", 2);
         ifstream inputFile(inputFilename, ios::binary);
@@ -226,8 +225,8 @@ OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
         if (oracleTables_.count(sign))
             Err::handle("Loading twice a table for the same signature ("
                         + sign +")");
-        Out::output("Loading main table from " + inputFilename + ".\n", 2);
-        ifstream inputFile(inputFilename, ios::binary);
+        Out::output("Loading table from " + inFile + ".\n", 2);
+        ifstream inputFile(inFile, ios::binary);
         if (!inputFile.good())
             Err::handle("Unable to load signature table \"" + sign
                         + "\" from file " + inFile);

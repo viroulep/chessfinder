@@ -39,28 +39,29 @@ typedef std::vector<MoveNode> LegalNodes;
 
 class Node {
 public:
-    enum Status {
-        PENDING,
-        AGAINST,
-        TRESHOLD_US,
-        TRESHOLD_THEM,
-        MATE_US,
-        MATE_THEM,
-        STALEMATE,
-        DRAW
+    enum StatusFlag {
+        PENDING = 1,
+        AGAINST = 1 << 1,
+        US = 1 << 2,
+        THEM = 1 << 3,
+        TRESHOLD = 1 << 4,
+        MATE = 1 << 5,
+        STALEMATE = 1 << 6,
+        DRAW = 1 << 7,
+        SIGNATURE_TABLE = 1 << 8
     };
     Node(const Node *prev);
-    Node(const Node *prev, std::string pos, Status st);
+    Node(const Node *prev, std::string pos, StatusFlag st);
     ~Node();
     void safeAddParent(const Node *parent);
     void safeAddMove(MoveNode mv);
-    void updateStatus(Status st);
+    void updateStatus(StatusFlag st);
     const std::vector<const Node *> &getParents() const;
     const LegalNodes &getMoves() const;
     const std::string &getPos() const;
-    Status getStatus() const;
+    StatusFlag getStatus() const;
     std::string to_string() const;
-    static std::string to_string(Status s);
+    static std::string to_string(StatusFlag s);
 private:
     /*Fen string without clock informations*/
     /*Actually its the full fen*/
@@ -72,7 +73,7 @@ private:
     //vector<UCIMove> legal_moves;
     LegalNodes legal_moves_;
     //Polyglot "learn" field, uint32_t
-    Status st_ = PENDING;
+    StatusFlag st_ = PENDING;
     std::vector<const Node *> prev_;
     pthread_mutex_t lockP_ = PTHREAD_MUTEX_INITIALIZER;
     pthread_mutex_t lockM_ = PTHREAD_MUTEX_INITIALIZER;

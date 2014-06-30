@@ -286,11 +286,21 @@ void *OracleBuilder::exploreNode(void *args)
         pos.set(currentPos);
         Color active = pos.side_to_move();
         string signature = pos.signature();
+        uint64_t curHash = pos.hash();
 
         /*Check we are not computing an already existing position*/
         /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
+        if (tables->find(signature) != tables->end()) {
+            HashTable *signTable = (*tables)[signature];
+            Node *s = nullptr;
+            if ((s = signTable->findPos(currentPos))) {
+                current->updateStatus((Node::StatusFlag)
+                                      (s->getStatus() | Node::SIGNATURE_TABLE));
+                oracle->safeAddNode(curHash, current);
+                continue;
+            }
+        }
         if (oracle->findPos(currentPos)) {
-            /*TODO use signature to check correct table*/
             Out::output("Position already in table.\n", 1);
             delete current;
             continue;
@@ -305,7 +315,6 @@ void *OracleBuilder::exploreNode(void *args)
                         + to_string(nodes->size()) + "\n");
 
         /*Register current pos in the table*/
-        uint64_t curHash = pos.hash();
         oracle->safeAddNode(curHash, current);
 
         /*Clear cut*/
@@ -390,28 +399,30 @@ void *OracleBuilder::exploreNode(void *args)
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
-            current->updateStatus(Node::MATE_US);
             Out::output("[" + color_to_string(active)
                         + "] Bestline is mate (cut)\n", 2);
             /*Eval is always negative if it's bad for us*/
             if (bestLine.getEval() < 0) {
-                current->updateStatus(Node::MATE_THEM);
+                current->updateStatus((Node::StatusFlag)(Node::MATE | Node::THEM));
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to mate, this is an error"
                             " until we decide on what to do, and if it's a bug"
                             " in the engine.");
+            } else {
+                current->updateStatus((Node::StatusFlag)(Node::MATE | Node::US));
             }
             continue;
         } else if (fabs(bestLine.getEval()) > opt.getCutoffTreshold()) {
-            current->updateStatus(Node::TRESHOLD_US);
             Out::output("[" + color_to_string(active)
                         + "] Bestline is above treshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
-                current->updateStatus(Node::TRESHOLD_THEM);
+                current->updateStatus((Node::StatusFlag)(Node::TRESHOLD | Node::THEM));
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to threshold, this is an error"
                             " until we decide on what to do, and if it's a bug"
                             " in the engine.");
+            } else {
+                current->updateStatus((Node::StatusFlag)(Node::TRESHOLD | Node::US));
             }
             continue;
         }
@@ -422,7 +433,6 @@ void *OracleBuilder::exploreNode(void *args)
 
         /*Split draw and unbalanced lines*/
         for (Line l : lines) {
-            /*TODO check if break would work*/
             if (l.empty())
                 continue;
             int limit = opt.getCutoffTreshold();
@@ -442,10 +452,11 @@ void *OracleBuilder::exploreNode(void *args)
          *unbalanced lines and see...)
          */
         for (Line l : cut) {
-            Node::Status s = Node::TRESHOLD_THEM;
+            Node::StatusFlag s = Node::THEM;
             if (l.isMat())
-                s = Node::MATE_THEM;
-            /*FIXME there is likely a memory leak here, if position already in table*/
+                s = (Node::StatusFlag)(s | Node::MATE);
+            else
+                s = (Node::StatusFlag)(s | Node::TRESHOLD);
             Node *toAdd = new Node(current, pos.fen(), s);
             string next = l.firstMove();
             if (!pos.tryAndApplyMove(next))

@@ -32,7 +32,7 @@ Node::Node(const Node *prev)
     prev_.push_back(prev);
 }
 
-Node::Node(const Node *prev, string pos, Status st) : pos_(pos), st_(st)
+Node::Node(const Node *prev, string pos, StatusFlag st) : pos_(pos), st_(st)
 {
     prev_.push_back(prev);
 }
@@ -80,7 +80,7 @@ void Node::safeAddMove(MoveNode mv)
     pthread_mutex_unlock(&lockM_);
 }
 
-void Node::updateStatus(Status st)
+void Node::updateStatus(StatusFlag st)
 {
     st_ = st;
 }
@@ -100,7 +100,7 @@ const string &Node::getPos() const
     return pos_;
 }
 
-Node::Status Node::getStatus() const
+Node::StatusFlag Node::getStatus() const
 {
     return st_;
 }
@@ -108,33 +108,33 @@ Node::Status Node::getStatus() const
 string Node::to_string() const
 {
     string retVal;
-    //TODO: display moves ?
     retVal += "(p:" + std::to_string(prev_.size())
               + "," + to_string(st_) + "," + pos_ + ")";
     return retVal;
 }
 
-string Node::to_string(Status s)
+string Node::to_string(StatusFlag s)
 {
-    switch (s) {
-        case PENDING:
-            return "pending";
-        case AGAINST:
-            return "against";
-        case MATE_US:
-            return "mate_us";
-        case MATE_THEM:
-            return "mate_them";
-        case STALEMATE:
-            return "stalemate";
-        case DRAW:
-            return "draw";
-        case TRESHOLD_US:
-            return "treshold_us";
-        case TRESHOLD_THEM:
-            return "treshold_them";
-    }
-    return "";
+    string status;
+    if (s & PENDING)
+        status += "pending";
+    if (s & AGAINST)
+        status += "against";
+    if (s & TRESHOLD)
+        status += "threshold";
+    if (s & MATE)
+        status += "mate";
+    if (s & STALEMATE)
+        status += "stalemate";
+    if (s & DRAW)
+        status += "draw";
+    if (s & US)
+        status += " us";
+    if (s & THEM)
+        status += " them";
+    if (s & SIGNATURE_TABLE)
+        status += " (external table)";
+    return status;
 }
 
 HashTable::~HashTable()
@@ -250,7 +250,7 @@ void HashTable::toPolyglot(ostream &os)
         //write move
         os.write((char *)&move, sizeof(uint16_t));
 
-        Node::Status st = n.getStatus();
+        Node::StatusFlag st = n.getStatus();
         if (st == Node::STALEMATE || st == Node::DRAW)
             weight++;
         //write weight
@@ -276,7 +276,7 @@ HashTable *HashTable::fromPolyglot(istream &is)
         is.read((char *)&learn, sizeof(uint32_t));
         if (!is.good())
             break;
-        Node *toAdd = new Node(nullptr, "", (Node::Status)learn);
+        Node *toAdd = new Node(nullptr, "", (Node::StatusFlag)learn);
         MoveNode mn(Board::polyglotToUci(move), NULL);
         toAdd->safeAddMove(mn);
         pair<uint64_t, Node *> p(hash, toAdd);

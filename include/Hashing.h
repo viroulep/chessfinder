@@ -90,6 +90,7 @@ public:
 
     static uint64_t hashFEN(std::string fenString);
     /*static uint64_t hashBoard(Chessboard *cb);*/
+    HashTable();
     ~HashTable();
     std::string to_string();
     //TODO: rename simplepos to FEN
@@ -99,6 +100,8 @@ public:
     void toPolyglot(std::ostream &os);
     static HashTable *fromPolyglot(std::istream &is);
 private:
+    void outputHeader(std::ostream &os);
+    void readHeader(std::istream &is);
     static int pieceOffset(int kind, Board::Rank r, Board::File f);
     static uint64_t piecesFromFEN(std::string pos);
     static uint64_t enpassantFromFEN(std::string enpassant);
@@ -106,6 +109,7 @@ private:
 
     static const uint64_t Random64_[781];
     pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
+    uint16_t cutoffValue_ = 0;
 };
 
 #endif

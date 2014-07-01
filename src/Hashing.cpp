@@ -137,6 +137,11 @@ string Node::to_string(StatusFlag s)
     return status;
 }
 
+HashTable::HashTable()
+{
+    cutoffValue_ = Options::getInstance().getCutoffTreshold();
+}
+
 HashTable::~HashTable()
 {
     for (HashTable::iterator it = begin(), itEnd = end();
@@ -232,8 +237,10 @@ int HashTable::hash_size() const
  *}
  *
  */
+
 void HashTable::toPolyglot(ostream &os)
 {
+    outputHeader(os);
     for (HashTable::iterator it = begin(), itEnd = end();
             it != itEnd; ++it) {
         Node n = *(it->second);
@@ -269,6 +276,7 @@ HashTable *HashTable::fromPolyglot(istream &is)
     uint16_t weight = 0x0;
     uint32_t learn = 0x0;
     Out::output("Import hashtable.\n", 1);
+    retValue->readHeader(is);
     while (is) {
         is.read((char *)&hash, sizeof(uint64_t));
         is.read((char *)&move, sizeof(uint16_t));
@@ -329,6 +337,41 @@ uint64_t HashTable::hashFEN(string fenString)
     return fenHash;
 }
 
+void HashTable::outputHeader(ostream &os)
+{
+    Out::output("Writting header\n", 3);
+    /*Here we book a spot of 1 entry size to store some meta information*/
+    uint64_t foo = 0;
+    os.write((char *)&foo, sizeof(uint64_t));
+    os.write((char *)&cutoffValue_, sizeof(uint16_t));
+    os.write((char *)&foo, sizeof(uint16_t));
+    os.write((char *)&foo, sizeof(uint32_t));
+}
+
+void HashTable::readHeader(istream &is)
+{
+    Out::output("Reading header\n", 3);
+    if (!is.good())
+        Err::handle("Unable to read header from input file");
+    uint16_t readCutoff = 0;
+    uint64_t readFoo = 0;
+    is.read((char *)&readFoo, sizeof(uint64_t));
+    if (!is.good() || readFoo != 0)
+        Err::handle("Your input table is not compatible with this version of"
+                    " the program !");
+    is.read((char *)&readCutoff, sizeof(uint16_t));
+    if (!is.good() || readCutoff == 0)
+        Err::handle("Invalid cutoff");
+    if (readCutoff < cutoffValue_)
+        Err::handle("Input table has a threshold cutoff value lower than the"
+                    " one used for this session, therefore it's not usable.");
+    /* Note : here do not update cutoffValue, it will just be lower if the table
+     * is written.
+     **/
+    is.read((char *)&readFoo, sizeof(uint16_t) + sizeof(uint32_t));
+    if (!is.good())
+        Err::handle("Unable to fully read header from input file");
+}
 
 int HashTable::pieceOffset(int kind, Board::Rank r, Board::File f)
 {

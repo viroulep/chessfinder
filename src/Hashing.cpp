@@ -176,8 +176,10 @@ Node *HashTable::findOrInsert(uint64_t hash, Node *node)
 {
     pthread_mutex_lock(&lock_);
     Node *retVal = unsafeFindPos(hash);
-    if (retVal)
+    if (retVal) {
+        pthread_mutex_unlock(&lock_);
         return retVal;
+    }
     insert(std::make_pair(hash, node));
     pthread_mutex_unlock(&lock_);
     return node;

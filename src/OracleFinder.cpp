@@ -294,7 +294,8 @@ void *OracleBuilder::exploreNode(void *args)
             if ((s = signTable->findPos(curHash))) {
                 current->updateStatus((Node::StatusFlag)
                                       (s->getStatus() | Node::SIGNATURE_TABLE));
-                oracle->findOrInsert(curHash, current);
+                if (oracle->findOrInsert(curHash, current) != current)
+                    delete current;
                 continue;
             }
         }

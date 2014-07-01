@@ -164,79 +164,29 @@ string HashTable::to_string()
     return retVal;
 }
 
-Node *HashTable::findPos(std::string sp)
+Node *HashTable::findPos(uint64_t hash)
 {
-    uint64_t hash = HashTable::hashFEN(sp);
-    /*bool lock = false;*/
-    Node *retVal = nullptr;
-    /*while (!__atomic_compare_exchange_n(&lock_, &lock, 1, true,*/
-                                        /*__ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))*/
-        /*;*/
     pthread_mutex_lock(&lock_);
-    /*lock = true;*/
-    auto it = find(hash);
-    if (it != end())
-        retVal = it->second;
+    Node *retVal = unsafeFindPos(hash);
     pthread_mutex_unlock(&lock_);
-    /*
-     *if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
-     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    Err::handle("Unable to release lock on Hashtable.");
-     */
     return retVal;
 }
 
-void HashTable::safeAddNode(uint64_t hash, Node *Node)
+Node *HashTable::findOrInsert(uint64_t hash, Node *node)
 {
     pthread_mutex_lock(&lock_);
-    /*
-     *bool lock = false;
-     *while (!__atomic_compare_exchange_n(&lock_, &lock, 1, true,
-     *                                    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    ;
-     *lock = true;
-     */
-    insert(std::make_pair(hash, Node));
-    /*
-     *if (!__atomic_compare_exchange_n(&lock_, &lock, 0, false,
-     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    Err::handle("Unable to release lock on Hashtable.");
-     */
+    Node *retVal = unsafeFindPos(hash);
+    if (retVal)
+        return retVal;
+    insert(std::make_pair(hash, node));
     pthread_mutex_unlock(&lock_);
+    return node;
 }
 
 int HashTable::hash_size() const
 {
     return this->size();
 }
-
-/*
- *Node *HashTable::find(SimplePos sp)
- *{
- *    //FIXME: according to specification, hash is almost unique,
- *    //so replace this by regular find from multimap
- *    uint64_t hash = HashTable::hashFEN(sp);
- *    auto range = equal_range(hash);
- *    Node *found = NULL;
- *    queue<string> infos;
- *    stringstream ss(sp);
- *    string tmpInfo;
- *    while (getline(ss, tmpInfo, ' '))
- *        infos.push(tmpInfo);
- *    string simpleFen = infos.front();
- *    infos.pop();
- *    simpleFen += " " + infos.front();
- *    Out::output("Looking for " + simpleFen + "\n", 3);
- *    for (auto it = range.first, itEnd = range.second;
- *            it != itEnd && !found ; ++it) {
- *        Out::output("against " + it->second->pos + "\n", 3);
- *        if (simpleFen == it->second->pos.substr(0, simpleFen.size()))
- *            found = it->second;
- *    }
- *    return found;
- *}
- *
- */
 
 void HashTable::toPolyglot(ostream &os)
 {
@@ -336,6 +286,16 @@ uint64_t HashTable::hashFEN(string fenString)
     }
     return fenHash;
 }
+
+Node *HashTable::unsafeFindPos(uint64_t hash)
+{
+    Node *retVal = nullptr;
+    auto it = find(hash);
+    if (it != end())
+        retVal = it->second;
+    return retVal;
+}
+
 
 void HashTable::outputHeader(ostream &os)
 {

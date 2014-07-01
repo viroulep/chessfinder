@@ -288,33 +288,32 @@ void *OracleBuilder::exploreNode(void *args)
         uint64_t curHash = pos.hash();
 
         /*Check we are not computing an already existing position*/
-        /*FIXME here we should "findorinsert" to be sure to avoid duplicate processing*/
         if (tables->find(signature) != tables->end()) {
             HashTable *signTable = (*tables)[signature];
             Node *s = nullptr;
-            if ((s = signTable->findPos(currentPos))) {
+            if ((s = signTable->findPos(curHash))) {
                 current->updateStatus((Node::StatusFlag)
                                       (s->getStatus() | Node::SIGNATURE_TABLE));
-                oracle->safeAddNode(curHash, current);
+                oracle->findOrInsert(curHash, current);
                 continue;
             }
         }
-        if (oracle->findPos(currentPos)) {
+        /*Try to find the position and insert it if not found*/
+        if (oracle->findOrInsert(curHash, current) != current) {
             Out::output("Position already in table.\n", 1);
             delete current;
             continue;
         }
 
-        if (OracleBuilder::cutNode(pos, current)) {
-            Out::output("Node cut by user-defined function", 1);
-            continue;
-        }
+        /* TODO rethink this, as we should probably remove the position if cut
+         *if (OracleBuilder::cutNode(pos, current)) {
+         *    Out::output("Node cut by user-defined function", 1);
+         *    continue;
+         *}
+         */
         if (nodes->size() % 10000 == 0)
             Out::output("[" + color_to_string(active) + "] Proceed size : "
                         + to_string(nodes->size()) + "\n");
-
-        /*Register current pos in the table*/
-        oracle->safeAddNode(curHash, current);
 
         /*Clear cut*/
         if (!pos.hasSufficientMaterial()) {
@@ -463,7 +462,9 @@ void *OracleBuilder::exploreNode(void *args)
             uint64_t hash = pos.hash();
             pos.undoLastMove();
             pair<uint64_t, Node *> p(hash, toAdd);
-            oracle->safeAddNode(hash, toAdd);
+            /*If a position if found, do not insert node and delete it*/
+            if (oracle->findOrInsert(hash, toAdd) != toAdd)
+                delete toAdd;
         }
 
 
@@ -481,10 +482,8 @@ void *OracleBuilder::exploreNode(void *args)
          * according to a user defined comparator
          */
         Node *next = NULL;
-        /*A move*/
+        /*The elected move*/
         string mv;
-        /*A fen*/
-        string fenpos;
         /*Try to find a position in the table*/
         /* There must be a reason to go trough it backward, but I can't
          * remember it right now.
@@ -499,10 +498,10 @@ void *OracleBuilder::exploreNode(void *args)
                 Err::handle("Illegal move while proceeding a draw node");
             }
             /*This is the next pos*/
-            fenpos = pos.fen();
+            uint64_t hashpos = pos.hash();
             pos.undoLastMove();
             //Jean Louis' idea to force finding positions in oracle
-            next = oracle->findPos(fenpos);
+            next = oracle->findPos(hashpos);
             if (next) {
                 next->safeAddParent(current);
                 break;
@@ -520,7 +519,7 @@ void *OracleBuilder::exploreNode(void *args)
             l = draw[0];
             mv = l.firstMove();
             pos.tryAndApplyMove(mv);
-            fenpos = pos.fen();
+            string fenpos = pos.fen();
             pos.undoLastMove();
 
             //no next position in the table, push the node to stack

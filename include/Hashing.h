@@ -94,12 +94,13 @@ public:
     ~HashTable();
     std::string to_string();
     //TODO: rename simplepos to FEN
-    Node *findPos(std::string sp);
-    void safeAddNode(uint64_t hash, Node *node);
+    Node *findPos(uint64_t hash);
+    Node *findOrInsert(uint64_t hash, Node *node);
     int hash_size() const;
     void toPolyglot(std::ostream &os);
     static HashTable *fromPolyglot(std::istream &is);
 private:
+    Node *unsafeFindPos(uint64_t hash);
     void outputHeader(std::ostream &os);
     void readHeader(std::istream &is);
     static int pieceOffset(int kind, Board::Rank r, Board::File f);

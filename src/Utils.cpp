@@ -99,7 +99,7 @@ namespace Utils {
         oss << "        threads : number of threads the engine should use\n";
         oss << "    - Finder\n";
         oss << "        verbose_level : the verbose level (default is 0)\n";
-        oss << "        cutoff_treshold : define the value for the draw in centipawn\n";
+        oss << "        cutoff_threshold : define the value for the draw in centipawn\n";
         oss << "                          (Default is 100, which means lines between\n";
         oss << "                          -1.0 and 1.0 will be considered as draw)\n";
         oss << "        playfor_movetime : the time given to the side the finder plays for (ms)\n";
@@ -109,7 +109,7 @@ namespace Utils {
         oss << "                              (default is 1000)\n";
         oss << "    - Matfinder\n";
         oss << "        lines : number of lines to consider (default is 8)\n";
-        oss << "        mate_treshold : minimal value for an evaluation to be considered"\
+        oss << "        mate_threshold : minimal value for an evaluation to be considered"\
                "as mate.\n";
         oss << "                        (default is 10000 centipawn)\n";
         oss << "    - Oraclefinder\n";

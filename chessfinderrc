@@ -6,12 +6,12 @@
 [finder]
     engine_number = 2
     verbose_level = 2
-    cutoff_treshold = 100
+    cutoff_threshold = 100
     playfor_movetime = 600
     playagainst_movetime = 300
 [matfinder]
     lines = 8
-    mate_treshold = 8000
+    mate_threshold = 8000
 [oraclefinder]
     comparator = map
     oracle_side = white

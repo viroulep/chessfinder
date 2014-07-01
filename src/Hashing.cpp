@@ -120,7 +120,7 @@ string Node::to_string(StatusFlag s)
         status += "pending";
     if (s & AGAINST)
         status += "against";
-    if (s & TRESHOLD)
+    if (s & THRESHOLD)
         status += "threshold";
     if (s & MATE)
         status += "mate";
@@ -139,7 +139,7 @@ string Node::to_string(StatusFlag s)
 
 HashTable::HashTable()
 {
-    cutoffValue_ = Options::getInstance().getCutoffTreshold();
+    cutoffValue_ = Options::getInstance().getCutoffThreshold();
 }
 
 HashTable::~HashTable()

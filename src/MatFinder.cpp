@@ -125,7 +125,7 @@ int MatFinder::runFinderOnPosition(const Position &p, const list<string> &moves)
         Out::output(Utils::getPrettyLines(pos, lines), 2);
         bestLine = getBestLine(pos, lines);
         if (bestLine.empty() || bestLine.isMat() ||
-                fabs(bestLine.getEval()) > Options::getInstance().getMateTreshold()) {
+                fabs(bestLine.getEval()) > Options::getInstance().getMateThreshold()) {
             /*Handle the case where we should backtrack*/
             if (addedMoves_ > 0) {
                 Out::output("\tBacktracking " + pos.getLastMove()
@@ -238,7 +238,7 @@ const Line &MatFinder::getBestLine(const Position &pos,
 {
     Color active = pos.side_to_move();
     for (int i = 0; i < (int) lines.size(); ++i) {
-        int limit = Options::getInstance().getCutoffTreshold();
+        int limit = Options::getInstance().getCutoffThreshold();
         //FIXME: find a clearer way to define "balance"
         //eval is in centipawn, 100 ~ a pawn
         if (lines[i].isMat()) {

@@ -44,7 +44,7 @@ public:
         AGAINST = 1 << 1,
         US = 1 << 2,
         THEM = 1 << 3,
-        TRESHOLD = 1 << 4,
+        THRESHOLD = 1 << 4,
         MATE = 1 << 5,
         STALEMATE = 1 << 6,
         DRAW = 1 << 7,

@@ -69,7 +69,7 @@ class Options {
         int getEngineHashmapSize() const;
         int getEngineThreads() const;
 
-        int getCutoffTreshold() const;
+        int getCutoffThreshold() const;
         int getEngineNumber() const;
         int getPlayforMovetime() const;
         int getPlayagainstMovetime() const;
@@ -79,7 +79,7 @@ class Options {
 
         int getMaxMoves() const;
 
-        int getMateTreshold() const;
+        int getMateThreshold() const;
         int getMaxLines() const;
 
         MoveComparator *getMoveComparator() const;
@@ -111,14 +111,14 @@ class Options {
         int engineHashmapSize_ = 1024;
         int engineThreads_ = 2;
 
-        int finderCutoffTreshold_ = 100;
+        int finderCutoffThreshold_ = 100;
         int finderEngineNumber = 1;
         int playforMovetime_ = 1500;
         int playagainstMovetime_ = 1000;
         int verboseLevel_ = 0;
         int maxMoves_ = 255;
 
-        int mateTreshold_ = 10000;
+        int mateThreshold_ = 10000;
         int maxLines_ = 8;
 
         PositionList positions_;

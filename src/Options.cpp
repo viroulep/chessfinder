@@ -124,9 +124,9 @@ int Options::getEngineThreads() const
     return engineThreads_;
 }
 
-int Options::getCutoffTreshold() const
+int Options::getCutoffThreshold() const
 {
-    return finderCutoffTreshold_;
+    return finderCutoffThreshold_;
 }
 
 int Options::getEngineNumber() const
@@ -159,9 +159,9 @@ int Options::getMaxMoves() const
     return maxMoves_;
 }
 
-int Options::getMateTreshold() const
+int Options::getMateThreshold() const
 {
-    return mateTreshold_;
+    return mateThreshold_;
 }
 
 int Options::getMaxLines() const
@@ -252,8 +252,8 @@ void Options::addConfig(Config &conf)
     val = conf("finder", "engine_number");
     PARSE_INTVAL(finderEngineNumber, "engine_number");
 
-    val = conf("finder", "cutoff_treshold");
-    PARSE_INTVAL(finderCutoffTreshold_, "cutoff_treshold");
+    val = conf("finder", "cutoff_threshold");
+    PARSE_INTVAL(finderCutoffThreshold_, "cutoff_threshold");
 
     val = conf("finder", "playfor_movetime");
     PARSE_INTVAL(playforMovetime_, "playfor_movetime");
@@ -268,8 +268,8 @@ void Options::addConfig(Config &conf)
     val = conf("matfinder", "lines");
     PARSE_INTVAL(maxLines_, "lines");
 
-    val = conf("matfinder", "mate_treshold");
-    PARSE_INTVAL(mateTreshold_, "mate_treshold");
+    val = conf("matfinder", "mate_threshold");
+    PARSE_INTVAL(mateThreshold_, "mate_threshold");
 
     /*Getting OracleFinder specific configuration*/
     val = conf("oraclefinder", "comparator");

@@ -490,7 +490,7 @@ namespace Board {
             Err::handle("Comparing illegal moves");
         /*
          * First check the eval if they are too different.
-         * (For example if the cp_treshold is 300 cp, then lines at -2.2 and +1.2
+         * (For example if the cp_threshold is 300 cp, then lines at -2.2 and +1.2
          * are equivalent, but the last one is better !)
          */
         float lhsEv = lhs.getEval();

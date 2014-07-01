@@ -183,7 +183,7 @@ int OracleBuilder::buildOracle(Board::Color playFor,
      *TODO we still need to do some cleaning in the table :
      *    - if all moves after a draw are mate or tresh, then this line is not
      *    a draw and should be updated.
-     *    - what to do with treshold/mate node ? Matfinder has to close
+     *    - what to do with threshold/mate node ? Matfinder has to close
      *    these lines
      */
     //Display info at the end of computation
@@ -411,17 +411,17 @@ void *OracleBuilder::exploreNode(void *args)
                 current->updateStatus((Node::StatusFlag)(Node::MATE | Node::US));
             }
             continue;
-        } else if (fabs(bestLine.getEval()) > opt.getCutoffTreshold()) {
+        } else if (fabs(bestLine.getEval()) > opt.getCutoffThreshold()) {
             Out::output("[" + color_to_string(active)
-                        + "] Bestline is above treshold (cut)\n", 2);
+                        + "] Bestline is above threshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
-                current->updateStatus((Node::StatusFlag)(Node::TRESHOLD | Node::THEM));
+                current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::THEM));
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to threshold, this is an error"
                             " until we decide on what to do, and if it's a bug"
                             " in the engine.");
             } else {
-                current->updateStatus((Node::StatusFlag)(Node::TRESHOLD | Node::US));
+                current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::US));
             }
             continue;
         }
@@ -434,7 +434,7 @@ void *OracleBuilder::exploreNode(void *args)
         for (Line l : lines) {
             if (l.empty())
                 continue;
-            int limit = opt.getCutoffTreshold();
+            int limit = opt.getCutoffThreshold();
             if (l.isMat())
                 cut.push_back(l);
             else if (fabs(l.getEval()) <= limit)
@@ -446,7 +446,7 @@ void *OracleBuilder::exploreNode(void *args)
         current->updateStatus(Node::DRAW);
 
         /*
-         *Add all the imbalanced line to the hashtable (either mat or "treshold")
+         *Add all the imbalanced line to the hashtable (either mat or "threshold")
          *(save some iterations in main loop : we could also push all the
          *unbalanced lines and see...)
          */
@@ -455,7 +455,7 @@ void *OracleBuilder::exploreNode(void *args)
             if (l.isMat())
                 s = (Node::StatusFlag)(s | Node::MATE);
             else
-                s = (Node::StatusFlag)(s | Node::TRESHOLD);
+                s = (Node::StatusFlag)(s | Node::THRESHOLD);
             Node *toAdd = new Node(current, pos.fen(), s);
             string next = l.firstMove();
             if (!pos.tryAndApplyMove(next))
@@ -510,7 +510,7 @@ void *OracleBuilder::exploreNode(void *args)
         }
         /*FIXME: what if positive eval ?*/
         /*Maybe just continue, but then we should register that mate or
-         * treshold is winning or losing*/
+         * threshold is winning or losing*/
         if (!next) {
             std::sort(draw.begin(), draw.end(),
                          [&pos](const Line &lhs, const Line &rhs)

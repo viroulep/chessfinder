@@ -43,6 +43,8 @@ enum SearchMode {
     MIXED
 };
 
+/*NOTE threshold : certificat pour la table*/
+/*TODO rajouter intervalle tri*/
 class Options {
     public:
 
@@ -82,6 +84,8 @@ class Options {
         int getMateThreshold() const;
         int getMaxLines() const;
 
+        int getBestmoveDeviation() const;
+
         MoveComparator *getMoveComparator() const;
         void setMoveComparator(MoveComparator *mc);
         void setMoveComparator(std::string smc);
@@ -120,6 +124,8 @@ class Options {
 
         int mateThreshold_ = 10000;
         int maxLines_ = 8;
+
+        int bestmoveDeviation_ = 19;
 
         PositionList positions_;
 

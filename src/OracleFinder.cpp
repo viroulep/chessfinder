@@ -246,6 +246,7 @@ OracleFinder::~OracleFinder()
         else
             oracleTables_[""]->toPolyglot(outputFile);
     }
+    /*TODO if autosave : save table < 6 pieces*/
     for (auto entry : oracleTables_) {
         delete entry.second;
     }
@@ -289,6 +290,7 @@ void *OracleBuilder::exploreNode(void *args)
 
         /*Check we are not computing an already existing position*/
         if (tables->find(signature) != tables->end()) {
+            /*TODO insert in correct signature table if piece < 6*/
             HashTable *signTable = (*tables)[signature];
             Node *s = nullptr;
             if ((s = signTable->findPos(curHash))) {
@@ -315,6 +317,8 @@ void *OracleBuilder::exploreNode(void *args)
         if (nodes->size() % 10000 == 0)
             Out::output("[" + color_to_string(active) + "] Proceed size : "
                         + to_string(nodes->size()) + "\n");
+        Out::output("[" + color_to_string(active) + "] Proceed size : "
+                        + to_string(nodes->size()) + "\n", 2);
 
         /*Clear cut*/
         if (!pos.hasSufficientMaterial()) {
@@ -377,7 +381,9 @@ void *OracleBuilder::exploreNode(void *args)
             case DEPTH:
                 cmd += "depth " + to_string(opt.getSearchDepth());
                 break;
-            case MIXED://Intentional no-break TODO: implement mixed search ?
+            case MIXED://Intentional no-break
+            /*TODO: implement mixed search ? likely not,
+             * early multipv in stockfish*/
             case TIME:
             default:
                 cmd += "movetime " + to_string(moveTime);
@@ -426,48 +432,18 @@ void *OracleBuilder::exploreNode(void *args)
             continue;
         }
 
-        /*If we are here, bestLine is draw, and we should continue to explore*/
-        vector<Line> draw;
-        vector<Line> cut;
+        /*If we are here, bestLine is "draw", and we should continue to explore*/
+        vector<Line> playableLines;
 
-        /*Split draw and unbalanced lines*/
+        /*Select all the candidate lines (bestmove +- deviation)*/
         for (Line l : lines) {
-            if (l.empty())
-                continue;
-            int limit = opt.getCutoffThreshold();
-            if (l.isMat())
-                cut.push_back(l);
-            else if (fabs(l.getEval()) <= limit)
-                draw.push_back(l);
-            else
-                cut.push_back(l);
+            if (!(l.empty() || l.isMat())
+                && fabs(bestLine.getEval() - l.getEval())
+                   <= opt.getBestmoveDeviation())
+                playableLines.push_back(l);
         }
 
         current->updateStatus(Node::DRAW);
-
-        /*
-         *Add all the imbalanced line to the hashtable (either mat or "threshold")
-         *(save some iterations in main loop : we could also push all the
-         *unbalanced lines and see...)
-         */
-        for (Line l : cut) {
-            Node::StatusFlag s = Node::THEM;
-            if (l.isMat())
-                s = (Node::StatusFlag)(s | Node::MATE);
-            else
-                s = (Node::StatusFlag)(s | Node::THRESHOLD);
-            Node *toAdd = new Node(current, pos.fen(), s);
-            string next = l.firstMove();
-            if (!pos.tryAndApplyMove(next))
-                Err::handle("Illegal move pushed ! (In an unbalanced line)");
-            uint64_t hash = pos.hash();
-            pos.undoLastMove();
-            pair<uint64_t, Node *> p(hash, toAdd);
-            /*If a position if found, do not insert node and delete it*/
-            if (oracle->findOrInsert(hash, toAdd) != toAdd)
-                delete toAdd;
-        }
-
 
 
         /*
@@ -485,12 +461,14 @@ void *OracleBuilder::exploreNode(void *args)
         Node *next = NULL;
         /*The elected move*/
         string mv;
+
         /*Try to find a position in the table*/
         /* There must be a reason to go trough it backward, but I can't
          * remember it right now.
          */
         Line l;
-        for (auto rit = draw.rbegin(); rit != draw.rend(); ++rit) {
+        for (auto rit = playableLines.rbegin();
+             rit != playableLines.rend(); ++rit) {
             l = *rit;
             mv = l.firstMove();
             if (!pos.tryAndApplyMove(mv)) {
@@ -508,16 +486,15 @@ void *OracleBuilder::exploreNode(void *args)
                 break;
             }
         }
-        /*FIXME: what if positive eval ?*/
-        /*Maybe just continue, but then we should register that mate or
-         * threshold is winning or losing*/
+
+        /*No repetition found, sort the playable lines*/
         if (!next) {
-            std::sort(draw.begin(), draw.end(),
+            std::sort(playableLines.begin(), playableLines.end(),
                          [&pos](const Line &lhs, const Line &rhs)
                          {
                              return pos.compareLines(lhs, rhs);
                          });
-            l = draw[0];
+            l = playableLines[0];
             mv = l.firstMove();
             pos.tryAndApplyMove(mv);
             string fenpos = pos.fen();
@@ -529,6 +506,7 @@ void *OracleBuilder::exploreNode(void *args)
                     + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
             nodes->push(next);
         }
+
         /*Whatever the move is, add it to our move list*/
         MoveNode move(mv, next);
         current->safeAddMove(move);

@@ -169,6 +169,12 @@ int Options::getMaxLines() const
     return maxLines_;
 }
 
+
+int Options::getBestmoveDeviation() const
+{
+    return bestmoveDeviation_;
+}
+
 MoveComparator *Options::getMoveComparator() const
 {
     if (!comp_)

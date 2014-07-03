@@ -279,6 +279,7 @@ void *OracleBuilder::exploreNode(void *args)
     //Main loop
     Node *current = nullptr;
     while ((current = nodes->poptop())) {
+        string iterationOutput;
         const string currentPos = current->getPos();
 
         Line bestLine;
@@ -303,7 +304,7 @@ void *OracleBuilder::exploreNode(void *args)
         }
         /*Try to find the position and insert it if not found*/
         if (oracle->findOrInsert(curHash, current) != current) {
-            Out::output("Position already in table.\n", 1);
+            Out::output(iterationOutput, "Position already in table.\n", 1);
             delete current;
             continue;
         }
@@ -315,22 +316,24 @@ void *OracleBuilder::exploreNode(void *args)
          *}
          */
         if (nodes->size() % 10000 == 0)
-            Out::output("[" + color_to_string(active) + "] Proceed size : "
-                        + to_string(nodes->size()) + "\n");
-        Out::output("[" + color_to_string(active) + "] Proceed size : "
-                        + to_string(nodes->size()) + "\n", 2);
+            Out::output(iterationOutput, "[" + color_to_string(active)
+                        + "] Proceed size : " + to_string(nodes->size())
+                        + "\n");
+        Out::output(iterationOutput, "[" + color_to_string(active)
+                    + "] Proceed size : " + to_string(nodes->size())
+                    + "\n", 2);
 
         /*Clear cut*/
         if (!pos.hasSufficientMaterial()) {
             current->updateStatus(Node::DRAW);
-            Out::output("[" + color_to_string(active)
-                    + "] Insuficient material.\n", 2);
+            Out::output(iterationOutput, "[" + color_to_string(active)
+                        + "] Insuficient material.\n", 2);
             //Proceed to next node...
             continue;
         }
 
 
-        Out::output(pos.pretty(), 2);
+        Out::output(iterationOutput, pos.pretty(), 2);
         int hit = OracleFinder::signStat_[signature];
         OracleFinder::signStat_[signature] = ++hit;
         string position = "position fen ";
@@ -347,10 +350,10 @@ void *OracleBuilder::exploreNode(void *args)
              * eg: if we are building an oracle for white, we need to push all
              * possible white positions when computing a black node.
              */
-            Out::output("Push all lines : ", 2);
+            Out::output(iterationOutput, "Push all lines : ", 2);
             for (Move m : all) {
                 string uciMv = move_to_string(m);
-                Out::output("+", 2);
+                Out::output(iterationOutput, "+", 2);
                 if (!pos.tryAndApplyMove(m))
                     Err::handle("Illegal move pushed ! (While proceeding against Node)");
                 string fen = pos.fen();
@@ -360,7 +363,7 @@ void *OracleBuilder::exploreNode(void *args)
                 MoveNode move(uciMv, next);
                 current->safeAddMove(move);
             }
-            Out::output("\n", 2);
+            Out::output(iterationOutput, "\n", 2);
             continue;
         }
 
@@ -373,8 +376,8 @@ void *OracleBuilder::exploreNode(void *args)
         /*Thinking according to the side the engine play for*/
         int moveTime = opt.getPlayforMovetime();
 
-        Out::output("[" + color_to_string(active) + "] Thinking... ("
-                    + to_string(moveTime) + ")\n", 1);
+        Out::output(iterationOutput, "[" + color_to_string(active)
+                    + "] Thinking... (" + to_string(moveTime) + ")\n", 1);
 
         string cmd = "go ";
         switch (opt.getSearchMode()) {
@@ -393,18 +396,18 @@ void *OracleBuilder::exploreNode(void *args)
         pool.sendAndWaitBestmove(commId, cmd);
 
 
-        Out::output(Utils::getPrettyLines(pos, lines), 2);
+        Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
 
         bestLine = lines[0];
         if (bestLine.empty()) {
             //STALEMATE
             current->updateStatus(Node::STALEMATE);
-            Out::output("[" + color_to_string(active)
+            Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Bestline is stalemate (cut)\n", 2);
             //Proceed to next node...
             continue;
         } else if (bestLine.isMat()) {
-            Out::output("[" + color_to_string(active)
+            Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Bestline is mate (cut)\n", 2);
             /*Eval is always negative if it's bad for us*/
             if (bestLine.getEval() < 0) {
@@ -418,7 +421,7 @@ void *OracleBuilder::exploreNode(void *args)
             }
             continue;
         } else if (fabs(bestLine.getEval()) > opt.getCutoffThreshold()) {
-            Out::output("[" + color_to_string(active)
+            Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Bestline is above threshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
                 current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::THEM));
@@ -502,16 +505,17 @@ void *OracleBuilder::exploreNode(void *args)
 
             //no next position in the table, push the node to stack
             next = new Node(current, fenpos, Node::PENDING);
-            Out::output("[" + color_to_string(active)
-                    + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
+            Out::output(iterationOutput, "[" + color_to_string(active)
+                        + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
             nodes->push(next);
         }
 
         /*Whatever the move is, add it to our move list*/
         MoveNode move(mv, next);
         current->safeAddMove(move);
-        Out::output("-----------------------\n", 1);
-
+        Out::output(iterationOutput, "-----------------------\n", 1);
+        /*Send the whole iteration output*/
+        Out::output(iterationOutput);
     }
     return 0;
 }

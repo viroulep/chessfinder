@@ -37,6 +37,7 @@ namespace Err {
 
 namespace Out {
     void output(const std::string &msg, int level = 0);
+    void output(std::string &dest, const std::string &msg, int level = 0);
     void output(std::ostream &out, const std::string &msg);
 }
 #endif

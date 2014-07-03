@@ -76,6 +76,12 @@ namespace Out {
             output(cout, msg);
     }
 
+    void output(string &dest, const string &msg, int level/* = 0*/)
+    {
+        if (level <= Options::getInstance().getVerboseLevel())
+            dest += msg;
+    }
+
     void output(std::ostream &out, const std::string &msg)
     {
         out << msg << flush;

@@ -22,6 +22,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include "UCICommunicator.h"
 #include "Output.h"
 #include "Options.h"
 
@@ -42,7 +43,15 @@ namespace Err {
     void handle(const string &msg)
     {
         output(msg);
-        exit(EXIT_FAILURE);
+        /*
+         *Ugly solution to bypass issues with data destruction when
+         *    calling exit in a thread
+         * TODO SIGUSR to exit all thread
+         * + rework receiver and at exit
+         */
+        Comm::UCICommunicatorPool::getInstance().destroyAll();
+        sleep(1);
+        std::exit(EXIT_FAILURE);
     }
 
     void handle(const string &caller, int rc)

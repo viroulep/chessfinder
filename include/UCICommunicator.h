@@ -118,7 +118,6 @@ namespace Comm {
             template<class T>
                 int create(const std::string engineFullpath,
                         const EngineOptions &options);
-            /*TODO : only one thread at a time should be able to use the comm*/
             bool send(int id, const std::string &cmd);
             bool send(int id, const std::string &&c);
             bool send(int id, const char *c);
@@ -150,6 +149,8 @@ namespace Comm {
              * atomically
              */
             int currentId_ = 0;
+
+            int destroyed_ = 0;
 
             /*The instance*/
             static UCICommunicatorPool instance_;

@@ -441,12 +441,15 @@ namespace Comm {
     bool UCICommunicatorPool::destroyAll()
     {
         bool done = true;
+        int doit = __atomic_add_fetch(&destroyed_, 1, __ATOMIC_SEQ_CST);
+        if (doit > 1)
+            return true;
         /*Necessary to prevent iterator from being invalidated*/
-        set<int> toDestroy;
-        for (auto entry : pool_)
-            toDestroy.insert(entry.first);
+        vector<int> toDestroy;
+        for (auto entry : pool_) {
+            toDestroy.push_back(entry.first);
+        }
         for (int id : toDestroy) {
-            Out::output("destroying " + to_string(id) + "\n", 5);
             done &= destroy(id);
         }
         return done;

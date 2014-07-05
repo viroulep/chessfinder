@@ -340,8 +340,10 @@ void *OracleBuilder::exploreNode(void *args)
 
 
         Out::output(iterationOutput, pos.pretty(), 2);
-        int hit = OracleFinder::signStat_[signature];
-        OracleFinder::signStat_[signature] = ++hit;
+
+        /*Hit statistic*/
+        __atomic_fetch_add(&OracleFinder::signStat_[signature], 1, __ATOMIC_SEQ_CST);
+
         string position = "position fen ";
         position += pos.fen();
         pool.send(commId, position);

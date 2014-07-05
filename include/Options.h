@@ -62,10 +62,12 @@ class Options {
         const std::string &getInputFile() const;
         const std::string &getOutputFile() const;
 
-        const std::map<std::string, std::string> &getInputTables() const;
+        const std::string &getTableFolder() const;
 
         void setInputFile(std::string in);
         void setOutputFile(std::string out);
+
+        void setTableFolder(std::string folder);
 
         const std::string &getEngineFullpath() const;
         int getEngineHashmapSize() const;
@@ -131,7 +133,7 @@ class Options {
 
         MoveComparator *comp_ = nullptr;
 
-        std::map<std::string, std::string> inputTables_;
+        std::string tableFolder_;
 
         static Options instance_;
 };

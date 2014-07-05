@@ -26,8 +26,7 @@
 #include <vector>
 #include <list>
 #include <stack>
-#include <unordered_map>
-#include <pthread.h>
+#include "ConcurrentMap.h"
 #include "Line.h"
 #include "Finder.h"
 #include "Hashing.h"
@@ -49,14 +48,14 @@ class NodeStack : private std::stack<Node *> {
 namespace OracleBuilder {
     typedef struct explorerArgs {
         pthread_t th;
-        std::map<std::string, HashTable *> *tables = nullptr;
+        ConcurrentMap<std::string, HashTable *> *tables = nullptr;
         NodeStack *stack = nullptr;
         Board::Color playFor = Board::NOCOLOR;
         int commdId = -1;
     } explorerArgs;
 
     int buildOracle(Board::Color playFor,
-                    std::map<std::string, HashTable *> *oracle,
+                    ConcurrentMap<std::string, HashTable *> *oracle,
                     const std::vector<int> &communicators,
                     const Board::Position &pos,
                     const std::list<std::string> &moves);
@@ -76,7 +75,7 @@ private:
     /*This should now create workers and handle termination*/
     int runFinderOnPosition(const Board::Position &pos,
                             const std::list<std::string> &moves);
-    std::map<std::string, HashTable *> oracleTables_;
+    ConcurrentMap<std::string, HashTable *> oracleTables_;
 };
 
 #endif

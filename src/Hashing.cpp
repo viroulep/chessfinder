@@ -19,6 +19,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <iostream>
+#include <fstream>
 #include <sstream>
 #include <queue>
 #include "Hashing.h"
@@ -137,7 +139,22 @@ string Node::to_string(StatusFlag s)
     return status;
 }
 
+Node *Node::lightCopy()
+{
+    Node *retVal = new Node(nullptr);
+    retVal->st_ = this->st_;
+    retVal->legal_moves_.insert(retVal->legal_moves_.begin(),
+                                this->legal_moves_.begin(),
+                                this->legal_moves_.end());
+    return retVal;
+}
+
 HashTable::HashTable()
+{
+    HashTable("");
+}
+
+HashTable::HashTable(string file) :file_(file)
 {
     cutoffValue_ = Options::getInstance().getCutoffThreshold();
 }
@@ -164,34 +181,22 @@ string HashTable::to_string()
     return retVal;
 }
 
-Node *HashTable::findPos(uint64_t hash)
+void HashTable::autosave()
 {
-    pthread_mutex_lock(&lock_);
-    Node *retVal = unsafeFindPos(hash);
-    pthread_mutex_unlock(&lock_);
-    return retVal;
-}
-
-Node *HashTable::findOrInsert(uint64_t hash, Node *node)
-{
-    pthread_mutex_lock(&lock_);
-    Node *retVal = unsafeFindPos(hash);
-    if (retVal) {
-        pthread_mutex_unlock(&lock_);
-        return retVal;
+    if (modified_) {
+        if (file_.length() > 0)
+            toPolyglot(file_);
+        else
+            Out::output("Unable to autosave table : no filename\n");
     }
-    insert(std::make_pair(hash, node));
-    pthread_mutex_unlock(&lock_);
-    return node;
 }
 
-int HashTable::hash_size() const
+void HashTable::toPolyglot(const string &file)
 {
-    return this->size();
-}
-
-void HashTable::toPolyglot(ostream &os)
-{
+    ofstream os(file, ios::binary);
+    if (!os.good())
+        Out::output("Unable to save table to file "
+                    + file + "\n");
     outputHeader(os);
     for (HashTable::iterator it = begin(), itEnd = end();
             it != itEnd; ++it) {
@@ -220,14 +225,19 @@ void HashTable::toPolyglot(ostream &os)
     }
 }
 
-HashTable *HashTable::fromPolyglot(istream &is)
+HashTable *HashTable::fromPolyglot(const string &file)
 {
-    HashTable *retValue = new HashTable();
+    Out::output("Loading table from " + file + ".\n", 3);
+    ifstream is(file, ios::binary);
+    if (!is.good())
+        Err::handle("Unable to load table from file "
+                    + file);
+    HashTable *retValue = new HashTable(file);
     uint64_t hash = 0x0;
     uint16_t move = 0x0;
     uint16_t weight = 0x0;
     uint32_t learn = 0x0;
-    Out::output("Import hashtable.\n", 1);
+    Out::output("Import hashtable.\n", 3);
     retValue->readHeader(is);
     while (is) {
         is.read((char *)&hash, sizeof(uint64_t));
@@ -237,13 +247,13 @@ HashTable *HashTable::fromPolyglot(istream &is)
         if (!is.good())
             break;
         Node *toAdd = new Node(nullptr, "", (Node::StatusFlag)learn);
-        MoveNode mn(Board::polyglotToUci(move), NULL);
+        MoveNode mn(Board::polyglotToUci(move), nullptr);
         toAdd->safeAddMove(mn);
         pair<uint64_t, Node *> p(hash, toAdd);
         retValue->insert(p);
         Out::output("Inserting pos in hashtable.\n", 3);
     }
-    Out::output("Data successfully imported.\n", 1);
+    Out::output("Data successfully imported.\n", 3);
     return retValue;
 }
 

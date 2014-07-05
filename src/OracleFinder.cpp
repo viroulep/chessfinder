@@ -119,7 +119,7 @@ bool OracleBuilder::cutNode(const Position &, const Node *)
 }
 
 int OracleBuilder::buildOracle(Board::Color playFor,
-                               map<string, HashTable *> *oracle,
+                               ConcurrentMap<string, HashTable *> *oracle,
                                const vector<int> &communicators,
                                const Position &p,
                                const list<string> &moves)
@@ -193,9 +193,9 @@ int OracleBuilder::buildOracle(Board::Color playFor,
 
 
     Out::output("Hashtable size = "
-            + std::to_string((*oracle)[""]->hash_size()) + ") : \n");
+            + std::to_string((*oracle)[""]->size()) + ") : \n");
     Out::output((*oracle)[""]->to_string() + "\n", 2);
-    Out::output("(size = " + std::to_string((*oracle)[""]->hash_size()) + ") : \n", 2);
+    Out::output("(size = " + std::to_string((*oracle)[""]->size()) + ") : \n", 2);
 
     return 0;
 }
@@ -205,49 +205,38 @@ int OracleBuilder::buildOracle(Board::Color playFor,
 
 OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
 {
-    //engine_side_ = cb_->getActiveSide();
-    //engine_play_for_ = MatfinderOptions::getPlayFor();
     string inputFilename = opt_.getInputFile();
     if (inputFilename.size() > 0) {
-        Out::output("Loading main table from " + inputFilename + ".\n", 2);
-        ifstream inputFile(inputFilename, ios::binary);
-        if (!inputFile.good())
-            Err::handle("Unable to load table from file "
-                        + inputFilename);
-        oracleTables_[""] = HashTable::fromPolyglot(inputFile);
+        oracleTables_[""] = HashTable::fromPolyglot(inputFilename);
     } else {
         Out::output("Creating new main empty table.\n", 2);
         oracleTables_[""] = new HashTable();
     }
-    for (auto pair : opt_.getInputTables()) {
-        const string &sign = pair.first;
-        const string &inFile = pair.second;
+    for (const string &inFile : Utils::filesFromDir(opt_.getTableFolder(),
+                                                    ".bin")) {
+        const string &sign = Utils::signatureFromFilename(inFile);
+        if (sign.length() == 0)
+            Err::handle("Unable to determine table signature (" + inFile + ")");
         if (oracleTables_.count(sign))
             Err::handle("Loading twice a table for the same signature ("
-                        + sign +")");
-        Out::output("Loading table from " + inFile + ".\n", 2);
-        ifstream inputFile(inFile, ios::binary);
-        if (!inputFile.good())
-            Err::handle("Unable to load signature table \"" + sign
-                        + "\" from file " + inFile);
-        oracleTables_[sign] = HashTable::fromPolyglot(inputFile);
+                        + inFile + "/" + sign +")");
+        string fileInDir = opt_.getTableFolder() + "/" + inFile;
+        Out::output("Loading table \"" + fileInDir + "\" with signature \""
+                    + sign + "\".\n", 2);
+        oracleTables_[sign] = HashTable::fromPolyglot(fileInDir);
     }
 }
 
 OracleFinder::~OracleFinder()
 {
     string outputFilename = opt_.getOutputFile();
-    if (outputFilename.size() > 0) {
-        Out::output("Saving table to " + outputFilename + ".\n", 2);
-        ofstream outputFile(outputFilename, ios::binary);
-        if (!outputFile.good())
-            Out::output("Unable to save table to file "
-                    + outputFilename + "\n");
-        else
-            oracleTables_[""]->toPolyglot(outputFile);
-    }
-    /*TODO if autosave : save table < 6 pieces*/
     for (auto entry : oracleTables_) {
+        if (entry.first == "") {
+            if (outputFilename.length() > 0)
+                entry.second->toPolyglot(outputFilename);
+        } else {
+            entry.second->autosave();
+        }
         delete entry.second;
     }
     dumpStat();
@@ -271,7 +260,7 @@ void *OracleBuilder::exploreNode(void *args)
     explorerArgs *all = (explorerArgs *)args;
     Board::Color playFor = all->playFor;
     int commId = all->commdId;
-    map<string, HashTable *> *tables = all->tables;
+    ConcurrentMap<string, HashTable *> *tables = all->tables;
     HashTable *oracle = (*tables)[""];
     NodeStack *nodes = all->stack;
     Err::handle("Args unpacking", !(oracle && nodes));
@@ -288,20 +277,41 @@ void *OracleBuilder::exploreNode(void *args)
         Color active = pos.side_to_move();
         string signature = pos.signature();
         uint64_t curHash = pos.hash();
+        bool insertCopyInSignTable = false;
 
-        /*Check we are not computing an already existing position*/
-        if (tables->find(signature) != tables->end()) {
-            /*TODO insert in correct signature table if piece < 6*/
-            HashTable *signTable = (*tables)[signature];
+        /*Lookup in signature tables*/
+        if (signature.length() < 6) {
+            HashTable *table = nullptr;
+            if (tables->count(signature) == 0) {
+                Out::output("try to create new table for " + signature + "\n");
+                string filename = opt.getTableFolder() + "/" + signature
+                                  + ".autosave."
+                                  + to_string(opt.getCutoffThreshold())
+                                  + ".bin";
+                table = new HashTable(filename);
+                if (tables->findOrInsert(signature, table) != table) {
+                    Out::output("table not inserted");
+                    delete table;
+                    Out::output("table deleted");
+                    table = (*tables)[signature];
+                } else {
+                    Out::output("table inserted");
+                }
+            } else {
+                table = (*tables)[signature];
+            }
             Node *s = nullptr;
-            if ((s = signTable->findPos(curHash))) {
+            if ((s = table->findVal(curHash))) {
                 current->updateStatus((Node::StatusFlag)
                                       (s->getStatus() | Node::SIGNATURE_TABLE));
                 if (oracle->findOrInsert(curHash, current) != current)
                     delete current;
                 continue;
+            } else {
+                insertCopyInSignTable = true;
             }
         }
+
         /*Try to find the position and insert it if not found*/
         if (oracle->findOrInsert(curHash, current) != current) {
             Out::output(iterationOutput, "Position already in table.\n", 1);
@@ -315,13 +325,9 @@ void *OracleBuilder::exploreNode(void *args)
          *    continue;
          *}
          */
-        if (nodes->size() % 10000 == 0)
-            Out::output(iterationOutput, "[" + color_to_string(active)
-                        + "] Proceed size : " + to_string(nodes->size())
-                        + "\n");
         Out::output(iterationOutput, "[" + color_to_string(active)
                     + "] Proceed size : " + to_string(nodes->size())
-                    + "\n", 2);
+                    + "\n");
 
         /*Clear cut*/
         if (!pos.hasSufficientMaterial()) {
@@ -399,13 +405,14 @@ void *OracleBuilder::exploreNode(void *args)
         Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
 
         bestLine = lines[0];
+        bool skipThisNode = false;
         if (bestLine.empty()) {
             //STALEMATE
             current->updateStatus(Node::STALEMATE);
             Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Bestline is stalemate (cut)\n", 2);
             //Proceed to next node...
-            continue;
+            skipThisNode = true;
         } else if (bestLine.isMat()) {
             Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Bestline is mate (cut)\n", 2);
@@ -419,7 +426,7 @@ void *OracleBuilder::exploreNode(void *args)
             } else {
                 current->updateStatus((Node::StatusFlag)(Node::MATE | Node::US));
             }
-            continue;
+            skipThisNode = true;
         } else if (fabs(bestLine.getEval()) > opt.getCutoffThreshold()) {
             Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Bestline is above threshold (cut)\n", 2);
@@ -432,8 +439,21 @@ void *OracleBuilder::exploreNode(void *args)
             } else {
                 current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::US));
             }
-            continue;
+            skipThisNode = true;
         }
+
+        /*Trick to avoid code duplicaton for inserting copy in table*/
+        if (!skipThisNode)
+            current->updateStatus(Node::DRAW);
+
+        if (insertCopyInSignTable) {
+            Node *cpy = current->lightCopy();
+            if ((*tables)[signature]->findOrInsert(curHash, cpy) != cpy)
+                delete cpy;
+        }
+
+        if (skipThisNode)
+            continue;
 
         /*If we are here, bestLine is "draw", and we should continue to explore*/
         vector<Line> playableLines;
@@ -446,7 +466,6 @@ void *OracleBuilder::exploreNode(void *args)
                 playableLines.push_back(l);
         }
 
-        current->updateStatus(Node::DRAW);
 
 
         /*
@@ -483,7 +502,7 @@ void *OracleBuilder::exploreNode(void *args)
             uint64_t hashpos = pos.hash();
             pos.undoLastMove();
             //Jean Louis' idea to force finding positions in oracle
-            next = oracle->findPos(hashpos);
+            next = oracle->findVal(hashpos);
             if (next) {
                 next->safeAddParent(current);
                 break;

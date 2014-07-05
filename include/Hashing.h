@@ -23,10 +23,10 @@
 #define __HASHTABLE_H__
 
 #include <cstdint>
-#include <ostream>
 #include <map>
 #include <vector>
 
+#include "ConcurrentMap.h"
 #include "SimpleChessboard.h"
 
 #define U64(u) (u##ULL)
@@ -34,6 +34,7 @@
 
 class Node;
 
+/*FIXME : is registering the next Node really necessary ?!*/
 typedef std::pair<std::string, Node *> MoveNode;
 typedef std::vector<MoveNode> LegalNodes;
 
@@ -62,6 +63,9 @@ public:
     StatusFlag getStatus() const;
     std::string to_string() const;
     static std::string to_string(StatusFlag s);
+    /*"Light" copy : copy only basic informations such as status and moves,
+     * as it's the only things needed for exporting table*/
+    Node *lightCopy();
 private:
     /*Fen string without clock informations*/
     /*Actually its the full fen*/
@@ -84,21 +88,19 @@ private:
 };
 
 //map is internally ordered by key, ascending
-class HashTable : private std::multimap<uint64_t, Node *>
+class HashTable : public ConcurrentMap<uint64_t, Node *>
 {
 public:
 
     static uint64_t hashFEN(std::string fenString);
-    /*static uint64_t hashBoard(Chessboard *cb);*/
+    HashTable(std::string file);
     HashTable();
     ~HashTable();
     std::string to_string();
-    //TODO: rename simplepos to FEN
-    Node *findPos(uint64_t hash);
-    Node *findOrInsert(uint64_t hash, Node *node);
-    int hash_size() const;
-    void toPolyglot(std::ostream &os);
-    static HashTable *fromPolyglot(std::istream &is);
+
+    void autosave();
+    void toPolyglot(const std::string &file);
+    static HashTable *fromPolyglot(const std::string &file);
 private:
     Node *unsafeFindPos(uint64_t hash);
     void outputHeader(std::ostream &os);
@@ -111,6 +113,7 @@ private:
     static const uint64_t Random64_[781];
     pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
     uint16_t cutoffValue_ = 0;
+    const std::string file_;
 };
 
 #endif

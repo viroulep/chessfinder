@@ -19,9 +19,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include "Utils.h"
 #include "ChessboardTypes.h"
@@ -213,6 +216,52 @@ namespace Utils {
         ts->tv_sec  = tp.tv_sec;
         ts->tv_nsec = tp.tv_usec * 1000;
         ts->tv_sec += seconds;
+    }
+
+    string signatureFromFilename(const string &filename)
+    {
+        /*Assume the filename respect sign.whateverstring.bin*/
+        std::size_t dotPos = filename.find(".");
+        if (dotPos != std::string::npos) {
+            string rawSign = filename.substr(0, dotPos);
+            std::sort(rawSign.begin(), rawSign.end());
+            return rawSign;
+        }
+        return "";
+    }
+
+    bool endsWith(const string &thestring, const string &end)
+    {
+        if (end.size() > thestring.size())
+            return false;
+        else
+            return equal(end.rbegin(), end.rend(), thestring.rbegin());
+    }
+
+    vector<string> filesFromDir(const std::string &directory,
+                                          const std::string &ext)
+    {
+        vector<string> retVal;
+        DIR *dp;
+        struct dirent *dirp;
+        if((dp  = opendir(directory.c_str())) == NULL)
+            Err::handle("Error opening " + directory + "\n", errno);
+
+        struct stat st;
+        string curEntry;
+        while ((dirp = readdir(dp)) != NULL) {
+            curEntry = string(dirp->d_name);
+            if (lstat(string(directory + "/" + curEntry).c_str(), &st)) {
+                Err::handle("Unable to read from table directory : "
+                            "something went wrong with lstat("
+                            + to_string(errno) + ")");
+            }
+            if (!S_ISDIR(st.st_mode) && endsWith(curEntry, ext)) {
+                retVal.push_back(curEntry);
+            }
+        }
+        closedir(dp);
+        return retVal;
     }
 
     string getPrettyLines(const Board::Position &pos, const vector<Line> &lines)

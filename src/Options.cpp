@@ -94,9 +94,9 @@ const string &Options::getOutputFile() const
     return outputFile_;
 }
 
-const map<string, string> &Options::getInputTables() const
+const string &Options::getTableFolder() const
 {
-    return inputTables_;
+    return tableFolder_;
 }
 
 void Options::setInputFile(string in)
@@ -107,6 +107,11 @@ void Options::setInputFile(string in)
 void Options::setOutputFile(string out)
 {
     outputFile_ = out;
+}
+
+void Options::setTableFolder(string folder)
+{
+    tableFolder_ = folder;
 }
 
 const string &Options::getEngineFullpath() const
@@ -288,17 +293,10 @@ void Options::addConfig(Config &conf)
     if (val)
         setSearchMode(val);
 
-    /*Getting all input tables*/
-    int index = 1;
-    Value *key;
-    string tableSection = "oracletables";
-    while ((key = conf.ikey(tableSection.c_str(), index))
-           && (val = conf.ivalue(tableSection.c_str(), index))) {
-        string skey = key->get();
-        std::sort(skey.begin(), skey.end());
-        inputTables_[skey] = val;
-        index++;
-    }
+    val = conf("oraclefinder", "table_folder");
+    if (val)
+        setTableFolder(val);
+
 
     val = conf("oraclefinder", "search_depth");
     PARSE_INTVAL(searchDepth_, "search_depth");

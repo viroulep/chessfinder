@@ -36,6 +36,11 @@ namespace Utils {
     std::string listToString(const std::list<std::string> &theList);
     void getTimeout(struct timespec *ts, int seconds);
 
+    std::string signatureFromFilename(const std::string &filename);
+    bool endsWith(const std::string &thestring, const std::string &end);
+    std::vector<std::string> filesFromDir(const std::string &directory,
+                                          const std::string &ext);
+
     //FIXME: should belong to board ?
     PositionList positionListFromFile(std::string fileName);
     std::string getPrettyLines(const Board::Position &pos,

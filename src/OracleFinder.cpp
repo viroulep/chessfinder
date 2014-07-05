@@ -283,19 +283,14 @@ void *OracleBuilder::exploreNode(void *args)
         if (signature.length() < 6) {
             HashTable *table = nullptr;
             if (tables->count(signature) == 0) {
-                Out::output("try to create new table for " + signature + "\n");
                 string filename = opt.getTableFolder() + "/" + signature
                                   + ".autosave."
                                   + to_string(opt.getCutoffThreshold())
                                   + ".bin";
                 table = new HashTable(filename);
                 if (tables->findOrInsert(signature, table) != table) {
-                    Out::output("table not inserted");
                     delete table;
-                    Out::output("table deleted");
                     table = (*tables)[signature];
-                } else {
-                    Out::output("table inserted");
                 }
             } else {
                 table = (*tables)[signature];
@@ -304,6 +299,13 @@ void *OracleBuilder::exploreNode(void *args)
             if ((s = table->findVal(curHash))) {
                 current->updateStatus((Node::StatusFlag)
                                       (s->getStatus() | Node::SIGNATURE_TABLE));
+                if (current->getStatus() & Node::THEM) {
+                    OracleBuilder::displayNodeHistory(current);
+                    Out::output("Iteration output for error :\n" + iterationOutput);
+                    Err::handle("A node has gone from draw to mate, this is an error"
+                                " until we decide on what to do, and if it's a bug"
+                                " in the engine.");
+                }
                 if (oracle->findOrInsert(curHash, current) != current)
                     delete current;
                 continue;
@@ -421,6 +423,7 @@ void *OracleBuilder::exploreNode(void *args)
             /*Eval is always negative if it's bad for us*/
             if (bestLine.getEval() < 0) {
                 current->updateStatus((Node::StatusFlag)(Node::MATE | Node::THEM));
+                Out::output("Iteration output for error :\n" + iterationOutput);
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to mate, this is an error"
                             " until we decide on what to do, and if it's a bug"
@@ -434,6 +437,7 @@ void *OracleBuilder::exploreNode(void *args)
                         + "] Bestline is above threshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
                 current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::THEM));
+                Out::output("Iteration output for error :\n" + iterationOutput);
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to threshold, this is an error"
                             " until we decide on what to do, and if it's a bug"

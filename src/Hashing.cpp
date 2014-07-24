@@ -119,7 +119,7 @@ string Node::to_string(StatusFlag s)
 {
     string status;
     if (s & PENDING)
-        status += "pending";
+        status += "pending ";
     if (s & AGAINST)
         status += "against";
     if (s & THRESHOLD)
@@ -161,6 +161,7 @@ HashTable::HashTable(string file) :file_(file)
 
 HashTable::~HashTable()
 {
+    Out::output(show_pending());
     for (HashTable::iterator it = begin(), itEnd = end();
             it != itEnd; ++it) {
         delete(it->second);
@@ -181,6 +182,21 @@ string HashTable::to_string()
     return retVal;
 }
 
+string HashTable::show_pending()
+{
+    string retVal = "";
+    /*TODO clean output to file*/
+    for (HashTable::iterator it = begin(), itEnd = end();
+            it != itEnd; ++it) {
+        Node n = *(it->second);
+        if (n.getStatus() & Node::PENDING)
+            retVal += "#" + std::to_string(it->first) + ":" + n.to_string() + "\n";
+    }
+    if (retVal == "")
+        retVal += "<empty>\n";
+    return "Pending nodes :\n" + retVal;
+}
+
 void HashTable::autosave()
 {
     if (modified_) {
@@ -193,6 +209,7 @@ void HashTable::autosave()
 
 void HashTable::toPolyglot(const string &file)
 {
+    Out::output(show_pending());
     ofstream os(file, ios::binary);
     if (!os.good())
         Out::output("Unable to save table to file "

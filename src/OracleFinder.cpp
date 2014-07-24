@@ -280,7 +280,7 @@ void *OracleBuilder::exploreNode(void *args)
         bool insertCopyInSignTable = false;
 
         /*Lookup in signature tables*/
-        if (signature.length() < 6) {
+        if (signature.length() <= opt.getMaxPiecesEnding()) {
             HashTable *table = nullptr;
             if (tables->count(signature) == 0) {
                 string filename = opt.getTableFolder() + "/" + signature
@@ -449,8 +449,21 @@ void *OracleBuilder::exploreNode(void *args)
         }
 
         /*Trick to avoid code duplicaton for inserting copy in table*/
-        if (!skipThisNode)
+        if (!skipThisNode) {
             current->updateStatus(Node::DRAW);
+            /* If we are not in fullBuild mode, just insert a pending node in
+             * table if the signature is low enough
+             */
+            if (!opt.fullBuild() &&
+                signature.length() <= opt.getMaxPiecesEnding()) {
+                if (oracle->findOrInsert(curHash, current) != current)
+                    delete current;
+                else
+                    current->updateStatus((Node::StatusFlag)
+                                          (current->getStatus() | Node::PENDING));
+                continue;
+            }
+        }
 
         if (insertCopyInSignTable) {
             Node *cpy = current->lightCopy();

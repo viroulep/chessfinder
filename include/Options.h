@@ -88,6 +88,9 @@ class Options {
 
         int getBestmoveDeviation() const;
 
+        unsigned int getMaxPiecesEnding() const;
+        bool fullBuild() const;
+
         MoveComparator *getMoveComparator() const;
         void setMoveComparator(MoveComparator *mc);
         void setMoveComparator(std::string smc);
@@ -128,6 +131,10 @@ class Options {
         int maxLines_ = 8;
 
         int bestmoveDeviation_ = 19;
+
+        unsigned int maxPiecesEnding_ = 6;
+        /*Build full oracle, or just until we reach an 6 piece ending*/
+        bool fullBuild_ = false;
 
         PositionList positions_;
 

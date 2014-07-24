@@ -180,6 +180,16 @@ int Options::getBestmoveDeviation() const
     return bestmoveDeviation_;
 }
 
+unsigned int Options::getMaxPiecesEnding() const
+{
+    return maxPiecesEnding_;
+}
+
+bool Options::fullBuild() const
+{
+    return fullBuild_;
+}
+
 MoveComparator *Options::getMoveComparator() const
 {
     if (!comp_)
@@ -239,6 +249,17 @@ if (val) {\
     }\
 }
 
+#define PARSE_BOOLVAL(option, optionName)\
+if (val) {\
+    string sval(val);\
+    if (sval == "false")\
+        option = false;\
+    else if (sval == "true")\
+        option = true;\
+    else\
+        Err::handle("Error parsing " optionName " from configuration file");\
+}
+
 void Options::addConfig(Config &conf)
 {
     Out::output("Setting options from configuration file.\n", 1);
@@ -296,6 +317,8 @@ void Options::addConfig(Config &conf)
     val = conf("oraclefinder", "table_folder");
     if (val)
         setTableFolder(val);
+    val = conf("oraclefinder", "full_build");
+    PARSE_BOOLVAL(fullBuild_, "full_build");
 
 
     val = conf("oraclefinder", "search_depth");
@@ -304,6 +327,7 @@ void Options::addConfig(Config &conf)
 }
 
 #undef PARSE_INTVAL
+#undef PARSE_BOOLVAL
 
 Options::Options()
 {

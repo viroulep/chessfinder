@@ -18,3 +18,4 @@
     search_mode = depth
     search_depth = 20
     table_folder = input_tables
+    full_build = false

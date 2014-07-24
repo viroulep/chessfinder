@@ -97,6 +97,7 @@ public:
     HashTable();
     ~HashTable();
     std::string to_string();
+    std::string show_pending();
 
     void autosave();
     void toPolyglot(const std::string &file);

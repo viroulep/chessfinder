@@ -480,8 +480,9 @@ void *OracleBuilder::exploreNode(void *args)
         /*Select all the candidate lines (bestmove +- deviation)*/
         for (Line l : lines) {
             if (!(l.empty() || l.isMat())
-                && fabs(bestLine.getEval() - l.getEval())
-                   <= opt.getBestmoveDeviation())
+                && (fabs(bestLine.getEval() - l.getEval())
+                   <= opt.getBestmoveDeviation()
+                   || l.getEval() >= 0))
                 playableLines.push_back(l);
         }
 

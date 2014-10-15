@@ -27,20 +27,22 @@
 class MoveComparator {
     public:
         virtual ~MoveComparator();
-        bool compare(Board::Move &lhs, Board::Move &rhs);
-        virtual uint16_t evaluateMove(Board::Move &mv) = 0;
+        bool compare(const Board::Position &pos, Board::Move &lhs,
+                     Board::Move &rhs);
+        virtual uint16_t evaluateMove(const Board::Position &pos,
+                                      Board::Move &mv) = 0;
 
 };
 
 class DefaultMoveComparator : public MoveComparator {
     public:
         virtual ~DefaultMoveComparator();
-        uint16_t evaluateMove(Board::Move &mv);
+        uint16_t evaluateMove(const Board::Position &pos, Board::Move &mv);
 };
 
 class MapMoveComparator : public MoveComparator {
     public:
-        uint16_t evaluateMove(Board::Move &mv);
+        uint16_t evaluateMove(const Board::Position &pos, Board::Move &mv);
 };
 
 
@@ -52,11 +54,5 @@ class SampleMoveComparator : public MoveComparator {
 */
 
 
-
-namespace CompareMove {
-
-bool compareTake(Board::Move &lhs, Board::Move &rhs);
-
-}
 
 #endif

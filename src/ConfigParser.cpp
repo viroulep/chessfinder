@@ -368,7 +368,7 @@ int Config::read_config_file()
             svalue = svalue->next;
         }
 
-        if (getline(file, str_buf) == 0)
+        if (!std::getline(file, str_buf))
             break;
 
         str_buf += '#';

@@ -78,6 +78,7 @@ namespace Board {
             std::set<Square> pieces_squares(Color c) const;
             Piece piece_on(Square s) const;
             Square enpassant() const;
+            Square king(Color c) const;
             bool canCastle(CastlingFlag f) const;
             virtual void init();
             virtual void clear();

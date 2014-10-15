@@ -118,6 +118,15 @@ namespace Board {
         return st_->enpassant;
     }
 
+    Square Position::king(Color c) const
+    {
+        Piece king = make_piece(c, KING);
+        for (Square s = SQ_A1; s <= SQ_H8; ++s)
+            if (board_[s] == king)
+                return s;
+        assert(false && "No king on board !");
+    }
+
     bool Position::canCastle(CastlingFlag f) const
     {
         return (st_->castle & f);
@@ -503,7 +512,7 @@ namespace Board {
         }
 
         /*Optionally add some restriction on the line*/
-        return Options::getInstance().getMoveComparator()->compare(lhsM, rhsM);
+        return Options::getInstance().getMoveComparator()->compare(*this, lhsM, rhsM);
     }
 
     /*

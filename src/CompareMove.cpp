@@ -17,30 +17,13 @@ MoveComparator::~MoveComparator()
 
 
 /* m1 < m2 means that m1 is *better* than m2 ! */
-bool MoveComparator::compare(Board::Move &lhs, Board::Move &rhs)
+bool MoveComparator::compare(const Position &pos, Move &lhs, Move &rhs)
 {
-    return evaluateMove(lhs) > evaluateMove(rhs);
+    return evaluateMove(pos, lhs) > evaluateMove(pos, rhs);
 }
 
 
-bool CompareMove::compareTake(Move &lhs, Move &rhs)
-{
-    /*if (lhs.state->captured == NO_KIND && rhs.state->captured == NO_KIND)*/
-    if (lhs.captured == NO_KIND && rhs.captured == NO_KIND)
-        return false;
-    /*else if (lhs.state->captured != NO_KIND && rhs.state->captured == NO_KIND)*/
-    else if (lhs.captured != NO_KIND && rhs.captured == NO_KIND)
-        return true;
-    else if (lhs.captured == NO_KIND && rhs.captured != NO_KIND)
-        return false;
-    else {
-        PieceKind lhsP = lhs.captured;
-        PieceKind rhsP = rhs.captured;
-        return lhsP > rhsP;
-    }
-}
-
-uint16_t DefaultMoveComparator::evaluateMove(Move &)
+uint16_t DefaultMoveComparator::evaluateMove(const Position &pos, Move &)
 {
     return 1;
 }
@@ -49,16 +32,17 @@ DefaultMoveComparator::~DefaultMoveComparator()
 {
 }
 
-uint16_t MapMoveComparator::evaluateMove(Move &mv)
+uint16_t MapMoveComparator::evaluateMove(const Position &pos, Move &mv)
 {
     /*
      * Scheme of the evaluation :
      *
-     * aafffrrrppp
-     * aa : value for take/promotion/pawn move
-     * fff : bonus for file
-     * rrr : bonus for rank
-     * ppp : bonus for piece kind
+     * aabbfffrrrppp
+     * aa   : value for take/promotion/pawn move
+     * bb   : bonus for cuting the king
+     * fff  : bonus for file
+     * rrr  : bonus for rank
+     * ppp  : bonus for piece kind
      **/
     File ft;
     Rank rt;
@@ -87,6 +71,17 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
         encodedMove = 0x1;
     }
 
+    uint16_t cutBonus = 0x0;
+    if (kind_of(pf) == ROOK || kind_of(pf) == QUEEN) {
+        Square oppKing = pos.king((pos.side_to_move() == WHITE)?BLACK:WHITE);
+        if (int(rank_of(oppKing)) == int(rt) + 1)
+            cutBonus = 0x1;
+        cutBonus <<= 1;
+        if (int(file_of(oppKing)) == int(ft) + 1)
+            cutBonus  |= 0x1;
+    }
+
+
     /*ppp*/
     uint16_t encodedPiece = 0x0;
     /*fffrrr*/
@@ -99,44 +94,44 @@ uint16_t MapMoveComparator::evaluateMove(Move &mv)
         case KNIGHT:
             /*Knight goes to C2*/
             encodedPiece = 0x2;
-            encodedSquare = 7 - abs(ft - FILE_C);
+            encodedSquare = 7 - abs(int(ft) - FILE_C);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(rt - RANK_2);
+            encodedSquare |= 7 - abs(int(rt) - RANK_2);
             break;
         case BISHOP:
             /*Bishop goes to D2*/
             encodedPiece = 0x3;
-            encodedSquare = 7 - abs(ft - FILE_D);
+            encodedSquare = 7 - abs(int(ft) - FILE_D);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(rt - RANK_2);
+            encodedSquare |= 7 - abs(int(rt) - RANK_2);
             break;
         case ROOK:
             /*Rook goes to B3*/
             encodedPiece = 0x4;
-            encodedSquare = 7 - abs(ft - FILE_B);
+            encodedSquare = 7 - abs(int(ft) - FILE_B);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(rt - RANK_3);
+            encodedSquare |= 7 - abs(int(rt) - RANK_3);
             break;
         case QUEEN:
             /*Queen goes to C3*/
             encodedPiece = 0x5;
-            encodedSquare = 7 - abs(ft - FILE_C);
+            encodedSquare = 7 - abs(int(ft) - FILE_C);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(rt - RANK_3);
+            encodedSquare |= 7 - abs(int(rt) - RANK_3);
             break;
         case KING:
             /*King goes to B2*/
             encodedPiece = 0x6;
-            encodedSquare = 7 - abs(ft - FILE_B);
+            encodedSquare = 7 - abs(int(ft) - FILE_B);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(rt - RANK_2);
+            encodedSquare |= 7 - abs(int(rt) - RANK_2);
             break;
         default:
             Err::handle("No kind to compare move !");
             break;
     }
-    /*mmssssssppp*/
-    evaluation = (encodedMove << 9) | (encodedSquare << 3) | encodedPiece;
+    /*mmbbssssssppp*/
+    evaluation = (encodedMove << 11) | (cutBonus << 9) | (encodedSquare << 3) | encodedPiece;
     return evaluation;
 }
 

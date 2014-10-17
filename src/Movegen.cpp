@@ -52,7 +52,7 @@ namespace Board {
         for (Rank cr = Rank(r - 2); cr <= Rank(r + 2); ++cr) {
             if (cr == r)
                 continue;
-            Rank diff = Rank(abs(cr - r));
+            Rank diff = Rank(abs(int(cr) - r));
             File fdiff = File(3 - diff);
             Square s1 = make_square(cr, File(f + fdiff));
             Square s2 = make_square(cr, File(f - fdiff));

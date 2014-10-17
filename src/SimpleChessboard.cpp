@@ -729,7 +729,7 @@ namespace Board {
         } else if (m.type == NORMAL) {
             /*Handle double pawn push*/
             if (kind_of(pFrom) == PAWN &&
-                    abs(rank_of(m.to) - rank_of(m.from)) == 2)
+                    abs(int(rank_of(m.to)) - rank_of(m.from)) == 2)
                 next->enpassant = make_square(
                         (active_ == WHITE)?RANK_3:RANK_6,
                         file_of(m.from));

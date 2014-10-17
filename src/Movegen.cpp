@@ -25,8 +25,6 @@
 
 using namespace std;
 
-namespace Board {
-
 #define MOVE_LOOP(cond, rank, file) \
     for (cond) {                \
         Square s = make_square(rank, file);\
@@ -42,6 +40,8 @@ namespace Board {
     make_square(Rank(rank - 1), file);\
     if (is_ok(s) && (s == pos.enpassant() || pos.takes(from, s)))\
         sqList.insert(s);
+
+namespace Board {
 
     template<>
     set<Square> gen_reachable<KNIGHT>(const Square from, const Position &pos)
@@ -159,21 +159,6 @@ namespace Board {
         return sqList;
     }
 
-#define GEN_ATTACKED(KIND) \
-    template<>\
-    set<Square> gen_attacked<KIND>(const Square from, const Position &pos)\
-    {\
-        return gen_reachable<KIND>(from, pos);\
-    }
-
-    GEN_ATTACKED(KNIGHT);
-    GEN_ATTACKED(BISHOP);
-    GEN_ATTACKED(ROOK);
-    GEN_ATTACKED(QUEEN);
-    GEN_ATTACKED(KING);
-
-#undef GEN_ATTACKED
-
     template<>
     set<Square> gen_attacked<PAWN>(const Square from, const Position &pos)
     {
@@ -193,8 +178,8 @@ namespace Board {
         return sqList;
     }
 
-
-    set<Square> gen_attackers(Color c, const Square target, const Position &pos)
+    set<Square> gen_attackers(Color c, const Square target,
+                                   const Position &pos)
     {
         set<Square> sqList;
         for (Square s = SQ_A1; s <= SQ_H8; ++s) {
@@ -202,58 +187,18 @@ namespace Board {
             Piece p = pos.piece_on(s);
             if (p == NO_PIECE || color_of(p) != c)
                 continue;
-            DISPATCH(sqListTmp, kind_of(p), gen_attacked, s, pos);
+            sqListTmp = fgen_attacked[kind_of(p)](s, pos);
             if (sqListTmp.find(target) != sqListTmp.end())
                 sqList.insert(s);
         }
         return sqList;
     }
-#define GEN_SIMPLE_MOVES(KIND) \
-    template<>\
-    vector<Move> gen_simple_moves<KIND>(const Square from, Position &pos)\
-    {\
-        set<Square> dests = gen_reachable<KIND>(from, pos);\
-        vector<Move> moves;\
-        for (Square s : dests) {\
-            Move m;\
-            m.from = from;\
-            m.moving = pos.piece_on(from);\
-            m.to = s;\
-            m.type = NORMAL;\
-            m.captured = NO_KIND;\
-            if (!pos.empty(m.to))\
-                m.captured = kind_of(pos.piece_on(m.to));\
-            if (pos.tryMove(m))\
-                moves.push_back(m);\
-        }\
-        return moves;\
-    }
-
-#define GEN_MOVES(KIND) \
-    template<>\
-    vector<Move> gen_moves<KIND>(const Square from, Position &pos)\
-    {\
-        return gen_simple_moves<KIND>(from, pos);\
-    }
-
-    GEN_SIMPLE_MOVES(QUEEN);
-    GEN_SIMPLE_MOVES(KNIGHT);
-    GEN_SIMPLE_MOVES(ROOK);
-    GEN_SIMPLE_MOVES(BISHOP);
-    GEN_SIMPLE_MOVES(KING);
-    GEN_MOVES(QUEEN);
-    GEN_MOVES(KNIGHT);
-    GEN_MOVES(ROOK);
-    GEN_MOVES(BISHOP);
-
-#undef GEN_SIMPLE_MOVES
-#undef GEN_MOVES
 
     template<>
-    vector<Move> gen_moves<KING>(const Square from, Position &pos)
+    std::vector<Move> gen_moves<KING>(const Square from, Position &pos)
     {
-        vector<Move> all = gen_simple_moves<KING>(from, pos);
-        set<Square> attackers_oo;
+        std::vector<Move> all = gen_simple_moves<KING>(from, pos);
+        std::set<Square> attackers_oo;
         Piece king = pos.piece_on(from);
         Move m;
         m.from = from;
@@ -307,10 +252,10 @@ namespace Board {
     }
 
     template<>
-    vector<Move> gen_moves<PAWN>(const Square from, Position &pos)
+    std::vector<Move> gen_moves<PAWN>(const Square from, Position &pos)
     {
-        vector<Move> all;
-        set<Square> dests = gen_reachable<PAWN>(from, pos);
+        std::vector<Move> all;
+        std::set<Square> dests = gen_reachable<PAWN>(from, pos);
         Move m;
         m.from = from;
         m.moving = pos.piece_on(from);
@@ -340,20 +285,45 @@ namespace Board {
         return all;
     }
 
-    vector<Move> gen_all(Position &pos)
+    /*
+     *enum PieceKind {
+     *    NO_KIND, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+     *};
+     */
+    vector<Move> (*fgen_moves[KING + 1])(const Square, Position &) = {
+        nullptr,
+        &gen_moves<PAWN>,
+        &gen_moves<KNIGHT>,
+        &gen_moves<BISHOP>,
+        &gen_moves<ROOK>,
+        &gen_moves<QUEEN>,
+        &gen_moves<KING>
+    };
+    set<Square> (*fgen_attacked[KING + 1])(const Square, const Position &) = {
+        nullptr,
+        &gen_attacked<PAWN>,
+        &gen_attacked<KNIGHT>,
+        &gen_attacked<BISHOP>,
+        &gen_attacked<ROOK>,
+        &gen_attacked<QUEEN>,
+        &gen_attacked<KING>
+    };
+
+    std::vector<Move> gen_all(Position &pos)
     {
-        vector<Move> all, partial;
-        set<Square> squares = pos.pieces_squares(pos.side_to_move());
+        std::vector<Move> all, partial;
+        std::set<Square> squares = pos.pieces_squares(pos.side_to_move());
         Piece p;
         for (Square s : squares) {
             p = pos.piece_on(s);
-            DISPATCH(partial, kind_of(p), gen_moves, s, pos);
+            partial = fgen_moves[kind_of(p)](s, pos);
             all.insert(all.end(), partial.begin(), partial.end());
         }
         return all;
     }
 
-/*#undef DISPATCH*/
+}
+
 #undef MOVE_EP
 #undef MOVE_LOOP
-}
+

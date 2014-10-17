@@ -654,7 +654,7 @@ namespace Board {
         vector<Move> moves;
         for (Square s : getSimilarPieces(from)) {
             moves.clear();
-            DISPATCH(moves, kind_of(p), gen_moves, s, *this);
+            moves = fgen_moves[kind_of(p)](s, *this);
             for (Move simMove : moves) {
                 if (simMove.to == to) {
                     simSameRank |= (rank_of(simMove.from) == rank_of(from));
@@ -828,7 +828,7 @@ namespace Board {
         if (k == NO_KIND)
             return false;
         vector<Move> legalMoves;
-        DISPATCH(legalMoves, k, gen_moves, from, *this);
+        legalMoves = fgen_moves[k](from, *this);
         move->from = SQ_NONE;
         for (Move m : legalMoves) {
             if (mv == move_to_string(m)) {

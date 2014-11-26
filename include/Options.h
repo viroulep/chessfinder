@@ -49,6 +49,7 @@ class Options {
     public:
 
         Variant getVariant() const;
+        std::string getVariantAsString() const;
         void setVariant(std::string sv);
 
         SearchMode getSearchMode() const;

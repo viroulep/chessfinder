@@ -35,6 +35,19 @@ Variant Options::getVariant() const
     return variant_;
 }
 
+string Options::getVariantAsString() const
+{
+    if (variant_ == STANDARD)
+        return "standard";
+    else if (variant_ == GARDNER)
+        return "gardner";
+    else if (variant_ == LOS_ALAMOS)
+        return "alamos";
+    else
+        return "unknownvariant";
+}
+
+
 void Options::setVariant(string sv)
 {
     if (sv == "standard")

@@ -285,6 +285,7 @@ void *OracleBuilder::exploreNode(void *args)
             if (tables->count(signature) == 0) {
                 string filename = opt.getTableFolder() + "/" + signature
                                   + ".autosave."
+                                  + opt.getVariantAsString()
                                   + to_string(opt.getCutoffThreshold())
                                   + ".bin";
                 table = new HashTable(filename);

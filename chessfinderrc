@@ -6,7 +6,7 @@
 [finder]
     engine_number = 2
     verbose_level = 2
-    cutoff_threshold = 100
+    cutoff_threshold = 150
     playfor_movetime = 600
     playagainst_movetime = 300
 [matfinder]

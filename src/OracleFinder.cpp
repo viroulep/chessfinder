@@ -210,7 +210,7 @@ OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
         oracleTables_[""] = HashTable::fromPolyglot(inputFilename);
     } else {
         Out::output("Creating new main empty table.\n", 2);
-        oracleTables_[""] = new HashTable();
+        oracleTables_[""] = new HashTable("");
     }
     for (const string &inFile : Utils::filesFromDir(opt_.getTableFolder(),
                                                     ".bin")) {

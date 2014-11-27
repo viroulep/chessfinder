@@ -149,11 +149,6 @@ Node *Node::lightCopy()
     return retVal;
 }
 
-HashTable::HashTable()
-{
-    HashTable("");
-}
-
 HashTable::HashTable(string file) :file_(file)
 {
     cutoffValue_ = Options::getInstance().getCutoffThreshold();

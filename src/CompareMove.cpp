@@ -84,7 +84,7 @@ uint16_t MapMoveComparator::evaluateMove(const Position &pos, Move &mv)
 
     /*ppp*/
     uint16_t encodedPiece = 0x0;
-    /*fffrrr*/
+    /*rrrfff*/
     uint16_t encodedSquare = 0x0;
 
     switch (kind_of(pf)) {
@@ -94,37 +94,37 @@ uint16_t MapMoveComparator::evaluateMove(const Position &pos, Move &mv)
         case KNIGHT:
             /*Knight goes to C2*/
             encodedPiece = 0x2;
-            encodedSquare = 7 - abs(int(ft) - FILE_C);
+            encodedSquare = 7 - abs(int(rt) - RANK_2);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(int(rt) - RANK_2);
+            encodedSquare |= 7 - abs(int(ft) - FILE_C);
             break;
         case BISHOP:
             /*Bishop goes to D2*/
             encodedPiece = 0x3;
-            encodedSquare = 7 - abs(int(ft) - FILE_D);
+            encodedSquare = 7 - abs(int(rt) - RANK_2);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(int(rt) - RANK_2);
+            encodedSquare |= 7 - abs(int(ft) - FILE_D);
             break;
         case ROOK:
-            /*Rook goes to B3*/
+            /*Rook goes to B7 (Mainly 7th) */
             encodedPiece = 0x4;
-            encodedSquare = 7 - abs(int(ft) - FILE_B);
+            encodedSquare = 7 - abs(int(rt) - RANK_7);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(int(rt) - RANK_3);
+            encodedSquare |= 7 - abs(int(ft) - FILE_B);
             break;
         case QUEEN:
-            /*Queen goes to C3*/
+            /*Queen goes to C7 (Mainly 7th) */
             encodedPiece = 0x5;
-            encodedSquare = 7 - abs(int(ft) - FILE_C);
+            encodedSquare = 7 - abs(int(rt) - RANK_7);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(int(rt) - RANK_3);
+            encodedSquare |= 7 - abs(int(ft) - FILE_C);
             break;
         case KING:
-            /*King goes to B2*/
+            /*King goes to G4*/
             encodedPiece = 0x6;
-            encodedSquare = 7 - abs(int(ft) - FILE_B);
+            encodedSquare = 7 - abs(int(rt) - RANK_4);
             encodedSquare <<= 3;
-            encodedSquare |= 7 - abs(int(rt) - RANK_2);
+            encodedSquare |= 7 - abs(int(ft) - FILE_G);
             break;
         default:
             Err::handle("No kind to compare move !");

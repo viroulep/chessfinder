@@ -483,7 +483,7 @@ void *OracleBuilder::exploreNode(void *args)
             if (!(l.empty() || l.isMat())
                 && (fabs(bestLine.getEval() - l.getEval())
                    <= opt.getBestmoveDeviation()
-                   || l.getEval() >= 0))
+                   || l.getEval() >= -1))
                 playableLines.push_back(l);
         }
 

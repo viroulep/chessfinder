@@ -506,10 +506,6 @@ namespace Board {
         float rhsEv = rhs.getEval();
         Out::output("Comparing " + std::to_string(lhsEv) + " to "
                     + std::to_string(rhsEv) + "\n", 3);
-        /*Set the limit to .5 eval*/
-        if (abs(lhsEv - rhsEv) > 20) {
-            return lhsEv > rhsEv;
-        }
 
         /*Optionally add some restriction on the line*/
         return Options::getInstance().getMoveComparator()->compare(*this, lhsM, rhsM);

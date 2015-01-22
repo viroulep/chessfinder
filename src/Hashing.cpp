@@ -46,40 +46,14 @@ Node::~Node()
 
 void Node::safeAddParent(const Node *parent)
 {
-    /*bool lock = false;*/
-    pthread_mutex_lock(&lockP_);
-    /*
-     *while (!__atomic_compare_exchange_n(&lockP_, &lock, 1, true,
-     *                                    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    ;
-     *lock = true;
-     */
+    unique_lock<mutex> lock(lockP_);
     prev_.push_back(parent);
-    /*
-     *if (!__atomic_compare_exchange_n(&lockP_, &lock, 0, false,
-     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    Err::handle("Unable to release lock on Node.");
-     */
-    pthread_mutex_unlock(&lockP_);
 }
 
 void Node::safeAddMove(MoveNode mv)
 {
-    pthread_mutex_lock(&lockM_);
-    /*bool lock = false;*/
-    /*
-     *while (!__atomic_compare_exchange_n(&lockM_, &lock, 1, true,
-     *                                    __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    ;
-     *lock = true;
-     */
+    unique_lock<mutex> lock(lockM_);
     legal_moves_.push_back(mv);
-    /*
-     *if (!__atomic_compare_exchange_n(&lockM_, &lock, 0, false,
-     *                                 __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-     *    Err::handle("Unable to release lock on Node.");
-     */
-    pthread_mutex_unlock(&lockM_);
 }
 
 void Node::updateStatus(StatusFlag st)
@@ -169,8 +143,7 @@ string HashTable::to_string()
     string retVal;
     for (HashTable::iterator it = begin(), itEnd = end();
             it != itEnd; ++it) {
-        Node n = *(it->second);
-        retVal += "#" + std::to_string(it->first) + ":" + n.to_string() + "\n";
+        retVal += "#" + std::to_string(it->first) + ":" + it->second->to_string() + "\n";
     }
     if (size() == 0)
         retVal += "<empty>";
@@ -183,7 +156,7 @@ string HashTable::show_pending()
     /*TODO clean output to file*/
     for (HashTable::iterator it = begin(), itEnd = end();
             it != itEnd; ++it) {
-        Node n = *(it->second);
+        Node &n = *(it->second);
         if (n.getStatus() & Node::PENDING)
             retVal += "#" + std::to_string(it->first) + ":" + n.to_string() + "\n";
     }
@@ -212,7 +185,7 @@ void HashTable::toPolyglot(const string &file)
     outputHeader(os);
     for (HashTable::iterator it = begin(), itEnd = end();
             it != itEnd; ++it) {
-        Node n = *(it->second);
+        Node &n = *(it->second);
         uint64_t hash = it->first;
         //write hash
         os.write((char *)&hash, sizeof(uint64_t));

@@ -1,8 +1,8 @@
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <signal.h>
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <set>
@@ -168,55 +168,37 @@ namespace Comm {
 
     bool UCICommunicator::waitBestmove()
     {
-        pthread_mutex_lock(&bestmove_mutex_);
-        pthread_cond_wait(&bestmove_cond_, &bestmove_mutex_);
-        pthread_mutex_unlock(&bestmove_mutex_);
+        std::unique_lock<std::mutex> lock(bestmove_mutex_);
+        bestmove_cond_.wait(lock);
         return true;
     }
 
     bool UCICommunicator::waitReadyok()
     {
-        pthread_mutex_lock(&readyok_mutex_);
-        struct timespec ts;
-        /*Timeout for readyness is 5 sec*/
-        Utils::getTimeout(&ts, 5);
-        pthread_cond_timedwait(&readyok_cond_,
-                &readyok_mutex_,
-                &ts);
-        pthread_mutex_unlock(&readyok_mutex_);
+        std::unique_lock<std::mutex> lock(readyok_mutex_);
+        if (readyok_cond_.wait_for(lock, chrono::seconds(5))
+                == cv_status::timeout)
+            Err::handle("Engine not ready in 5 sec.");
         return true;
     }
 
     void UCICommunicator::signalBestmove()
     {
-        pthread_mutex_lock(&bestmove_mutex_);
+        std::unique_lock<std::mutex> lock(bestmove_mutex_);
         Out::output("Signaling bestmove_cond\n", 5);
-        pthread_cond_signal(&bestmove_cond_);
-        pthread_mutex_unlock(&bestmove_mutex_);
+        bestmove_cond_.notify_one();
     }
 
     void UCICommunicator::signalReadyok()
     {
-        pthread_mutex_lock(&readyok_mutex_);
-        Out::output("Signaling readyok_cond\n", 5);
-        pthread_cond_signal(&readyok_cond_);
-        pthread_mutex_unlock(&readyok_mutex_);
+        std::unique_lock<std::mutex> lock(readyok_mutex_);
+        Out::output("Signaling bestmove_cond\n", 5);
+        readyok_cond_.notify_one();
     }
 
     void UCICommunicator::clearLines()
     {
         linesVector_.assign(Options::getInstance().getMaxMoves(), Line());
-    }
-
-    void *UCICommunicator::start_routine(void *arg)
-    {
-        UCICommunicator *comm = static_cast<UCICommunicator *>(arg);
-        if (comm) {
-            comm->run();
-            return 0;
-        } else {
-            return (void *)1;
-        }
     }
 
     LocalUCICommunicator::LocalUCICommunicator(const string engineFullpath,
@@ -262,7 +244,7 @@ namespace Comm {
         delete receiver_input_;
     }
 
-    void *LocalUCICommunicator::run()
+    void LocalUCICommunicator::run()
     {
         pid_t pid = fork();
         if (pid == 0) {
@@ -291,7 +273,6 @@ namespace Comm {
         } else {
             Err::handle("couldn't fork");
         }
-        return 0;
     }
 
     bool LocalUCICommunicator::send(const string &cmd) const
@@ -350,12 +331,8 @@ namespace Comm {
             int id = __atomic_fetch_add(&currentId_, 1, __ATOMIC_SEQ_CST);
             T *engineComm = new T(engineFullpath, options);
 
-            pool_.insert(make_pair(id, make_pair(engineComm, pthread_t())));
-
-            pthread_t *tid = &pool_[id].second;
-            int status = pthread_create(tid, 0, UCICommunicator::start_routine,
-                           (void *)pool_[id].first);
-            Err::handle("pthread_create", status);
+            pool_.emplace(id, make_pair(engineComm,
+                                        std::thread(&T::run, engineComm)));
 
             /*Ping the engine until it's ready*/
             unsigned int pollTime = 20000;
@@ -427,9 +404,7 @@ namespace Comm {
         if (pool_.count(id) > 0) {
             /*Properly exit engine*/
             pool_[id].first->quit();
-            void **retVal = nullptr;
-            int status = pthread_join(pool_[id].second, retVal);
-            Err::handle("pthread_join", status);
+            pool_[id].second.join();
             /*Remove Communicator from the pool*/
             delete pool_[id].first;
             pool_.erase(id);
@@ -446,7 +421,7 @@ namespace Comm {
             return true;
         /*Necessary to prevent iterator from being invalidated*/
         vector<int> toDestroy;
-        for (auto entry : pool_) {
+        for (auto &entry : pool_) {
             toDestroy.push_back(entry.first);
         }
         for (int id : toDestroy) {

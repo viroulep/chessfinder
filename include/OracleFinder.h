@@ -39,27 +39,20 @@ class NodeStack : private std::stack<Node *> {
         Node *poptop();
         unsigned int size();
     private:
-        pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
-        pthread_cond_t cond_ = PTHREAD_COND_INITIALIZER;
+        std::mutex lock_;
+        std::condition_variable cond_;
         unsigned long waitingWorkers_ = 0;
         const unsigned long maxWorkers_;
 };
 
 namespace OracleBuilder {
-    typedef struct explorerArgs {
-        pthread_t th;
-        ConcurrentMap<std::string, HashTable *> *tables = nullptr;
-        NodeStack *stack = nullptr;
-        Board::Color playFor = Board::NOCOLOR;
-        int commdId = -1;
-    } explorerArgs;
-
     int buildOracle(Board::Color playFor,
-                    ConcurrentMap<std::string, HashTable *> *oracle,
+                    ConcurrentMap<std::string, HashTable *> &oracle,
                     const std::vector<int> &communicators,
                     const Board::Position &pos,
                     const std::list<std::string> &moves);
-    void *exploreNode(void *args);
+    void exploreNode(ConcurrentMap<std::string, HashTable *> &tables,
+                      NodeStack &nodes, Board::Color playFor, int commId);
     void displayNodeHistory(const Node *start);
     bool cutNode(const Board::Position &pos, const Node *currentNode);
 }

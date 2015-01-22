@@ -22,7 +22,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdint>
-#include <pthread.h>
 #include <unistd.h>
 #include "SimpleChessboard.h"
 #include "Movegen.h"

@@ -25,7 +25,9 @@
 #include <string>
 #include <map>
 #include <vector>
-#include <pthread.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 #include "Stream.h"
 #include "Line.h"
@@ -52,7 +54,7 @@ namespace Comm {
             const std::vector<Line> &getResultLines() const;
 
             /*Communicator specific*/
-            virtual void *run() = 0;
+            virtual void run() = 0;
             virtual bool ok() = 0;
             virtual bool send(const std::string &cmd) const = 0;
             virtual void quit() const;
@@ -68,13 +70,10 @@ namespace Comm {
             void signalReadyok();
             void clearLines();
 
-            pthread_cond_t readyok_cond_ = PTHREAD_COND_INITIALIZER;
-            pthread_mutex_t readyok_mutex_ = PTHREAD_MUTEX_INITIALIZER;
-            pthread_cond_t bestmove_cond_ = PTHREAD_COND_INITIALIZER;
-            pthread_mutex_t bestmove_mutex_ = PTHREAD_MUTEX_INITIALIZER;
-
-            /*pthread static routine*/
-            static void *start_routine(void *arg);
+            std::condition_variable readyok_cond_;
+            std::mutex readyok_mutex_;
+            std::condition_variable bestmove_cond_;
+            std::mutex bestmove_mutex_;
 
             EngineOptions optionsMap_;
             std::vector<Line> linesVector_;
@@ -88,7 +87,7 @@ namespace Comm {
             virtual ~LocalUCICommunicator();
 
             /*Communicator implementation*/
-            virtual void *run();
+            virtual void run();
             virtual bool send(const std::string &cmd) const;
             virtual bool ok();
             virtual void quit() const;
@@ -142,7 +141,7 @@ namespace Comm {
              * Map of all the UCICommunicator
              * It maps an id to an UCICommunicator and its managing thread
              */
-            std::map<int, std::pair<UCICommunicator *, pthread_t>> pool_;
+            std::map<int, std::pair<UCICommunicator *, std::thread>> pool_;
 
             /*
              * This is the current communicator id, should be manipulated

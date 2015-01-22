@@ -5,7 +5,7 @@ This repository hosts a pair of tools used to help chess engines.
 You need the following dependendies :
 
 * The pthread library
-* A C++11 compiler
+* A C++11 compiler (such as GCC 4.9 or Clang 3.5)
 * Stockfish or an UCI engine
 
 It has been tested on Unix and Mac.

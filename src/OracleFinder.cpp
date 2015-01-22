@@ -51,39 +51,35 @@ NodeStack::NodeStack(unsigned long workers) : maxWorkers_(workers)
 
 void NodeStack::push(Node *n)
 {
-    pthread_mutex_lock(&lock_);
+    unique_lock<mutex> lock(lock_);
     std::stack<Node *>::push(n);
-    pthread_cond_signal(&cond_);
-    pthread_mutex_unlock(&lock_);
+    cond_.notify_one();
 }
 
 void NodeStack::push(std::vector<Node *> &nodes)
 {
-    pthread_mutex_lock(&lock_);
+    unique_lock<mutex> lock(lock_);
     for (Node *n : nodes)
         std::stack<Node *>::push(n);
-    pthread_cond_signal(&cond_);
-    pthread_mutex_unlock(&lock_);
+    cond_.notify_one();
 }
 
 Node *NodeStack::poptop()
 {
     Node *n = nullptr;
-    pthread_mutex_lock(&lock_);
+    unique_lock<mutex> lock(lock_);
     while (empty()) {
         waitingWorkers_++;
         if (waitingWorkers_ == maxWorkers_) {
-            pthread_cond_broadcast(&cond_);
-            pthread_mutex_unlock(&lock_);
+            cond_.notify_all();
             return nullptr;
         } else {
-            pthread_cond_wait(&cond_, &lock_);
+            cond_.wait(lock);
             waitingWorkers_--;
         }
     }
     n = top();
     pop();
-    pthread_mutex_unlock(&lock_);
     return n;
 }
 
@@ -119,7 +115,7 @@ bool OracleBuilder::cutNode(const Position &, const Node *)
 }
 
 int OracleBuilder::buildOracle(Board::Color playFor,
-                               ConcurrentMap<string, HashTable *> *oracle,
+                               ConcurrentMap<string, HashTable *> &oracle,
                                const vector<int> &communicators,
                                const Position &p,
                                const list<string> &moves)
@@ -161,22 +157,14 @@ int OracleBuilder::buildOracle(Board::Color playFor,
     Node *rootNode_ = init;
     //depth-first
     nodes.push(rootNode_);
-    /*vector<pthread_t> threads;*/
-    vector<explorerArgs *> argsVect;
-    for (unsigned i = 0; i < communicators.size(); i++) {
-        explorerArgs *args = (explorerArgs *)malloc(sizeof(explorerArgs));
-        argsVect.push_back(args);
-        args->commdId = communicators[i];
-        args->tables = oracle;
-        args->stack = &nodes;
-        args->playFor = playFor;
-        Err::handle(pthread_create(&(args->th),
-                                   nullptr, exploreNode, args));
+    vector<thread> threads(communicators.size());
+    for (unsigned int i = 0; i < threads.size(); i++) {
+        threads[i] = thread(OracleBuilder::exploreNode, std::ref(oracle),
+                            std::ref(nodes), playFor, communicators[i]);
     }
 
-    for (explorerArgs *args : argsVect) {
-        Err::handle(pthread_join(args->th, nullptr));
-        free(args);
+    for (thread &t : threads) {
+        t.join();
     }
 
     /*
@@ -193,9 +181,9 @@ int OracleBuilder::buildOracle(Board::Color playFor,
 
 
     Out::output("Hashtable size = "
-            + std::to_string((*oracle)[""]->size()) + ") : \n");
-    Out::output((*oracle)[""]->to_string() + "\n", 2);
-    Out::output("(size = " + std::to_string((*oracle)[""]->size()) + ") : \n", 2);
+            + std::to_string(oracle[""]->size()) + ") : \n");
+    Out::output(oracle[""]->to_string() + "\n", 2);
+    Out::output("(size = " + std::to_string(oracle[""]->size()) + ") : \n", 2);
 
     return 0;
 }
@@ -252,22 +240,17 @@ void OracleFinder::dumpStat()
         Out::output("No hit...\n", 2);
 }
 
-void *OracleBuilder::exploreNode(void *args)
+void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
+                                NodeStack &nodes, Color playFor, int commId)
 {
     Position pos;
     Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
     Options &opt = Options::getInstance();
-    explorerArgs *all = (explorerArgs *)args;
-    Board::Color playFor = all->playFor;
-    int commId = all->commdId;
-    ConcurrentMap<string, HashTable *> *tables = all->tables;
-    HashTable *oracle = (*tables)[""];
-    NodeStack *nodes = all->stack;
-    Err::handle("Args unpacking", !(oracle && nodes));
+    HashTable *oracle = tables[""];
     pool.sendOption(commId, "MultiPV", to_string(opt.getMaxMoves()));
     //Main loop
     Node *current = nullptr;
-    while ((current = nodes->poptop())) {
+    while ((current = nodes.poptop())) {
         string iterationOutput;
         const string currentPos = current->getPos();
 
@@ -282,19 +265,19 @@ void *OracleBuilder::exploreNode(void *args)
         /*Lookup in signature tables*/
         if (signature.length() <= opt.getMaxPiecesEnding()) {
             HashTable *table = nullptr;
-            if (tables->count(signature) == 0) {
+            if (tables.count(signature) == 0) {
                 string filename = opt.getTableFolder() + "/" + signature
                                   + ".autosave."
                                   + opt.getVariantAsString()
                                   + to_string(opt.getCutoffThreshold())
                                   + ".bin";
                 table = new HashTable(filename);
-                if (tables->findOrInsert(signature, table) != table) {
+                if (tables.findOrInsert(signature, table) != table) {
                     delete table;
-                    table = (*tables)[signature];
+                    table = tables[signature];
                 }
             } else {
-                table = (*tables)[signature];
+                table = tables[signature];
             }
             Node *s = nullptr;
             if ((s = table->findVal(curHash))) {
@@ -329,7 +312,7 @@ void *OracleBuilder::exploreNode(void *args)
          *}
          */
         Out::output(iterationOutput, "[" + color_to_string(active)
-                    + "] Proceed size : " + to_string(nodes->size())
+                    + "] Proceed size : " + to_string(nodes.size())
                     + "\n");
 
         /*Clear cut*/
@@ -370,7 +353,7 @@ void *OracleBuilder::exploreNode(void *args)
                 string fen = pos.fen();
                 pos.undoLastMove();
                 Node *next = new Node(current, fen, Node::PENDING);
-                nodes->push(next);
+                nodes.push(next);
                 MoveNode move(uciMv, next);
                 current->safeAddMove(move);
             }
@@ -468,7 +451,7 @@ void *OracleBuilder::exploreNode(void *args)
 
         if (insertCopyInSignTable) {
             Node *cpy = current->lightCopy();
-            if ((*tables)[signature]->findOrInsert(curHash, cpy) != cpy)
+            if (tables[signature]->findOrInsert(curHash, cpy) != cpy)
                 delete cpy;
         }
 
@@ -547,7 +530,7 @@ void *OracleBuilder::exploreNode(void *args)
             next = new Node(current, fenpos, Node::PENDING);
             Out::output(iterationOutput, "[" + color_to_string(active)
                         + "] Pushed first line (" + mv + ") : " + fenpos + "\n", 2);
-            nodes->push(next);
+            nodes.push(next);
         }
 
         /*Whatever the move is, add it to our move list*/
@@ -557,17 +540,14 @@ void *OracleBuilder::exploreNode(void *args)
         /*Send the whole iteration output*/
         Out::output(iterationOutput);
     }
-    return 0;
 }
 
 int OracleFinder::runFinderOnPosition(const Position &p,
                                       const list<string> &moves)
 {
-    using namespace OracleBuilder;
-
     /*Get the side from option*/
     playFor_ = (opt_.buildOracleForWhite()) ? WHITE : BLACK;
 
 
-    return buildOracle(playFor_, &oracleTables_, commIds_, p, moves);
+    return OracleBuilder::buildOracle(playFor_, oracleTables_, commIds_, p, moves);
 }

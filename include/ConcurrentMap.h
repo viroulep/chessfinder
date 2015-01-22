@@ -24,6 +24,7 @@
 #define __CONCURRENTMAP_H__
 
 #include <map>
+#include <mutex>
 
 /* Note : This naive lock implementation may be to restrictive and non scalable
  * Rewriting it may be on the todo list some day
@@ -46,24 +47,22 @@ class ConcurrentMap : protected std::map<K, V> {
         typename std::map<K, V>::iterator begin();
         typename std::map<K, V>::iterator end();
     protected:
-        pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
+        std::mutex lock_;
         bool modified_ = false;
 };
 
 template <typename K, typename V>
 const V &ConcurrentMap<K, V>::findVal(const K &key, const V &defVal, bool insertDef)
 {
-    pthread_mutex_lock(&lock_);
+    std::unique_lock<std::mutex> lock(lock_);
     auto found = this->find(key);
     if (found != this->end()) {
-        pthread_mutex_unlock(&lock_);
         return found->second;
     }
     if (insertDef) {
         this->insert(std::make_pair(key, defVal));
         modified_ = true;
     }
-    pthread_mutex_unlock(&lock_);
     return defVal;
 }
 

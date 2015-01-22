@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <map>
+#include <mutex>
 #include <vector>
 
 #include "ConcurrentMap.h"
@@ -79,8 +80,8 @@ private:
     //Polyglot "learn" field, uint32_t
     StatusFlag st_ = PENDING;
     std::vector<const Node *> prev_;
-    pthread_mutex_t lockP_ = PTHREAD_MUTEX_INITIALIZER;
-    pthread_mutex_t lockM_ = PTHREAD_MUTEX_INITIALIZER;
+    std::mutex lockP_;
+    std::mutex lockM_;
     /*
      *bool lockP_ = false;
      *bool lockM_ = false;
@@ -112,7 +113,6 @@ private:
     static uint64_t castleFromFEN(std::string castle);
 
     static const uint64_t Random64_[781];
-    pthread_mutex_t lock_ = PTHREAD_MUTEX_INITIALIZER;
     uint16_t cutoffValue_ = 0;
     const std::string file_;
 };

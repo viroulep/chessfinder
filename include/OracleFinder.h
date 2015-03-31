@@ -51,6 +51,8 @@ namespace OracleBuilder {
                     const std::vector<int> &communicators,
                     const Board::Position &pos,
                     const std::list<std::string> &moves);
+    bool doubleCheck(int commId, std::string fenpos,
+            std::string &output, const Board::Position &pos);
     void exploreNode(ConcurrentMap<std::string, HashTable *> &tables,
                       NodeStack &nodes, Board::Color playFor, int commId);
     void displayNodeHistory(const Node *start);

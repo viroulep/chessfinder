@@ -387,7 +387,8 @@ namespace Comm {
         if ((engine = get(id))) {
             engine->sendOption(name, value);
         }
-        return isReady(id);
+        //return isReady(id);
+        return true;
     }
 
     const vector<Line> &UCICommunicatorPool::getResultLines(int id)

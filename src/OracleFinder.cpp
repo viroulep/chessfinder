@@ -240,6 +240,22 @@ void OracleFinder::dumpStat()
         Out::output("No hit...\n", 2);
 }
 
+bool OracleBuilder::doubleCheck(int commId, string fenpos, string &output, const Position &pos)
+{
+    Options &opt = Options::getInstance();
+    Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
+    pool.sendOption(commId, "MultiPV", "1");
+    pool.send(commId, "position fen " + fenpos);
+    pool.sendAndWaitBestmove(commId, "go depth 35");
+    const Line &checked = pool.getResultLines(commId)[0];
+    pool.sendOption(commId, "MultiPV", to_string(opt.getMaxMoves()));
+    Out::output(output, "Line double check :\n");
+    Out::output(output, Utils::getPrettyLines(pos, pool.getResultLines(commId)), 2);
+    bool retval = checked.isMat() || (checked.getEval() < 0
+         && (fabs(checked.getEval()) > Options::getInstance().getCutoffThreshold()));
+    return retval;
+}
+
 void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                                 NodeStack &nodes, Color playFor, int commId)
 {
@@ -515,16 +531,37 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
 
         /*No repetition found, sort the playable lines*/
         if (!next) {
-            std::sort(playableLines.begin(), playableLines.end(),
-                         [&pos](const Line &lhs, const Line &rhs)
-                         {
-                             return pos.compareLines(lhs, rhs);
-                         });
-            l = playableLines[0];
-            mv = l.firstMove();
-            pos.tryAndApplyMove(mv);
-            string fenpos = pos.fen();
-            pos.undoLastMove();
+            bool discard = false;
+            string fenpos;
+            do {
+                if (playableLines.size() == 0) {
+                    Out::output("Iteration output for error :\n" + iterationOutput);
+                    OracleBuilder::displayNodeHistory(current);
+                    Err::handle("No playable move for current position...\n"
+                                "It likely means something went wrong in "
+                                "previous position");
+                }
+                std::sort(playableLines.begin(), playableLines.end(),
+                             [&pos](const Line &lhs, const Line &rhs)
+                             {
+                                 return pos.compareLines(lhs, rhs);
+                             });
+                l = playableLines[0];
+                mv = l.firstMove();
+                pos.tryAndApplyMove(mv);
+                fenpos = pos.fen();
+                discard = doubleCheck(commId, fenpos, iterationOutput, pos);
+                Out::output(iterationOutput,
+                        "Double check on " + fenpos + " : " + std::to_string(discard) + "\n");
+                //Clear Hash tout les 10000 ?
+                if (discard) {
+                    playableLines.erase(playableLines.begin());
+                    Out::output(iterationOutput, "####################################\n");
+                    Out::output(iterationOutput, "####### One move discarded !#####\n");
+                    Out::output(iterationOutput, "####################################\n");
+                }
+                pos.undoLastMove();
+            } while (discard);
 
             //no next position in the table, push the node to stack
             next = new Node(current, fenpos, Node::PENDING);

@@ -285,7 +285,7 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                                       (s->getStatus() | Node::SIGNATURE_TABLE));
                 if (current->getStatus() & Node::THEM) {
                     OracleBuilder::displayNodeHistory(current);
-                    Out::output("Iteration output for error :\n" + iterationOutput);
+                    Out::output("[Sign lookup] Iteration output for error :\n" + iterationOutput);
                     Err::handle("A node has gone from draw to mate, this is an error"
                                 " until we decide on what to do, and if it's a bug"
                                 " in the engine.");
@@ -406,12 +406,74 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                         + "] Bestline is mate (cut)\n", 2);
             /*Eval is always negative if it's bad for us*/
             if (bestLine.getEval() < 0) {
+//TODO : remove this, then push back previous pos in queue from table after cleaning out the table
                 current->updateStatus((Node::StatusFlag)(Node::MATE | Node::THEM));
+                Err::output("A node went from draw to loss, clearing table and"
+                            " backtrackin");
+                pool.clearHash(commId);
+                //Remove both black and white prev pos
+                //FIXME : right now we assume no node are currently looking up for
+                //prevwhite node
+                const Node *prevNode = current->getParents().back();
+                string prevPos = prevNode->getPos();
+                if (prevPos.length() > 1
+                    && oracle->remove(HashTable::hashFEN(prevPos)) == 0)
+                        continue;//Means that some other explorer took care of it
+                const Node *prevWhiteNode = prevNode->getParents().back();
+                //We don't need the black position anymore, and it won't be deleted
+                //by any
+                delete prevNode;
+                pos.set(prevWhiteNode->getPos());
+                string prevSignature = pos.signature();
+                uint64_t prevHash = pos.hash();
+
+                /*Lookup in signature tables*/
+                if (prevSignature.length() <= opt.getMaxPiecesEnding()) {
+                    if (tables[prevSignature]->remove(prevHash) > 0)
+                        Out::output("Removed previous white pos from signature"
+                                    " table (" + prevWhiteNode->getPos() + ")\n");
+                }
+                //Lookup in oracle
+                if (oracle->remove(prevHash) > 0)
+                    Out::output("Removed previous white pos from Oracle\n");
+                //FIXME Voluntarily cast away the const qualifier, need some thinking
+                const_cast<Node *>(prevWhiteNode)->reset();
+                nodes.push(const_cast<Node *>(prevWhiteNode));
+                continue;
+#if 0
+                Out::output(iterationOutput, "Error, Trying to clear table and "
+                                             "ucinewgame on previous pos...\n");
+                const Node *tmp = current->getParents().back()->getParents().back();
+                Out::output(iterationOutput, "Trying prev fen : " + tmp->getPos());
+                string cmdPos = "position fen " + tmp->getPos();
+                pool.send(commId, cmdPos);
+                pool.clearHash(commId);
+                pool.sendAndWaitBestmove(commId, cmd);
+                Out::output(iterationOutput, "Result lines :\n");
+                Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
+
+                tmp = tmp->getParents().back()->getParents().back();
+                Out::output(iterationOutput, "Trying prev fen : " + tmp->getPos());
+                cmdPos = "position fen " + tmp->getPos();
+                pool.send(commId, cmdPos);
+                pool.sendAndWaitBestmove(commId, cmd);
+                Out::output(iterationOutput, "Result lines :\n");
+                Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
+
+                tmp = tmp->getParents().back()->getParents().back();
+                Out::output(iterationOutput, "Trying prev fen : " + tmp->getPos());
+                cmdPos = "position fen " + tmp->getPos();
+                pool.send(commId, cmdPos);
+                pool.sendAndWaitBestmove(commId, cmd);
+                Out::output(iterationOutput, "Result lines :\n");
+                Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
+
                 Out::output("Iteration output for error :\n" + iterationOutput);
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to mate, this is an error"
                             " until we decide on what to do, and if it's a bug"
                             " in the engine.");
+#endif
             } else {
                 current->updateStatus((Node::StatusFlag)(Node::MATE | Node::US));
             }
@@ -421,6 +483,65 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                         + "] Bestline is above threshold (cut)\n", 2);
             if (bestLine.getEval() < 0) {
                 current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::THEM));
+                Err::output("A node went from draw to loss, clearing table and"
+                            " backtrackin");
+                pool.clearHash(commId);
+                //Remove both black and white prev pos
+                //FIXME : right now we assume no node are currently looking up for
+                //prevwhite node
+                const Node *prevNode = current->getParents().back();
+                if (oracle->remove(HashTable::hashFEN(prevNode->getPos())) == 0)
+                        continue;//Means that some other explorer took care of it
+                const Node *prevWhiteNode = prevNode->getParents().back();
+                //We don't need the black position anymore, and it won't be deleted
+                //by any
+                delete prevNode;
+                pos.set(prevWhiteNode->getPos());
+                string prevSignature = pos.signature();
+                uint64_t prevHash = pos.hash();
+
+                /*Lookup in signature tables*/
+                if (prevSignature.length() <= opt.getMaxPiecesEnding()) {
+                    if (tables[prevSignature]->remove(prevHash) > 0)
+                        Out::output(iterationOutput, "Removed previous white pos from signature"
+                                    " table (" + prevWhiteNode->getPos() + ")\n");
+                }
+                //Lookup in oracle
+                if (oracle->remove(prevHash) > 0)
+                    Out::output(iterationOutput, "Removed previous white pos from Oracle\n");
+                //FIXME Voluntarily cast away the const qualifier, need some thinking
+                const_cast<Node *>(prevWhiteNode)->reset();
+                nodes.push(const_cast<Node *>(prevWhiteNode));
+                continue;
+#if 0
+                Out::output(iterationOutput, "Error, Trying to clear table and "
+                                             "ucinewgame on previous pos...\n");
+                const Node *tmp = current->getParents().back()->getParents().back();
+                Out::output(iterationOutput, "Trying prev fen : " + tmp->getPos());
+                string cmdPos = "position fen " + tmp->getPos();
+                pool.send(commId, cmdPos);
+                pool.clearHash(commId);
+                pool.sendAndWaitBestmove(commId, cmd);
+                Out::output(iterationOutput, "Result lines :\n");
+                Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
+
+                tmp = tmp->getParents().back()->getParents().back();
+                Out::output(iterationOutput, "Trying prev fen : " + tmp->getPos());
+                cmdPos = "position fen " + tmp->getPos();
+                pool.send(commId, cmdPos);
+                pool.sendAndWaitBestmove(commId, cmd);
+                Out::output(iterationOutput, "Result lines :\n");
+                Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
+
+                tmp = tmp->getParents().back()->getParents().back();
+                Out::output(iterationOutput, "Trying prev fen : " + tmp->getPos());
+                cmdPos = "position fen " + tmp->getPos();
+                pool.send(commId, cmdPos);
+                pool.sendAndWaitBestmove(commId, cmd);
+                Out::output(iterationOutput, "Result lines :\n");
+                Out::output(iterationOutput, Utils::getPrettyLines(pos, lines), 2);
+
+#endif
                 Out::output("Iteration output for error :\n" + iterationOutput);
                 OracleBuilder::displayNodeHistory(current);
                 Err::handle("A node has gone from draw to threshold, this is an error"

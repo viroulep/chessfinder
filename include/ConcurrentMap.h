@@ -39,6 +39,7 @@ class ConcurrentMap : protected std::map<K, V> {
     public:
         const V &findVal(const K &key, const V &defVal = V(), bool insertDef = false);
         const V &findOrInsert(const K &key, const V &value);
+        size_t remove(const K &key);
         bool modified();
         size_t size();
         size_t count(const K &key);
@@ -70,6 +71,13 @@ template <typename K, typename V>
 const V &ConcurrentMap<K, V>::findOrInsert(const K &key, const V &value)
 {
     return findVal(key, value, true);
+}
+
+template <typename K, typename V>
+size_t ConcurrentMap<K, V>::remove(const K &key)
+{
+    std::unique_lock<std::mutex> lock(lock_);
+    return this->erase(key);
 }
 
 template <typename K, typename V>

@@ -3,4 +3,5 @@
     variant = gardner
 [oraclefinder]
     table_folder = input_tables_gardner
-    search_depth = 35
+    search_depth = 40
+    full_build=true

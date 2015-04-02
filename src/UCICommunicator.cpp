@@ -390,6 +390,11 @@ namespace Comm {
         return isReady(id);
     }
 
+    bool UCICommunicatorPool::clearHash(int id)
+    {
+        return sendOption(id, "Clear Hash", "1");
+    }
+
     const vector<Line> &UCICommunicatorPool::getResultLines(int id)
     {
         UCICommunicator *engine;

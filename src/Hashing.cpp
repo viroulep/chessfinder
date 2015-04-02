@@ -61,6 +61,13 @@ void Node::updateStatus(StatusFlag st)
     st_ = st;
 }
 
+void Node::reset()
+{
+    st_ = PENDING;
+    unique_lock<mutex> lock(lockM_);
+    legal_moves_.clear();
+}
+
 const vector<const Node *> &Node::getParents() const
 {
     return prev_;
@@ -251,7 +258,7 @@ uint64_t HashTable::hashFEN(string fenString)
         infos.push(tmpInfo);
 
     if (infos.size() != 6)
-        Err::handle("Invalid input fen : must have 6 fields");
+        Err::handle("Invalid input fen : must have 6 fields (" + fenString + ")");
 
     uint64_t fenHash = U64(0x0);
     while (!infos.empty()) {

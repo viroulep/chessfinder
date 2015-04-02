@@ -58,6 +58,7 @@ public:
     void safeAddParent(const Node *parent);
     void safeAddMove(MoveNode mv);
     void updateStatus(StatusFlag st);
+    void reset();
     const std::vector<const Node *> &getParents() const;
     const LegalNodes &getMoves() const;
     const std::string &getPos() const;

@@ -416,7 +416,7 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 //prevwhite node
                 const Node *prevNode = current->getParents().back();
                 string prevPos = prevNode->getPos();
-                if (prevPos.length() > 1
+                if (prevPos.length() > 8
                     && oracle->remove(HashTable::hashFEN(prevPos)) == 0)
                         continue;//Means that some other explorer took care of it
                 const Node *prevWhiteNode = prevNode->getParents().back();
@@ -490,7 +490,9 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 //FIXME : right now we assume no node are currently looking up for
                 //prevwhite node
                 const Node *prevNode = current->getParents().back();
-                if (oracle->remove(HashTable::hashFEN(prevNode->getPos())) == 0)
+                string prevPos = prevNode->getPos();
+                if (prevPos.length() > 8
+                    && oracle->remove(HashTable::hashFEN(prevPos)) == 0)
                         continue;//Means that some other explorer took care of it
                 const Node *prevWhiteNode = prevNode->getParents().back();
                 //We don't need the black position anymore, and it won't be deleted

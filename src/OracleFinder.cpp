@@ -411,6 +411,14 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 Err::output("A node went from draw to loss, clearing table and"
                             " backtrackin");
                 pool.clearHash(commId);
+                Node *prevNode = const_cast<Node *>(current->getParents().back());
+                Node *prevWhiteNode = const_cast<Node *>(prevNode->getParents().back());
+                current->updateStatus((Node::StatusFlag)(Node::DRAW | Node::PENDING | Node::US));
+                prevNode->updateStatus((Node::StatusFlag)
+                                      (prevNode->getStatus() | Node::PENDING));
+                prevWhiteNode->updateStatus((Node::StatusFlag)
+                                      (prevWhiteNode->getStatus() | Node::PENDING));
+#if 0
                 //Remove both black and white prev pos
                 //FIXME : right now we assume no node are currently looking up for
                 //prevwhite node
@@ -439,6 +447,7 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 //FIXME Voluntarily cast away the const qualifier, need some thinking
                 const_cast<Node *>(prevWhiteNode)->reset();
                 nodes.push(const_cast<Node *>(prevWhiteNode));
+#endif
                 continue;
 #if 0
                 Out::output(iterationOutput, "Error, Trying to clear table and "
@@ -486,6 +495,14 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 Err::output("A node went from draw to loss, clearing table and"
                             " backtrackin");
                 pool.clearHash(commId);
+                Node *prevNode = const_cast<Node *>(current->getParents().back());
+                Node *prevWhiteNode = const_cast<Node *>(prevNode->getParents().back());
+                current->updateStatus((Node::StatusFlag)(Node::DRAW | Node::PENDING | Node::US));
+                prevNode->updateStatus((Node::StatusFlag)
+                                      (prevNode->getStatus() | Node::PENDING));
+                prevWhiteNode->updateStatus((Node::StatusFlag)
+                                      (prevWhiteNode->getStatus() | Node::PENDING));
+#if 0
                 //Remove both black and white prev pos
                 //FIXME : right now we assume no node are currently looking up for
                 //prevwhite node
@@ -514,6 +531,7 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 //FIXME Voluntarily cast away the const qualifier, need some thinking
                 const_cast<Node *>(prevWhiteNode)->reset();
                 nodes.push(const_cast<Node *>(prevWhiteNode));
+#endif
                 continue;
 #if 0
                 Out::output(iterationOutput, "Error, Trying to clear table and "

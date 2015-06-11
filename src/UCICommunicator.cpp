@@ -377,6 +377,7 @@ namespace Comm {
         UCICommunicator *engine;
         if ((engine = get(id)))
             engine->clearLines();
+        clearHash(id);
         return (send(id, cmd)) ? waitForBestmove(id) : false;
     }
 
@@ -388,6 +389,11 @@ namespace Comm {
             engine->sendOption(name, value);
         }
         return isReady(id);
+    }
+
+    bool UCICommunicatorPool::clearHash(int id)
+    {
+        return sendOption(id, "Clear Hash", "1");
     }
 
     const vector<Line> &UCICommunicatorPool::getResultLines(int id)

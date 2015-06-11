@@ -124,6 +124,7 @@ namespace Comm {
             bool sendAndWaitBestmove(int id, const std::string &cmd);
             bool sendOption(int id, const std::string &name,
                             const std::string &value);
+            bool clearHash(int id);
             const std::vector<Line> &getResultLines(int id);
             bool destroy(int id);
             bool destroyAll();

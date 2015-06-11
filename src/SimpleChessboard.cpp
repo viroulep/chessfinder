@@ -379,7 +379,8 @@ namespace Board {
             }
         oss << "   a b c d e f g h\n";
         oss << "Move history :" << moveHistory() << "\n";
-        oss << "PGN history :" << pgn() << "\n\n";
+        oss << "PGN history :" << pgn() << "\n";
+        oss << "Fen : " << fen() << "\n\n";
         return oss.str();
     }
 

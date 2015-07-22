@@ -180,10 +180,12 @@ int OracleBuilder::buildOracle(Board::Color playFor,
     Out::output(pos.pretty() + "\n");
 
 
-    Out::output("Hashtable size = "
-            + std::to_string(oracle[""]->size()) + ") : \n");
-    Out::output(oracle[""]->to_string() + "\n", 2);
-    Out::output("(size = " + std::to_string(oracle[""]->size()) + ") : \n", 2);
+    /*
+     *Out::output("Hashtable size = "
+     *        + std::to_string(oracle[""]->size()) + ") : \n");
+     *Out::output(oracle[""]->to_string() + "\n", 2);
+     *Out::output("(size = " + std::to_string(oracle[""]->size()) + ") : \n", 2);
+     */
 
     return 0;
 }
@@ -193,13 +195,6 @@ int OracleBuilder::buildOracle(Board::Color playFor,
 
 OracleFinder::OracleFinder(vector<int> &commIds) : Finder(commIds)
 {
-    string inputFilename = opt_.getInputFile();
-    if (inputFilename.size() > 0) {
-        oracleTables_[""] = HashTable::fromPolyglot(inputFilename);
-    } else {
-        Out::output("Creating new main empty table.\n", 2);
-        oracleTables_[""] = new HashTable("");
-    }
     for (const string &inFile : Utils::filesFromDir(opt_.getTableFolder(),
                                                     ".bin")) {
         const string &sign = Utils::signatureFromFilename(inFile);
@@ -219,12 +214,7 @@ OracleFinder::~OracleFinder()
 {
     string outputFilename = opt_.getOutputFile();
     for (auto entry : oracleTables_) {
-        if (entry.first == "") {
-            if (outputFilename.length() > 0)
-                entry.second->toPolyglot(outputFilename);
-        } else {
-            entry.second->autosave();
-        }
+        entry.second->autosave();
         delete entry.second;
     }
     dumpStat();
@@ -246,7 +236,7 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
     Position pos;
     Comm::UCICommunicatorPool &pool = Comm::UCICommunicatorPool::getInstance();
     Options &opt = Options::getInstance();
-    HashTable *oracle = tables[""];
+    //HashTable *oracle = tables[""];
     pool.sendOption(commId, "MultiPV", to_string(opt.getMaxMoves()));
     //Main loop
     Node *current = nullptr;
@@ -260,47 +250,35 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
         Color active = pos.side_to_move();
         string signature = pos.signature();
         uint64_t curHash = pos.hash();
-        bool insertCopyInSignTable = false;
 
         /*Lookup in signature tables*/
-        if (signature.length() <= opt.getMaxPiecesEnding()) {
-            HashTable *table = nullptr;
-            if (tables.count(signature) == 0) {
-                string filename = opt.getTableFolder() + "/" + signature
-                                  + ".autosave."
-                                  + opt.getVariantAsString()
-                                  + to_string(opt.getCutoffThreshold())
-                                  + ".bin";
-                table = new HashTable(filename);
-                if (tables.findOrInsert(signature, table) != table) {
-                    delete table;
-                    table = tables[signature];
-                }
-            } else {
-                table = tables[signature];
+        HashTable *oracle = nullptr;
+        if (tables.count(signature) == 0) {
+            string filename = opt.getTableFolder() + "/" + signature
+                              + ".autosave."
+                              + opt.getVariantAsString()
+                              + to_string(opt.getCutoffThreshold())
+                              + ".bin";
+            oracle = new HashTable(filename);
+            if (tables.findOrInsert(signature, oracle) != oracle) {
+                delete oracle;
+                oracle = tables[signature];
             }
-            Node *s = nullptr;
-            if ((s = table->findVal(curHash))) {
-                current->updateStatus((Node::StatusFlag)
-                                      (s->getStatus() | Node::SIGNATURE_TABLE));
-                if (current->getStatus() & Node::THEM) {
-                    OracleBuilder::displayNodeHistory(current);
-                    Out::output("Iteration output for error :\n" + iterationOutput);
-                    Err::handle("A node has gone from draw to mate, this is an error"
-                                " until we decide on what to do, and if it's a bug"
-                                " in the engine.");
-                }
-                if (oracle->findOrInsert(curHash, current) != current)
-                    delete current;
-                continue;
-            } else {
-                insertCopyInSignTable = true;
-            }
+        } else {
+            oracle = tables[signature];
         }
 
+        Node *s = nullptr;
         /*Try to find the position and insert it if not found*/
-        if (oracle->findOrInsert(curHash, current) != current) {
+        if ((s = oracle->findVal(curHash))) {
             Out::output(iterationOutput, "Position already in table.\n", 1);
+            if (s->getStatus() & Node::THEM) {
+                OracleBuilder::displayNodeHistory(current);
+                Out::output("Iteration output for error :\n" + iterationOutput);
+                Err::handle("A node has gone from draw to mate, this is an error"
+                            " until we decide on what to do, and if it's a bug"
+                            " in the engine.");
+            }
             delete current;
             continue;
         }
@@ -430,31 +408,26 @@ void OracleBuilder::exploreNode(ConcurrentMap<string, HashTable *> &tables,
                 current->updateStatus((Node::StatusFlag)(Node::THRESHOLD | Node::US));
             }
             skipThisNode = true;
-        }
-
-        /*Trick to avoid code duplicaton for inserting copy in table*/
-        if (!skipThisNode) {
+        } else {
             current->updateStatus(Node::DRAW);
-            /* If we are not in fullBuild mode, just insert a pending node in
-             * table if the signature is low enough
+        }
+
+        /* If we are not in fullBuild mode, just insert a pending node in
+         * table if the signature is low enough
+         */
+        if (oracle->findOrInsert(curHash, current) != current) {
+            /*
+             *Node already done
              */
-            if (!opt.fullBuild() &&
-                signature.length() <= opt.getMaxPiecesEnding()) {
-                if (oracle->findOrInsert(curHash, current) != current)
-                    delete current;
-                else
-                    current->updateStatus((Node::StatusFlag)
-                                          (current->getStatus() | Node::PENDING));
-                continue;
-            }
+            delete current;
+            continue;
         }
-
-        if (insertCopyInSignTable) {
-            Node *cpy = current->lightCopy();
-            if (tables[signature]->findOrInsert(curHash, cpy) != cpy)
-                delete cpy;
+        if (!opt.fullBuild() &&
+            signature.length() <= opt.getMaxPiecesEnding()) {
+            current->updateStatus((Node::StatusFlag)
+                                  (current->getStatus() | Node::PENDING));
+            continue;
         }
-
         if (skipThisNode)
             continue;
 
